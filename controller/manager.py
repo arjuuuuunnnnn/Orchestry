@@ -142,7 +142,15 @@ class AppManager:
             if "resources" in app_spec:
                 resources = app_spec["resources"]
                 if "cpu" in resources:
-                    container_config["nano_cpus"] = int(float(resources["cpu"]) * 1_000_000_000)
+                    # Handle Kubernetes-style CPU specifications (e.g., "100m", "0.5", "1")
+                    cpu_str = resources["cpu"]
+                    if cpu_str.endswith("m"):
+                        # Millicpus (e.g., "100m" = 0.1 CPU)
+                        cpu_value = float(cpu_str[:-1]) / 1000
+                    else:
+                        # Regular CPU value (e.g., "0.5", "1")
+                        cpu_value = float(cpu_str)
+                    container_config["nano_cpus"] = int(cpu_value * 1_000_000_000)
                 if "memory" in resources:
                     # Convert memory string to bytes
                     memory_str = resources["memory"]
@@ -293,11 +301,16 @@ class AppManager:
                 return {"status": "no_change", "app": app_name, "replicas": replicas}
             
             app_data = self.state_store.get_app(app_name)
+            if not app_data:
+                return {"error": f"App {app_name} specification not found"}
+                
+            # app_data is a dictionary, not a tuple
             app_spec = {
-                "type": app_data[1],
-                "image": app_data[2],
-                "ports": json.loads(app_data[3]),
-                "scaling": json.loads(app_data[4])
+                "type": app_data["type"],
+                "image": app_data["image"],
+                "ports": app_data["ports"],  # Already parsed as dict
+                "scaling": app_data["scaling"],  # Already parsed as dict
+                "resources": app_data["resources"]  # Already parsed as dict
             }
             
             if replicas > current_replicas:

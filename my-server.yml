@@ -3,28 +3,24 @@ kind: App
 metadata:
   name: my-server
   labels:
-    app: my-server
-    version: v1
+    app: "my-server"
+    version: "v1"
 spec:
   type: http
-  image: 452d0b0b8373  # Your existing image
+  image: "testing:latest"
   ports:
     - containerPort: 9010
-      protocol: TCP
-  scaling:
-    minReplicas: 1
-    maxReplicas: 5
-    targetRPS: 100
-    maxLatencyMs: 500
+      protocol: HTTP
   resources:
-    requests:
-      memory: "128Mi"
-      cpu: "100m"
-    limits:
-      memory: "512Mi"
-      cpu: "500m"
-  healthCheck:
-    path: "/"
-    port: 9010
-    initialDelaySeconds: 5
-    periodSeconds: 10
+    cpu: "100m"
+    memory: "128Mi"
+scaling:
+  minReplicas: 1
+  maxReplicas: 5
+  targetRPSPerReplica: 100
+  maxP95LatencyMs: 500
+healthCheck:
+  path: "/"
+  port: 9010
+  initialDelaySeconds: 5
+  periodSeconds: 10

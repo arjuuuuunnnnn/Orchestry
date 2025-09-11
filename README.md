@@ -1,39 +1,17 @@
-autoscaler/
-│
-├── cli/                     # SDK CLI (register, up, down, scale, status, logs, metrics)
-│   ├── __init__.py
-│   └── main.py              # CLI entrypoint using Typer/Click
-│
-├── controller/              # Daemon (core logic)
-│   ├── __init__.py
-│   ├── api.py               # FastAPI/Flask Admin API
-│   ├── manager.py           # Container lifecycle mgmt (Docker API)
-│   ├── scaler.py            # Scaling decisions (RPS, latency, CPU)
-│   ├── health.py            # Health checks
-│   ├── nginx.py             # Nginx config & reload logic
-│   └── state.py             # State registry & DB access
-│
-├── metrics/
-│   ├── __init__.py
-│   └── exporter.py          # Prometheus/OpenMetrics exporter, log shipper
-│
-├── state/
-│   ├── __init__.py
-│   └── db.py                # SQLite/BoltDB wrapper
-│
-├── app_spec/                # App registration schema
-│   ├── __init__.py
-│   └── models.py            # Pydantic dataclasses for AppSpec (YAML/JSON)
-│
-├── tests/                   # Unit tests
-│
-├── docker/                  # Helper Dockerfiles & templates
-│   └── nginx_template.conf  # Jinja2 template for per-app upstream
-│
-├── pyproject.toml            # Poetry/pipenv or requirements.txt
-└── README.md
+POST /api/v1/apps - Register applications
+POST /api/v1/apps/{app_name}/start - Start apps
+POST /api/v1/apps/{app_name}/stop - Stop apps
+POST /api/v1/apps/{app_name}/scale - Scale apps
+GET /api/v1/apps/{app_name} - Get app status
+GET /api/v1/apps - List all apps
+GET /health - Health check
 
 
+Python version == 3.13.5
 
-
-#### Python version == 3.13.5
+python -m cli.main register my-app.yml
+python -m cli.main up my-app
+python -m cli.main status my-app
+python -m cli.main scale my-app 3
+python -m cli.main list
+python -m cli.main metrics

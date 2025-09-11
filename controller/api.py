@@ -7,7 +7,7 @@ import logging
 import threading
 import time
 import os
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Any
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
@@ -23,8 +23,10 @@ logger = logging.getLogger(__name__)
 class AppSpec(BaseModel):
     apiVersion: str = "v1"
     kind: str = "App"
-    metadata: Dict[str, str]
-    spec: Dict
+    metadata: Dict[str, Any]  # Changed to Any to accept nested dicts
+    spec: Dict[str, Any]      # Changed to Any for flexibility
+    scaling: Optional[Dict[str, Any]] = None
+    healthCheck: Optional[Dict[str, Any]] = None
 
 class ScaleRequest(BaseModel):
     replicas: int = Field(..., ge=0, le=100)
@@ -207,30 +209,36 @@ def background_monitoring():
 async def register_app(app_spec: AppSpec):
     """Register a new application."""
     try:
-        result = app_manager.register(app_spec.dict())
+        # Convert AppSpec to dict for manager
+        spec_dict = app_spec.dict() if hasattr(app_spec, 'dict') else app_spec
+        result = app_manager.register(spec_dict)
         
         if "error" in result:
             raise HTTPException(status_code=400, detail=result["error"])
         
-        # Set up default scaling policy
-        app_name = app_spec.metadata["name"]
-        scaling_config = app_spec.spec.get("scaling", {})
+        # Get app name from metadata
+        app_name = spec_dict.get("metadata", {}).get("name")
+        if not app_name:
+            raise HTTPException(status_code=400, detail="App name is required in metadata")
+        
+        # Set up default scaling policy from the scaling section
+        scaling_config = spec_dict.get("scaling", {})
         
         policy = ScalingPolicy(
             min_replicas=scaling_config.get("minReplicas", 1),
             max_replicas=scaling_config.get("maxReplicas", 5),
-            target_rps_per_replica=scaling_config.get("policy", {}).get("http", {}).get("targetRPSPerReplica", 50),
-            max_p95_latency_ms=scaling_config.get("policy", {}).get("http", {}).get("maxP95LatencyMs", 250),
-            scale_out_threshold_pct=scaling_config.get("policy", {}).get("http", {}).get("scaleOutThresholdPct", 80),
-            scale_in_threshold_pct=scaling_config.get("policy", {}).get("http", {}).get("scaleInThresholdPct", 30),
-            window_seconds=scaling_config.get("policy", {}).get("http", {}).get("windowSeconds", 20),
-            cooldown_seconds=scaling_config.get("policy", {}).get("cooldownSeconds", 30)
+            target_rps_per_replica=scaling_config.get("targetRPSPerReplica", 50),
+            max_p95_latency_ms=scaling_config.get("maxP95LatencyMs", 250),
+            scale_out_threshold_pct=scaling_config.get("scaleOutThresholdPct", 80),
+            scale_in_threshold_pct=scaling_config.get("scaleInThresholdPct", 30),
+            window_seconds=scaling_config.get("windowSeconds", 60),
+            cooldown_seconds=scaling_config.get("cooldownSeconds", 300)
         )
         
         auto_scaler.set_policy(app_name, policy)
         
         # Log event
-        state_store.log_event(app_name, "registered", {"spec": app_spec.spec})
+        state_store.log_event(app_name, "registered", {"spec": spec_dict.get("spec", {})})
         
         return AppRegistrationResponse(
             status="registered",
