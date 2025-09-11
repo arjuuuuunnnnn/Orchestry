@@ -1,0 +1,307 @@
+2025-09-11 15:39:00,578 - __main__ - INFO - Starting AutoServe Controller...
+2025-09-11 15:39:00,578 - __main__ - INFO - API will be available at http://0.0.0.0:8000
+2025-09-11 15:39:00,578 - __main__ - INFO - Database: ./data/autoscaler.db
+2025-09-11 15:39:00,578 - __main__ - INFO - Nginx container: autoserve-nginx
+2025-09-11 15:39:00,578 - __main__ - INFO - Redis URL: redis://autoserve-redis:6379
+2025-09-11 15:39:01,181 - controller.state - INFO - Database schema initialized
+2025-09-11 15:39:01,181 - controller.api - ERROR - Failed to start controller: module 'docker' has no attribute 'from_env'
+2025-09-11 15:43:27,614 - __main__ - INFO - Starting AutoServe Controller...
+2025-09-11 15:43:27,614 - __main__ - INFO - API will be available at http://0.0.0.0:8000
+2025-09-11 15:43:27,614 - __main__ - INFO - Database: ./data/autoscaler.db
+2025-09-11 15:43:27,614 - __main__ - INFO - Nginx container: autoserve-nginx
+2025-09-11 15:43:27,614 - __main__ - INFO - Redis URL: redis://autoserve-redis:6379
+2025-09-11 15:43:28,188 - controller.state - INFO - Database schema initialized
+2025-09-11 15:43:28,198 - controller.nginx - INFO - Starting nginx container autoserve-nginx
+2025-09-11 15:43:28,282 - controller.nginx - ERROR - Failed to ensure nginx container: 400 Client Error for http+docker://localhost/v1.51/containers/ef90300d8e6d751423aa92cd56a1e78a55ee15d8e0542097b8b508a5406b66d5/start: Bad Request ("failed to create task for container: failed to create shim task: OCI runtime create failed: runc create failed: unable to start container process: error during container init: error mounting "/home/admino/badAss/AutoServe/docker/nginx-main.conf" to rootfs at "/etc/nginx/nginx.conf": create mountpoint for /etc/nginx/nginx.conf mount: cannot create subdirectories in "/var/lib/docker/overlay2/4775ff2c3da44699a267718108270c5afaa2a87992e7a12fbff3526bddd22516/merged/etc/nginx/nginx.conf": not a directory: Are you trying to mount a directory onto a file (or vice-versa)? Check if the specified host path exists and is the expected type")
+2025-09-11 15:43:28,282 - controller.api - ERROR - Failed to start controller: 400 Client Error for http+docker://localhost/v1.51/containers/ef90300d8e6d751423aa92cd56a1e78a55ee15d8e0542097b8b508a5406b66d5/start: Bad Request ("failed to create task for container: failed to create shim task: OCI runtime create failed: runc create failed: unable to start container process: error during container init: error mounting "/home/admino/badAss/AutoServe/docker/nginx-main.conf" to rootfs at "/etc/nginx/nginx.conf": create mountpoint for /etc/nginx/nginx.conf mount: cannot create subdirectories in "/var/lib/docker/overlay2/4775ff2c3da44699a267718108270c5afaa2a87992e7a12fbff3526bddd22516/merged/etc/nginx/nginx.conf": not a directory: Are you trying to mount a directory onto a file (or vice-versa)? Check if the specified host path exists and is the expected type")
+2025-09-11 15:44:20,577 - __main__ - INFO - Starting AutoServe Controller...
+2025-09-11 15:44:20,578 - __main__ - INFO - API will be available at http://0.0.0.0:8000
+2025-09-11 15:44:20,578 - __main__ - INFO - Database: ./data/autoscaler.db
+2025-09-11 15:44:20,578 - __main__ - INFO - Nginx container: autoserve-nginx
+2025-09-11 15:44:20,578 - __main__ - INFO - Redis URL: redis://autoserve-redis:6379
+2025-09-11 15:44:21,221 - controller.state - INFO - Database schema initialized
+2025-09-11 15:44:21,233 - controller.nginx - INFO - Nginx container autoserve-nginx is running
+2025-09-11 15:44:21,241 - controller.health - INFO - Health checker started
+2025-09-11 15:44:21,242 - controller.api - INFO - Started background monitoring thread
+2025-09-11 15:44:21,244 - controller.api - INFO - AutoServe Controller API started successfully
+2025-09-11 15:44:42,327 - controller.health - INFO - Health checker stopped
+2025-09-11 15:44:42,328 - controller.api - INFO - AutoServe Controller API shut down
+2025-09-11 15:44:42,328 - root - INFO - Received signal 2, shutting down...
+2025-09-11 15:44:45,503 - __main__ - INFO - Starting AutoServe Controller...
+2025-09-11 15:44:45,503 - __main__ - INFO - API will be available at http://0.0.0.0:8000
+2025-09-11 15:44:45,503 - __main__ - INFO - Database: ./data/autoscaler.db
+2025-09-11 15:44:45,504 - __main__ - INFO - Nginx container: autoserve-nginx
+2025-09-11 15:44:45,504 - __main__ - INFO - Redis URL: redis://autoserve-redis:6379
+2025-09-11 15:44:46,086 - controller.state - INFO - Database schema initialized
+2025-09-11 15:44:46,096 - controller.nginx - INFO - Nginx container autoserve-nginx is running
+2025-09-11 15:44:46,106 - controller.health - INFO - Health checker started
+2025-09-11 15:44:46,106 - controller.api - INFO - Started background monitoring thread
+2025-09-11 15:44:46,108 - controller.api - INFO - AutoServe Controller API started successfully
+2025-09-11 15:46:48,981 - __main__ - INFO - Starting AutoServe Controller...
+2025-09-11 15:46:48,981 - __main__ - INFO - API will be available at http://0.0.0.0:8000
+2025-09-11 15:46:48,981 - __main__ - INFO - Database: ./data/autoscaler.db
+2025-09-11 15:46:48,982 - __main__ - INFO - Nginx container: autoserve-nginx
+2025-09-11 15:46:48,982 - __main__ - INFO - Redis URL: redis://autoserve-redis:6379
+2025-09-11 15:46:49,510 - controller.state - INFO - Database schema initialized
+2025-09-11 15:46:49,521 - controller.nginx - INFO - Nginx container autoserve-nginx is running
+2025-09-11 15:46:49,530 - controller.health - INFO - Health checker started
+2025-09-11 15:46:49,530 - controller.api - INFO - Started background monitoring thread
+2025-09-11 15:46:49,532 - controller.api - INFO - AutoServe Controller API started successfully
+2025-09-11 15:48:06,884 - controller.state - INFO - Created new app specification for my-server
+2025-09-11 15:48:06,892 - controller.manager - INFO - Registered app my-server
+2025-09-11 15:48:06,892 - controller.scaler - INFO - Set scaling policy for my-server: min=1, max=5
+2025-09-11 15:49:00,895 - controller.manager - ERROR - Failed to start app my-server: 1
+2025-09-11 15:49:00,895 - controller.api - ERROR - Failed to start app my-server: 400: 1
+2025-09-11 15:51:55,247 - controller.nginx - ERROR - Failed to get nginx status: Container.exec_run() got an unexpected keyword argument 'capture_output'
+2025-09-11 15:52:20,219 - controller.manager - ERROR - Failed to start app my-server: 1
+2025-09-11 15:52:20,219 - controller.api - ERROR - Failed to start app my-server: 400: 1
+2025-09-11 15:52:57,645 - controller.state - INFO - Created new app specification for test-nginx
+2025-09-11 15:52:57,653 - controller.manager - INFO - Registered app test-nginx
+2025-09-11 15:52:57,654 - controller.scaler - INFO - Set scaling policy for test-nginx: min=1, max=3
+2025-09-11 15:53:28,599 - controller.manager - ERROR - Failed to start app test-nginx: 1
+2025-09-11 15:53:28,599 - controller.api - ERROR - Failed to start app test-nginx: 400: 1
+2025-09-11 15:55:25,204 - controller.health - INFO - Health checker stopped
+2025-09-11 15:55:25,205 - controller.api - INFO - AutoServe Controller API shut down
+2025-09-11 15:55:25,205 - root - INFO - Received signal 15, shutting down...
+2025-09-11 15:55:33,988 - __main__ - INFO - Starting AutoServe Controller...
+2025-09-11 15:55:33,988 - __main__ - INFO - API will be available at http://0.0.0.0:8000
+2025-09-11 15:55:33,988 - __main__ - INFO - Database: ./data/autoscaler.db
+2025-09-11 15:55:33,988 - __main__ - INFO - Nginx container: autoserve-nginx
+2025-09-11 15:55:33,988 - __main__ - INFO - Redis URL: redis://autoserve-redis:6379
+2025-09-11 15:55:34,565 - controller.state - INFO - Database schema initialized
+2025-09-11 15:55:34,575 - controller.nginx - INFO - Nginx container autoserve-nginx is running
+2025-09-11 15:55:34,585 - controller.health - INFO - Health checker started
+2025-09-11 15:55:34,585 - controller.api - INFO - Started background monitoring thread
+2025-09-11 15:55:34,587 - controller.api - INFO - AutoServe Controller API started successfully
+2025-09-11 15:55:51,805 - controller.manager - ERROR - Failed to start app my-server: 1
+2025-09-11 15:55:51,806 - controller.api - ERROR - Failed to start app my-server: 400: 1
+2025-09-11 15:57:24,273 - __main__ - INFO - Starting AutoServe Controller...
+2025-09-11 15:57:24,273 - __main__ - INFO - API will be available at http://0.0.0.0:8000
+2025-09-11 15:57:24,273 - __main__ - INFO - Database: ./data/autoscaler.db
+2025-09-11 15:57:24,273 - __main__ - INFO - Nginx container: autoserve-nginx
+2025-09-11 15:57:24,273 - __main__ - INFO - Redis URL: redis://autoserve-redis:6379
+2025-09-11 15:57:24,853 - controller.state - INFO - Database schema initialized
+2025-09-11 15:57:24,864 - controller.nginx - INFO - Nginx container autoserve-nginx is running
+2025-09-11 15:57:24,873 - controller.health - INFO - Health checker started
+2025-09-11 15:57:24,873 - controller.api - INFO - Started background monitoring thread
+2025-09-11 15:57:24,875 - controller.api - INFO - AutoServe Controller API started successfully
+2025-09-11 15:57:24,876 - controller.health - INFO - Health checker stopped
+2025-09-11 15:57:24,876 - controller.api - INFO - AutoServe Controller API shut down
+2025-09-11 15:57:28,126 - controller.health - INFO - Health checker stopped
+2025-09-11 15:57:28,126 - controller.api - INFO - AutoServe Controller API shut down
+2025-09-11 15:57:28,127 - root - INFO - Received signal 2, shutting down...
+2025-09-11 15:57:31,153 - __main__ - INFO - Starting AutoServe Controller...
+2025-09-11 15:57:31,154 - __main__ - INFO - API will be available at http://0.0.0.0:8000
+2025-09-11 15:57:31,154 - __main__ - INFO - Database: ./data/autoscaler.db
+2025-09-11 15:57:31,154 - __main__ - INFO - Nginx container: autoserve-nginx
+2025-09-11 15:57:31,154 - __main__ - INFO - Redis URL: redis://autoserve-redis:6379
+2025-09-11 15:57:31,744 - controller.state - INFO - Database schema initialized
+2025-09-11 15:57:31,756 - controller.nginx - INFO - Nginx container autoserve-nginx is running
+2025-09-11 15:57:31,765 - controller.health - INFO - Health checker started
+2025-09-11 15:57:31,766 - controller.api - INFO - Started background monitoring thread
+2025-09-11 15:57:31,768 - controller.api - INFO - AutoServe Controller API started successfully
+2025-09-11 15:58:33,098 - controller.health - INFO - Health checker stopped
+2025-09-11 15:58:33,098 - controller.api - INFO - AutoServe Controller API shut down
+2025-09-11 15:58:33,099 - root - INFO - Received signal 2, shutting down...
+2025-09-11 15:58:34,986 - __main__ - INFO - Starting AutoServe Controller...
+2025-09-11 15:58:34,986 - __main__ - INFO - API will be available at http://0.0.0.0:8000
+2025-09-11 15:58:34,986 - __main__ - INFO - Database: ./data/autoscaler.db
+2025-09-11 15:58:34,986 - __main__ - INFO - Nginx container: autoserve-nginx
+2025-09-11 15:58:34,986 - __main__ - INFO - Redis URL: redis://autoserve-redis:6379
+2025-09-11 15:58:35,563 - controller.state - INFO - Database schema initialized
+2025-09-11 15:58:35,576 - controller.nginx - INFO - Nginx container autoserve-nginx is running
+2025-09-11 15:58:35,582 - controller.health - INFO - Health checker started
+2025-09-11 15:58:35,583 - controller.api - INFO - Started background monitoring thread
+2025-09-11 15:58:35,584 - controller.api - INFO - AutoServe Controller API started successfully
+2025-09-11 15:58:51,244 - controller.health - INFO - Health checker stopped
+2025-09-11 15:58:51,244 - controller.api - INFO - AutoServe Controller API shut down
+2025-09-11 15:58:51,245 - root - INFO - Received signal 2, shutting down...
+2025-09-11 15:58:54,821 - __main__ - INFO - Starting AutoServe Controller...
+2025-09-11 15:58:54,821 - __main__ - INFO - API will be available at http://0.0.0.0:8000
+2025-09-11 15:58:54,821 - __main__ - INFO - Database: ./data/autoscaler.db
+2025-09-11 15:58:54,821 - __main__ - INFO - Nginx container: autoserve-nginx
+2025-09-11 15:58:54,821 - __main__ - INFO - Redis URL: redis://autoserve-redis:6379
+2025-09-11 15:58:55,349 - controller.state - INFO - Database schema initialized
+2025-09-11 15:58:55,361 - controller.nginx - INFO - Nginx container autoserve-nginx is running
+2025-09-11 15:58:55,370 - controller.health - INFO - Health checker started
+2025-09-11 15:58:55,371 - controller.api - INFO - Started background monitoring thread
+2025-09-11 15:58:55,373 - controller.api - INFO - AutoServe Controller API started successfully
+2025-09-11 15:58:59,676 - controller.manager - ERROR - Failed to start app my-server: 1
+2025-09-11 15:58:59,676 - controller.api - ERROR - Failed to start app my-server: 400: 1
+2025-09-11 16:00:28,831 - controller.health - INFO - Health checker stopped
+2025-09-11 16:00:28,831 - controller.api - INFO - AutoServe Controller API shut down
+2025-09-11 16:00:28,832 - root - INFO - Received signal 15, shutting down...
+2025-09-11 16:00:38,129 - __main__ - INFO - Starting AutoServe Controller...
+2025-09-11 16:00:38,129 - __main__ - INFO - API will be available at http://0.0.0.0:8000
+2025-09-11 16:00:38,129 - __main__ - INFO - Database: ./data/autoscaler.db
+2025-09-11 16:00:38,129 - __main__ - INFO - Nginx container: autoserve-nginx
+2025-09-11 16:00:38,130 - __main__ - INFO - Redis URL: redis://autoserve-redis:6379
+2025-09-11 16:00:38,730 - controller.state - INFO - Database schema initialized
+2025-09-11 16:00:38,741 - controller.nginx - INFO - Nginx container autoserve-nginx is running
+2025-09-11 16:00:38,749 - controller.health - INFO - Health checker started
+2025-09-11 16:00:38,749 - controller.api - INFO - Started background monitoring thread
+2025-09-11 16:00:38,756 - controller.api - INFO - AutoServe Controller API started successfully
+2025-09-11 16:00:57,831 - controller.health - INFO - Health checker stopped
+2025-09-11 16:00:57,831 - controller.api - INFO - AutoServe Controller API shut down
+2025-09-11 16:00:57,832 - root - INFO - Received signal 2, shutting down...
+2025-09-11 16:01:01,449 - __main__ - INFO - Starting AutoServe Controller...
+2025-09-11 16:01:01,449 - __main__ - INFO - API will be available at http://0.0.0.0:8000
+2025-09-11 16:01:01,449 - __main__ - INFO - Database: ./data/autoscaler.db
+2025-09-11 16:01:01,449 - __main__ - INFO - Nginx container: autoserve-nginx
+2025-09-11 16:01:01,449 - __main__ - INFO - Redis URL: redis://autoserve-redis:6379
+2025-09-11 16:01:01,972 - controller.state - INFO - Database schema initialized
+2025-09-11 16:01:01,983 - controller.nginx - INFO - Nginx container autoserve-nginx is running
+2025-09-11 16:01:01,992 - controller.health - INFO - Health checker started
+2025-09-11 16:01:01,993 - controller.api - INFO - Started background monitoring thread
+2025-09-11 16:01:01,994 - controller.api - INFO - AutoServe Controller API started successfully
+2025-09-11 16:01:04,973 - controller.manager - ERROR - Failed to start app my-server: 1
+2025-09-11 16:01:04,973 - controller.api - ERROR - Failed to start app my-server: 400: 1
+2025-09-11 16:01:54,497 - controller.health - INFO - Health checker stopped
+2025-09-11 16:01:54,498 - controller.api - INFO - AutoServe Controller API shut down
+2025-09-11 16:01:54,498 - root - INFO - Received signal 15, shutting down...
+2025-09-11 16:01:56,438 - __main__ - INFO - Starting AutoServe Controller...
+2025-09-11 16:01:56,438 - __main__ - INFO - API will be available at http://0.0.0.0:8000
+2025-09-11 16:01:56,439 - __main__ - INFO - Database: ./data/autoscaler.db
+2025-09-11 16:01:56,439 - __main__ - INFO - Nginx container: autoserve-nginx
+2025-09-11 16:01:56,439 - __main__ - INFO - Redis URL: redis://autoserve-redis:6379
+2025-09-11 16:01:57,018 - controller.state - INFO - Database schema initialized
+2025-09-11 16:01:57,030 - controller.nginx - INFO - Nginx container autoserve-nginx is running
+2025-09-11 16:01:57,037 - controller.health - INFO - Health checker started
+2025-09-11 16:01:57,037 - controller.api - INFO - Started background monitoring thread
+2025-09-11 16:01:57,041 - controller.api - INFO - AutoServe Controller API started successfully
+2025-09-11 16:02:19,227 - controller.health - INFO - Health checker stopped
+2025-09-11 16:02:19,227 - controller.api - INFO - AutoServe Controller API shut down
+2025-09-11 16:02:19,228 - root - INFO - Received signal 2, shutting down...
+2025-09-11 16:02:25,138 - __main__ - INFO - Starting AutoServe Controller...
+2025-09-11 16:02:25,138 - __main__ - INFO - API will be available at http://0.0.0.0:8000
+2025-09-11 16:02:25,138 - __main__ - INFO - Database: ./data/autoscaler.db
+2025-09-11 16:02:25,138 - __main__ - INFO - Nginx container: autoserve-nginx
+2025-09-11 16:02:25,138 - __main__ - INFO - Redis URL: redis://autoserve-redis:6379
+2025-09-11 16:02:25,682 - controller.state - INFO - Database schema initialized
+2025-09-11 16:02:25,692 - controller.nginx - INFO - Nginx container autoserve-nginx is running
+2025-09-11 16:02:25,703 - controller.health - INFO - Health checker started
+2025-09-11 16:02:25,703 - controller.api - INFO - Started background monitoring thread
+2025-09-11 16:02:25,708 - controller.api - INFO - AutoServe Controller API started successfully
+2025-09-11 16:02:30,457 - controller.manager - INFO - Starting app my-server
+2025-09-11 16:02:30,457 - controller.manager - INFO - Got app data for my-server: {'name': 'my-server', 'type': 'http', 'image': '452d0b0b8373', 'command': None, 'env': [], 'ports': [{'containerPort': 9010, 'protocol': 'TCP'}], 'health': {}, 'resources': {'requests': {'memory': '128Mi', 'cpu': '100m'}, 'limits': {'memory': '512Mi', 'cpu': '500m'}}, 'scaling': {'minReplicas': 1, 'maxReplicas': 5, 'targetRPS': 100, 'maxLatencyMs': 500}, 'retries': {}, 'termination': {}, 'volumes': [], 'labels': {}, 'created_at': 1757585886.8843095, 'updated_at': 1757585886.8843095}
+2025-09-11 16:02:30,457 - controller.manager - ERROR - Failed to start app my-server: 1
+2025-09-11 16:02:30,457 - controller.api - ERROR - Failed to start app my-server: 400: 1
+2025-09-11 16:03:27,946 - controller.health - INFO - Health checker stopped
+2025-09-11 16:03:27,947 - controller.api - INFO - AutoServe Controller API shut down
+2025-09-11 16:03:27,947 - root - INFO - Received signal 15, shutting down...
+2025-09-11 16:03:29,800 - __main__ - INFO - Starting AutoServe Controller...
+2025-09-11 16:03:29,800 - __main__ - INFO - API will be available at http://0.0.0.0:8000
+2025-09-11 16:03:29,800 - __main__ - INFO - Database: ./data/autoscaler.db
+2025-09-11 16:03:29,800 - __main__ - INFO - Nginx container: autoserve-nginx
+2025-09-11 16:03:29,800 - __main__ - INFO - Redis URL: redis://autoserve-redis:6379
+2025-09-11 16:03:30,406 - controller.state - INFO - Database schema initialized
+2025-09-11 16:03:30,418 - controller.nginx - INFO - Nginx container autoserve-nginx is running
+2025-09-11 16:03:30,425 - controller.health - INFO - Health checker started
+2025-09-11 16:03:30,425 - controller.api - INFO - Started background monitoring thread
+2025-09-11 16:03:30,428 - controller.api - INFO - AutoServe Controller API started successfully
+2025-09-11 16:03:46,388 - controller.health - INFO - Health checker stopped
+2025-09-11 16:03:46,388 - controller.api - INFO - AutoServe Controller API shut down
+2025-09-11 16:03:46,389 - root - INFO - Received signal 2, shutting down...
+2025-09-11 16:03:49,068 - __main__ - INFO - Starting AutoServe Controller...
+2025-09-11 16:03:49,068 - __main__ - INFO - API will be available at http://0.0.0.0:8000
+2025-09-11 16:03:49,068 - __main__ - INFO - Database: ./data/autoscaler.db
+2025-09-11 16:03:49,068 - __main__ - INFO - Nginx container: autoserve-nginx
+2025-09-11 16:03:49,068 - __main__ - INFO - Redis URL: redis://autoserve-redis:6379
+2025-09-11 16:03:49,601 - controller.state - INFO - Database schema initialized
+2025-09-11 16:03:49,612 - controller.nginx - INFO - Nginx container autoserve-nginx is running
+2025-09-11 16:03:49,621 - controller.health - INFO - Health checker started
+2025-09-11 16:03:49,621 - controller.api - INFO - Started background monitoring thread
+2025-09-11 16:03:49,623 - controller.api - INFO - AutoServe Controller API started successfully
+2025-09-11 16:03:56,580 - controller.manager - INFO - Starting app my-server
+2025-09-11 16:03:56,581 - controller.manager - INFO - Got app data for my-server: {'name': 'my-server', 'type': 'http', 'image': '452d0b0b8373', 'command': None, 'env': [], 'ports': [{'containerPort': 9010, 'protocol': 'TCP'}], 'health': {}, 'resources': {'requests': {'memory': '128Mi', 'cpu': '100m'}, 'limits': {'memory': '512Mi', 'cpu': '500m'}}, 'scaling': {'minReplicas': 1, 'maxReplicas': 5, 'targetRPS': 100, 'maxLatencyMs': 500}, 'retries': {}, 'termination': {}, 'volumes': [], 'labels': {}, 'created_at': 1757585886.8843095, 'updated_at': 1757585886.8843095}
+2025-09-11 16:03:56,581 - controller.manager - INFO - Parsed app spec for my-server: {'type': 'http', 'image': '452d0b0b8373', 'ports': [{'containerPort': 9010, 'protocol': 'TCP'}], 'scaling': {'minReplicas': 1, 'maxReplicas': 5, 'targetRPS': 100, 'maxLatencyMs': 500}, 'resources': {'requests': {'memory': '128Mi', 'cpu': '100m'}, 'limits': {'memory': '512Mi', 'cpu': '500m'}}}
+2025-09-11 16:03:56,581 - controller.manager - INFO - Starting 1 replicas for my-server
+2025-09-11 16:03:56,581 - controller.manager - INFO - Starting container 0 for my-server
+2025-09-11 16:03:56,753 - controller.manager - INFO - Started container my-server-0 at 172.19.0.4:9010
+2025-09-11 16:03:56,753 - controller.manager - INFO - Container 0 start result: ContainerInstance(container_id='20580a1052a1ff806eb3aa0976a0d9e1160cf0bc8e0338ba6ba189f19e446028', ip='172.19.0.4', port=9010, state='ready', cpu_percent=0.0, memory_percent=0.0, last_seen=1757586836.753751, failures=0)
+2025-09-11 16:03:56,754 - controller.nginx - ERROR - Failed to update nginx config for my-server: [Errno 13] Permission denied: '/home/admino/badAss/AutoServe/docker_configs/nginx/tmpgd2s4h8f.tmp'
+2025-09-11 16:03:56,754 - controller.manager - INFO - Started app my-server with 1 replicas
+2025-09-11 16:04:00,637 - controller.manager - WARNING - Failed to update stats for container 20580a1052a1ff806eb3aa0976a0d9e1160cf0bc8e0338ba6ba189f19e446028: 'percpu_usage'
+2025-09-11 16:04:08,674 - controller.manager - WARNING - Failed to update stats for container 20580a1052a1ff806eb3aa0976a0d9e1160cf0bc8e0338ba6ba189f19e446028: 'percpu_usage'
+2025-09-11 16:04:11,648 - controller.manager - WARNING - Failed to update stats for container 20580a1052a1ff806eb3aa0976a0d9e1160cf0bc8e0338ba6ba189f19e446028: 'percpu_usage'
+2025-09-11 16:04:22,660 - controller.manager - WARNING - Failed to update stats for container 20580a1052a1ff806eb3aa0976a0d9e1160cf0bc8e0338ba6ba189f19e446028: 'percpu_usage'
+2025-09-11 16:04:33,671 - controller.manager - WARNING - Failed to update stats for container 20580a1052a1ff806eb3aa0976a0d9e1160cf0bc8e0338ba6ba189f19e446028: 'percpu_usage'
+2025-09-11 16:04:44,681 - controller.manager - WARNING - Failed to update stats for container 20580a1052a1ff806eb3aa0976a0d9e1160cf0bc8e0338ba6ba189f19e446028: 'percpu_usage'
+2025-09-11 16:04:53,232 - controller.manager - INFO - Starting app my-server
+2025-09-11 16:04:53,232 - controller.manager - INFO - Got app data for my-server: {'name': 'my-server', 'type': 'http', 'image': '452d0b0b8373', 'command': None, 'env': [], 'ports': [{'containerPort': 9010, 'protocol': 'TCP'}], 'health': {}, 'resources': {'requests': {'memory': '128Mi', 'cpu': '100m'}, 'limits': {'memory': '512Mi', 'cpu': '500m'}}, 'scaling': {'minReplicas': 1, 'maxReplicas': 5, 'targetRPS': 100, 'maxLatencyMs': 500}, 'retries': {}, 'termination': {}, 'volumes': [], 'labels': {}, 'created_at': 1757585886.8843095, 'updated_at': 1757585886.8843095}
+2025-09-11 16:04:53,232 - controller.manager - INFO - Parsed app spec for my-server: {'type': 'http', 'image': '452d0b0b8373', 'ports': [{'containerPort': 9010, 'protocol': 'TCP'}], 'scaling': {'minReplicas': 1, 'maxReplicas': 5, 'targetRPS': 100, 'maxLatencyMs': 500}, 'resources': {'requests': {'memory': '128Mi', 'cpu': '100m'}, 'limits': {'memory': '512Mi', 'cpu': '500m'}}}
+2025-09-11 16:04:53,232 - controller.manager - INFO - Starting 1 replicas for my-server
+2025-09-11 16:04:53,232 - controller.manager - INFO - Starting container 0 for my-server
+2025-09-11 16:04:53,235 - controller.manager - ERROR - Failed to start container for my-server: 409 Client Error for http+docker://localhost/v1.51/containers/create?name=my-server-0: Conflict ("Conflict. The container name "/my-server-0" is already in use by container "20580a1052a1ff806eb3aa0976a0d9e1160cf0bc8e0338ba6ba189f19e446028". You have to remove (or rename) that container to be able to reuse that name.")
+2025-09-11 16:04:53,235 - controller.manager - ERROR - Container config was: {'image': '452d0b0b8373', 'name': 'my-server-0', 'labels': {'autoserve.app': 'my-server', 'autoserve.replica': '0', 'autoserve.type': 'http'}, 'network': 'autoserve', 'detach': True, 'ports': {'9010/tcp': None}}
+2025-09-11 16:04:53,237 - controller.manager - ERROR - Full traceback: Traceback (most recent call last):
+  File "/home/admino/badAss/AutoServe/.venv/lib/python3.13/site-packages/docker/api/client.py", line 275, in _raise_for_status
+    response.raise_for_status()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/home/admino/badAss/AutoServe/.venv/lib/python3.13/site-packages/requests/models.py", line 1026, in raise_for_status
+    raise HTTPError(http_error_msg, response=self)
+requests.exceptions.HTTPError: 409 Client Error: Conflict for url: http+docker://localhost/v1.51/containers/create?name=my-server-0
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/admino/badAss/AutoServe/controller/manager.py", line 165, in _start_container
+    container = self.docker_client.containers.run(**container_config)
+  File "/home/admino/badAss/AutoServe/.venv/lib/python3.13/site-packages/docker/models/containers.py", line 876, in run
+    container = self.create(image=image, command=command,
+                            detach=detach, **kwargs)
+  File "/home/admino/badAss/AutoServe/.venv/lib/python3.13/site-packages/docker/models/containers.py", line 935, in create
+    resp = self.client.api.create_container(**create_kwargs)
+  File "/home/admino/badAss/AutoServe/.venv/lib/python3.13/site-packages/docker/api/container.py", line 440, in create_container
+    return self.create_container_from_config(config, name, platform)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/admino/badAss/AutoServe/.venv/lib/python3.13/site-packages/docker/api/container.py", line 457, in create_container_from_config
+    return self._result(res, True)
+           ~~~~~~~~~~~~^^^^^^^^^^^
+  File "/home/admino/badAss/AutoServe/.venv/lib/python3.13/site-packages/docker/api/client.py", line 281, in _result
+    self._raise_for_status(response)
+    ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^
+  File "/home/admino/badAss/AutoServe/.venv/lib/python3.13/site-packages/docker/api/client.py", line 277, in _raise_for_status
+    raise create_api_error_from_http_exception(e) from e
+          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^
+  File "/home/admino/badAss/AutoServe/.venv/lib/python3.13/site-packages/docker/errors.py", line 39, in create_api_error_from_http_exception
+    raise cls(e, response=response, explanation=explanation) from e
+docker.errors.APIError: 409 Client Error for http+docker://localhost/v1.51/containers/create?name=my-server-0: Conflict ("Conflict. The container name "/my-server-0" is already in use by container "20580a1052a1ff806eb3aa0976a0d9e1160cf0bc8e0338ba6ba189f19e446028". You have to remove (or rename) that container to be able to reuse that name.")
+
+2025-09-11 16:04:53,238 - controller.manager - INFO - Container 0 start result: None
+2025-09-11 16:04:53,238 - controller.nginx - ERROR - Failed to update nginx config for my-server: [Errno 13] Permission denied: '/home/admino/badAss/AutoServe/docker_configs/nginx/tmpy71f0y52.tmp'
+2025-09-11 16:04:53,238 - controller.manager - INFO - Started app my-server with 1 replicas
+2025-09-11 16:04:55,693 - controller.manager - WARNING - Failed to update stats for container 20580a1052a1ff806eb3aa0976a0d9e1160cf0bc8e0338ba6ba189f19e446028: 'percpu_usage'
+2025-09-11 16:05:06,704 - controller.manager - WARNING - Failed to update stats for container 20580a1052a1ff806eb3aa0976a0d9e1160cf0bc8e0338ba6ba189f19e446028: 'percpu_usage'
+2025-09-11 16:05:17,716 - controller.manager - WARNING - Failed to update stats for container 20580a1052a1ff806eb3aa0976a0d9e1160cf0bc8e0338ba6ba189f19e446028: 'percpu_usage'
+2025-09-11 16:05:28,728 - controller.manager - WARNING - Failed to update stats for container 20580a1052a1ff806eb3aa0976a0d9e1160cf0bc8e0338ba6ba189f19e446028: 'percpu_usage'
+2025-09-11 16:05:39,737 - controller.manager - WARNING - Failed to update stats for container 20580a1052a1ff806eb3aa0976a0d9e1160cf0bc8e0338ba6ba189f19e446028: 'percpu_usage'
+2025-09-11 16:05:50,747 - controller.manager - WARNING - Failed to update stats for container 20580a1052a1ff806eb3aa0976a0d9e1160cf0bc8e0338ba6ba189f19e446028: 'percpu_usage'
+2025-09-11 16:05:54,745 - controller.nginx - ERROR - Failed to parse nginx status: a bytes-like object is required, not 'str'
+2025-09-11 16:06:01,757 - controller.manager - WARNING - Failed to update stats for container 20580a1052a1ff806eb3aa0976a0d9e1160cf0bc8e0338ba6ba189f19e446028: 'percpu_usage'
+2025-09-11 16:06:12,769 - controller.manager - WARNING - Failed to update stats for container 20580a1052a1ff806eb3aa0976a0d9e1160cf0bc8e0338ba6ba189f19e446028: 'percpu_usage'
+2025-09-11 16:06:23,779 - controller.manager - WARNING - Failed to update stats for container 20580a1052a1ff806eb3aa0976a0d9e1160cf0bc8e0338ba6ba189f19e446028: 'percpu_usage'
+2025-09-11 16:06:34,790 - controller.manager - WARNING - Failed to update stats for container 20580a1052a1ff806eb3aa0976a0d9e1160cf0bc8e0338ba6ba189f19e446028: 'percpu_usage'
+2025-09-11 16:06:45,801 - controller.manager - WARNING - Failed to update stats for container 20580a1052a1ff806eb3aa0976a0d9e1160cf0bc8e0338ba6ba189f19e446028: 'percpu_usage'
+2025-09-11 16:06:53,407 - controller.manager - WARNING - Failed to update stats for container 20580a1052a1ff806eb3aa0976a0d9e1160cf0bc8e0338ba6ba189f19e446028: 'percpu_usage'
+2025-09-11 16:06:56,812 - controller.manager - WARNING - Failed to update stats for container 20580a1052a1ff806eb3aa0976a0d9e1160cf0bc8e0338ba6ba189f19e446028: 'percpu_usage'
+2025-09-11 16:07:07,821 - controller.manager - WARNING - Failed to update stats for container 20580a1052a1ff806eb3aa0976a0d9e1160cf0bc8e0338ba6ba189f19e446028: 'percpu_usage'
+2025-09-11 16:07:18,830 - controller.manager - WARNING - Failed to update stats for container 20580a1052a1ff806eb3aa0976a0d9e1160cf0bc8e0338ba6ba189f19e446028: 'percpu_usage'
+2025-09-11 16:07:27,391 - controller.api - ERROR - Failed to get status for app test-nginx: 1 validation error for AppStatusResponse
+ready_replicas
+  Field required [type=missing, input_value={'app': 'test-nginx', 'st...as': 0, 'instances': []}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.10/v/missing
+2025-09-11 16:07:29,841 - controller.manager - WARNING - Failed to update stats for container 20580a1052a1ff806eb3aa0976a0d9e1160cf0bc8e0338ba6ba189f19e446028: 'percpu_usage'
+2025-09-11 16:07:40,852 - controller.manager - WARNING - Failed to update stats for container 20580a1052a1ff806eb3aa0976a0d9e1160cf0bc8e0338ba6ba189f19e446028: 'percpu_usage'
+2025-09-11 16:07:51,862 - controller.manager - WARNING - Failed to update stats for container 20580a1052a1ff806eb3aa0976a0d9e1160cf0bc8e0338ba6ba189f19e446028: 'percpu_usage'
+2025-09-11 16:08:01,775 - controller.api - ERROR - Failed to get status for app test-server: 404: App test-server not found
+2025-09-11 16:08:02,873 - controller.manager - WARNING - Failed to update stats for container 20580a1052a1ff806eb3aa0976a0d9e1160cf0bc8e0338ba6ba189f19e446028: 'percpu_usage'
+2025-09-11 16:08:13,883 - controller.manager - WARNING - Failed to update stats for container 20580a1052a1ff806eb3aa0976a0d9e1160cf0bc8e0338ba6ba189f19e446028: 'percpu_usage'
+2025-09-11 16:08:24,893 - controller.manager - WARNING - Failed to update stats for container 20580a1052a1ff806eb3aa0976a0d9e1160cf0bc8e0338ba6ba189f19e446028: 'percpu_usage'
+2025-09-11 16:08:35,905 - controller.manager - WARNING - Failed to update stats for container 20580a1052a1ff806eb3aa0976a0d9e1160cf0bc8e0338ba6ba189f19e446028: 'percpu_usage'
+2025-09-11 16:08:46,916 - controller.manager - WARNING - Failed to update stats for container 20580a1052a1ff806eb3aa0976a0d9e1160cf0bc8e0338ba6ba189f19e446028: 'percpu_usage'
+2025-09-11 16:08:56,918 - controller.manager - WARNING - Failed to update stats for container 20580a1052a1ff806eb3aa0976a0d9e1160cf0bc8e0338ba6ba189f19e446028: 'system_cpu_usage'
+2025-09-11 16:09:06,924 - controller.manager - WARNING - Failed to update stats for container 20580a1052a1ff806eb3aa0976a0d9e1160cf0bc8e0338ba6ba189f19e446028: 'system_cpu_usage'
+2025-09-11 16:09:07,915 - controller.health - INFO - Health checker stopped
+2025-09-11 16:09:07,916 - controller.api - INFO - AutoServe Controller API shut down
+2025-09-11 16:09:07,917 - root - INFO - Received signal 2, shutting down...

@@ -1,0 +1,35 @@
+FROM python:3.13-slim
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set working directory
+WORKDIR /app
+
+# Copy requirements and install Python dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy application code
+COPY . .
+
+# Create necessary directories
+RUN mkdir -p /app/data /app/logs /nginx-config
+
+# Set environment variables
+ENV PYTHONPATH=/app
+ENV AUTOSERVE_DB_PATH=/app/data/autoscaler.db
+ENV AUTOSERVE_NGINX_CONTAINER=autoserve-nginx
+ENV AUTOSERVE_REDIS_URL=redis://redis:6379
+
+# Expose port
+EXPOSE 8000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8000/health || exit 1
+
+# Run the controller
+CMD ["python", "controller/main.py", "--host", "0.0.0.0", "--port", "8000"]

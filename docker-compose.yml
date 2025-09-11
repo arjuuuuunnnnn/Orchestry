@@ -1,0 +1,72 @@
+version: '3.8'
+
+services:
+  # Nginx Load Balancer
+  nginx:
+    image: nginx:alpine
+    container_name: autoserve-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./docker_configs/nginx:/etc/nginx/conf.d
+      - ./docker_configs/nginx-main.conf:/etc/nginx/nginx.conf
+    networks:
+      - autoserve
+    restart: unless-stopped
+    labels:
+      - "autoserve.service=nginx"
+      - "autoserve.managed=true"
+
+  # Redis (for future worker mode and caching)
+  redis:
+    image: redis:alpine
+    container_name: autoserve-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - autoserve_redis_data:/data
+    networks:
+      - autoserve
+    restart: unless-stopped
+    labels:
+      - "autoserve.service=redis"
+      - "autoserve.managed=true"
+
+  # Controller
+  controller:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.controller
+    container_name: autoserve-controller
+    ports:
+      - "8000:8000"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./docker_configs/nginx:/nginx-config
+      - autoserve_db_data:/app/data
+      - ./logs:/app/logs
+    environment:
+      - AUTOSERVE_DB_PATH=/app/data/autoscaler.db
+      - AUTOSERVE_NGINX_CONTAINER=autoserve-nginx
+      - AUTOSERVE_REDIS_URL=redis://redis:6379
+      - AUTOSERVE_HOST=0.0.0.0
+      - AUTOSERVE_PORT=8000
+    networks:
+      - autoserve
+    depends_on:
+      - nginx
+      - redis
+    restart: unless-stopped
+    labels:
+      - "autoserve.service=controller"
+      - "autoserve.managed=true"
+
+networks:
+  autoserve:
+    driver: bridge
+    name: autoserve
+
+volumes:
+  autoserve_redis_data:
+  autoserve_db_data:
