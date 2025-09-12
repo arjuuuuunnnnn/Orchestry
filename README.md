@@ -24,6 +24,17 @@ python -m cli.main metrics
 
 
 
+python view_db.py
+
+python view_db.py summary
+python view_db.py apps
+python view_db.py instances
+python view_db.py events
+python view_db.py scaling
+
+
 (1)TODO: if name of the container is conflicting, ask to delete(manually) and run again
 
 (2)TODO: add 'docter' command for dependency check
+
+(3)TODO: check if the image exists locally/remotely before registering
