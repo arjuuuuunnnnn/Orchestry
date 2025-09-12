@@ -1,10 +1,16 @@
-POST /api/v1/apps - Register applications
+POST /api/v1/apps/register - Register applications
+
 POST /api/v1/apps/{app_name}/start - Start apps
+
 POST /api/v1/apps/{app_name}/stop - Stop apps
+
 POST /api/v1/apps/{app_name}/scale - Scale apps
+
 GET /api/v1/apps/{app_name} - Get app status
+
 GET /api/v1/apps - List all apps
-GET /health - Health check
+
+GET /health
 
 
 Python version == 3.13.5
