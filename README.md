@@ -25,13 +25,20 @@ python -m cli.main metrics
 
 
 
-python view_db.py
+# View all apps
+python view_docker_db.py apps
 
-python view_db.py summary
-python view_db.py apps
-python view_db.py instances
-python view_db.py events
-python view_db.py scaling
+# View summary
+python view_docker_db.py summary  
+
+# View instances
+python view_docker_db.py instances
+
+# View events
+python view_docker_db.py events
+
+# View scaling history
+python view_docker_db.py scaling
 
 
 sqlite3 data/autoscaler.db "DELETE FROM scaling_history; DELETE FROM events; DELETE FROM instances; DELETE FROM apps; VACUUM;"

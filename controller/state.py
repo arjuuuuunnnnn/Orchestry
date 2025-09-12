@@ -8,7 +8,7 @@ from pathlib import Path
 logger = logging.getLogger(__name__)
 
 class StateStore:
-    def __init__(self, path="autoscaler.db"):
+    def __init__(self, path="data/autoscaler.db"):
         self.db_path = Path(path)
         self.conn = sqlite3.connect(path, check_same_thread=False)
         self.conn.row_factory = sqlite3.Row  # Enable dict-like access
