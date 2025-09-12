@@ -29,7 +29,7 @@ python -m cli.main metrics
 python view_docker_db.py apps
 
 # View summary
-python view_docker_db.py summary  
+python view_docker_db.py summary
 
 # View instances
 python view_docker_db.py instances
@@ -50,5 +50,3 @@ sqlite3 data/autoscaler.db "DELETE FROM scaling_history; DELETE FROM events; DEL
 (3)TODO: check if the image exists locally/remotely before registering
 
 (4)TODO: auto heal dead containers without loosing any req/res
-
-(5)TODO: state not saving in sqlite rn
