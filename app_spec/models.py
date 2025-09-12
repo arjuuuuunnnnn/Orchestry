@@ -322,8 +322,7 @@ def get_example_specs() -> Dict[str, Dict[str, Any]]:
                 ],
                 "env": [
                     {"name": "NODE_ENV", "value": "production"},
-                    {"name": "PORT", "value": "3000"},
-                    {"name": "REDIS_URL", "valueFrom": "sdk"}
+                    {"name": "PORT", "value": "3000"}
                 ],
                 "resources": {
                     "cpu": "200m",

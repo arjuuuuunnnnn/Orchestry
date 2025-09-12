@@ -22,7 +22,6 @@ RUN mkdir -p /app/data /app/logs /nginx-config
 ENV PYTHONPATH=/app
 ENV AUTOSERVE_DB_PATH=/app/data/autoscaler.db
 ENV AUTOSERVE_NGINX_CONTAINER=autoserve-nginx
-ENV AUTOSERVE_REDIS_URL=redis://redis:6379
 
 # Expose port
 EXPOSE 8000

@@ -45,8 +45,6 @@ def main():
                        help="Path to SQLite database (default: from environment or ./data/autoscaler.db)")
     parser.add_argument("--nginx-container", default=None,
                        help="Nginx container name (default: from environment or autoserve-nginx)")
-    parser.add_argument("--redis-url", default=None,
-                       help="Redis URL (default: from environment or redis://autoserve-redis:6379)")
     
     args = parser.parse_args()
     
@@ -64,15 +62,12 @@ def main():
     # Set environment variables that components will use
     db_path = args.db_path or os.getenv("AUTOSERVE_DB_PATH", "./data/autoscaler.db")
     nginx_container = args.nginx_container or os.getenv("AUTOSERVE_NGINX_CONTAINER", "autoserve-nginx")
-    redis_url = args.redis_url or os.getenv("AUTOSERVE_REDIS_URL", "redis://autoserve-redis:6379")
     
     os.environ["AUTOSERVE_DB_PATH"] = db_path
     os.environ["AUTOSERVE_NGINX_CONTAINER"] = nginx_container
-    os.environ["AUTOSERVE_REDIS_URL"] = redis_url
     
     logger.info(f"Database: {db_path}")
     logger.info(f"Nginx container: {nginx_container}")
-    logger.info(f"Redis URL: {redis_url}")
     
     # Ensure data directory exists
     Path(db_path).parent.mkdir(parents=True, exist_ok=True)

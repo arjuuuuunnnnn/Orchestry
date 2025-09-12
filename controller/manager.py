@@ -164,7 +164,7 @@ class AppManager:
                 env_vars = {}
                 for env in app_spec["env"]:
                     if env.get("valueFrom") == "sdk":
-                        # Handle SDK-provided values (like Redis URL)
+                        # Handle SDK-provided values
                         env_vars[env["name"]] = self._get_sdk_env_value(env["name"])
                     else:
                         env_vars[env["name"]] = env.get("value", "")
@@ -211,8 +211,6 @@ class AppManager:
     def _get_sdk_env_value(self, env_name: str) -> str:
         """Get SDK-provided environment variable values."""
         # Get values from environment or use defaults for containerized services
-        if env_name == "REDIS_URL":
-            return os.getenv("AUTOSERVE_REDIS_URL", "redis://autoserve-redis:6379")
         return ""
     
     def stop(self, app_name: str) -> dict:
