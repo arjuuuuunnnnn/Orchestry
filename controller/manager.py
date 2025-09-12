@@ -135,7 +135,8 @@ class AppManager:
                 },
                 "network": "autoserve",
                 "detach": True,
-                "ports": {f"{container_port}/tcp": None},  # Auto-assign host port
+                "ports": {},
+                "publish_all_ports": False,
             }
             
             #add resource limits if specified
@@ -169,8 +170,10 @@ class AppManager:
                         env_vars[env["name"]] = env.get("value", "")
                 container_config["environment"] = env_vars
             
-            # Start the container
-            container = self.docker_client.containers.run(**container_config)
+            # Create container without port publishing
+            container_config.pop("detach", None)  # Remove detach for create
+            container = self.docker_client.containers.create(**container_config)
+            container.start()
             
             # Wait for container to be running and get network info
             container.reload()

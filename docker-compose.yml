@@ -1,5 +1,4 @@
 services:
-  # Nginx Load Balancer
   nginx:
     image: nginx:alpine
     container_name: autoserve-nginx
@@ -16,22 +15,20 @@ services:
       - "autoserve.service=nginx"
       - "autoserve.managed=true"
 
-  # Redis (for future worker mode and caching)
-  redis:
-    image: redis:alpine
-    container_name: autoserve-redis
-    ports:
-      - "6379:6379"
-    volumes:
-      - autoserve_redis_data:/data
-    networks:
-      - autoserve
-    restart: unless-stopped
-    labels:
-      - "autoserve.service=redis"
-      - "autoserve.managed=true"
+  # redis:
+  #   image: redis:alpine
+  #   container_name: autoserve-redis
+  #   ports:
+  #     - "6379:6379"
+  #   volumes:
+  #     - autoserve_redis_data:/data
+  #   networks:
+  #     - autoserve
+  #   restart: unless-stopped
+  #   labels:
+  #     - "autoserve.service=redis"
+  #     - "autoserve.managed=true"
 
-  # Controller
   controller:
     build:
       context: .
@@ -47,6 +44,7 @@ services:
     environment:
       - AUTOSERVE_DB_PATH=/app/data/autoscaler.db
       - AUTOSERVE_NGINX_CONTAINER=autoserve-nginx
+      - AUTOSERVE_NGINX_CONF_DIR=/nginx-config
       - AUTOSERVE_REDIS_URL=redis://redis:6379
       - AUTOSERVE_HOST=0.0.0.0
       - AUTOSERVE_PORT=8000
@@ -54,7 +52,7 @@ services:
       - autoserve
     depends_on:
       - nginx
-      - redis
+      # - redis
     restart: unless-stopped
     labels:
       - "autoserve.service=controller"
