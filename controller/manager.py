@@ -6,8 +6,6 @@ Handles container creation, scaling, health checks, and removal.
 import docker
 import time
 import logging
-import json
-import os
 from typing import Dict, List, Optional
 from dataclasses import dataclass
 
@@ -355,19 +353,49 @@ class AppManager:
                 stats = container.stats(stream=False)
                 
                 # Calculate CPU percentage
-                cpu_delta = stats["cpu_stats"]["cpu_usage"]["total_usage"] - \
-                           stats["precpu_stats"]["cpu_usage"]["total_usage"]
-                system_delta = stats["cpu_stats"]["system_cpu_usage"] - \
-                              stats["precpu_stats"]["system_cpu_usage"]
-                num_cpus = len(stats["cpu_stats"]["cpu_usage"]["percpu_usage"])
+                cpu_stats = stats.get("cpu_stats", {})
+                precpu_stats = stats.get("precpu_stats", {})
                 
-                if system_delta > 0:
+                cpu_usage = cpu_stats.get("cpu_usage", {})
+                precpu_usage = precpu_stats.get("cpu_usage", {})
+                
+                total_usage = cpu_usage.get("total_usage", 0)
+                prev_total_usage = precpu_usage.get("total_usage", 0)
+                
+                system_cpu_usage = cpu_stats.get("system_cpu_usage", 0)
+                prev_system_cpu_usage = precpu_stats.get("system_cpu_usage", 0)
+                
+                # Get number of CPUs with fallback methods
+                num_cpus = 1  # Default fallback
+                if "percpu_usage" in cpu_usage:
+                    num_cpus = len(cpu_usage["percpu_usage"])
+                elif "online_cpus" in cpu_stats:
+                    num_cpus = cpu_stats["online_cpus"]
+                else:
+                    # Try to get from /proc/cpuinfo or use default
+                    try:
+                        import os
+                        num_cpus = os.cpu_count() or 1
+                    except:
+                        num_cpus = 1
+                
+                cpu_delta = total_usage - prev_total_usage
+                system_delta = system_cpu_usage - prev_system_cpu_usage
+                
+                if system_delta > 0 and cpu_delta >= 0:
                     instance.cpu_percent = (cpu_delta / system_delta) * num_cpus * 100.0
+                else:
+                    instance.cpu_percent = 0.0
                 
-                # Calculate memory percentage
-                memory_usage = stats["memory_stats"]["usage"]
-                memory_limit = stats["memory_stats"]["limit"]
-                instance.memory_percent = (memory_usage / memory_limit) * 100.0
+                # Calculate memory percentage with error handling
+                memory_stats = stats.get("memory_stats", {})
+                memory_usage = memory_stats.get("usage", 0)
+                memory_limit = memory_stats.get("limit", 1)  # Avoid division by zero
+                
+                if memory_limit > 0:
+                    instance.memory_percent = (memory_usage / memory_limit) * 100.0
+                else:
+                    instance.memory_percent = 0.0
                 
                 instance.last_seen = time.time()
                 

@@ -19,6 +19,8 @@ scaling:
   maxReplicas: 5
   targetRPSPerReplica: 100
   maxP95LatencyMs: 500
+  scaleOutThresholdPct: 40
+  scaleInThresholdPct: 20
 healthCheck:
   path: "/"
   port: 9010

@@ -20,7 +20,7 @@ class ScalingPolicy:
     target_rps_per_replica: int = 50
     max_p95_latency_ms: int = 250
     max_conn_per_replica: int = 80
-    scale_out_threshold_pct: int = 80
+    scale_out_threshold_pct: int = 40 #80
     scale_in_threshold_pct: int = 30
     window_seconds: int = 20
     cooldown_seconds: int = 30

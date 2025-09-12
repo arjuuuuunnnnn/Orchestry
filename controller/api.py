@@ -169,6 +169,13 @@ def background_monitoring():
                 # Evaluate scaling decision
                 decision = auto_scaler.evaluate_scaling(app_name, len(instances))
                 
+                # Debug: Always log scaling decisions for debugging
+                policy = auto_scaler.get_policy(app_name)
+                logger.info(f"Scaling evaluation for {app_name}: CPU={total_cpu:.1f}%, Memory={total_memory:.1f}%, "
+                          f"Decision={decision.should_scale}, Reason={decision.reason}, "
+                          f"Thresholds: out={policy.scale_out_threshold_pct if policy else 'N/A'}%, "
+                          f"in={policy.scale_in_threshold_pct if policy else 'N/A'}%")
+                
                 if decision.should_scale:
                     logger.info(f"Scaling {app_name}: {decision.reason}")
                     

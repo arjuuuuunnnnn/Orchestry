@@ -17,6 +17,7 @@ Python version == 3.13.5
 
 python -m cli.main register my-server.yml
 python -m cli.main up my-server
+python -m cli.main down my-server
 python -m cli.main status my-server
 python -m cli.main scale my-server 3
 python -m cli.main list
@@ -40,3 +41,7 @@ sqlite3 data/autoscaler.db "DELETE FROM scaling_history; DELETE FROM events; DEL
 (2)TODO: add 'docter' command for dependency check
 
 (3)TODO: check if the image exists locally/remotely before registering
+
+(4)TODO: auto heal dead containers without loosing any req/res
+
+(5)TODO: state not saving in sqlite rn
