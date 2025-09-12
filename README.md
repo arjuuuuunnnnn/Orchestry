@@ -33,6 +33,8 @@ python view_db.py events
 python view_db.py scaling
 
 
+sqlite3 data/autoscaler.db "DELETE FROM scaling_history; DELETE FROM events; DELETE FROM instances; DELETE FROM apps; VACUUM;"
+
 (1)TODO: if name of the container is conflicting, ask to delete(manually) and run again
 
 (2)TODO: add 'docter' command for dependency check
