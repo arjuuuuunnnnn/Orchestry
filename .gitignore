@@ -6,3 +6,4 @@ __pycache__/
 .env
 data/
 docker_configs/nginx/
+hello.md

@@ -18,6 +18,6 @@ python -m cli.main metrics
 
 
 
-# TODO: if the name of the container is already present, ask user to either delete that and run a new container or nothing
+(1)TODO: if name of the container is conflicting, ask to delete(manually) and run again
 
-# TODO: is something is conflicting, after installation add 'docter' command to see what the problem is and make sure everything is working(all the dependencies)
+(2)TODO: add 'docter' command for dependency check
