@@ -28,17 +28,36 @@ python -m cli.main metrics
 # View all apps
 python view_docker_db.py apps
 
-# View summary
+# View database summary  
 python view_docker_db.py summary
 
-# View instances
+# View container instances
 python view_docker_db.py instances
 
-# View events
+# View system events
 python view_docker_db.py events
 
 # View scaling history
 python view_docker_db.py scaling
+
+
+# Filter events by app
+python view_docker_db.py events --app my-server
+
+# Filter events by type
+python view_docker_db.py events --type manual_scale
+
+# Limit results
+python view_docker_db.py events --limit 10
+
+# Filter scaling history by app
+python view_docker_db.py scaling --app my-server
+
+# Use different volume name
+python view_docker_db.py summary --volume your_volume_name
+
+# Get help
+python view_docker_db.py --help
 
 
 sqlite3 data/autoscaler.db "DELETE FROM scaling_history; DELETE FROM events; DELETE FROM instances; DELETE FROM apps; VACUUM;"
