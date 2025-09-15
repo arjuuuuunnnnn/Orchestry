@@ -20,7 +20,7 @@ class ScalingPolicy:
     target_rps_per_replica: int = 50
     max_p95_latency_ms: int = 250
     max_conn_per_replica: int = 80
-    scale_out_threshold_pct: int = 40 #80
+    scale_out_threshold_pct: int = 80
     scale_in_threshold_pct: int = 30
     window_seconds: int = 20
     cooldown_seconds: int = 30
@@ -60,6 +60,8 @@ class AutoScaler:
         self.metrics_history: Dict[str, Dict[str, deque]] = defaultdict(lambda: defaultdict(lambda: deque(maxlen=1000)))
         self.last_scale_time: Dict[str, float] = {}
         self.scale_decisions: Dict[str, deque] = defaultdict(lambda: deque(maxlen=100))
+        # Store last calculated scale factors for debug/inspection
+        self.last_scale_factors: Dict[str, Dict[str, float]] = {}
         
     def set_policy(self, app_name: str, policy: ScalingPolicy):
         """Set the scaling policy for an application."""
@@ -131,10 +133,13 @@ class AutoScaler:
         
         # Calculate scaling factors for each metric
         scale_factors = self._calculate_scale_factors(metrics, policy)
+        # Save for external debugging/metrics endpoint
+        self.last_scale_factors[app_name] = scale_factors
+        logger.debug(f"[autoscale] {app_name} metrics={metrics} scale_factors={scale_factors}")
         
         # Determine if we should scale out or in
         decision = self._make_scaling_decision(
-            current_replicas, scale_factors, policy, metrics
+            app_name, current_replicas, scale_factors, policy, metrics
         )
         
         # Record the decision
@@ -204,9 +209,10 @@ class AutoScaler:
         return factors
     
     def _make_scaling_decision(
-        self, 
-        current_replicas: int, 
-        scale_factors: Dict[str, float], 
+        self,
+        app_name: str,
+        current_replicas: int,
+        scale_factors: Dict[str, float],
         policy: ScalingPolicy,
         metrics: ScalingMetrics
     ) -> ScalingDecision:
@@ -265,6 +271,8 @@ class AutoScaler:
         
         if should_scale:
             logger.info(f"Scaling decision for app: {reason}, {current_replicas} -> {target_replicas}")
+        else:
+            logger.debug(f"[autoscale] No scale for {app_name}: reason={reason}, factors={scale_factors}")
         
         return decision
     

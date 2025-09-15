@@ -34,6 +34,15 @@ class ScaleRequest(BaseModel):
 class PolicyRequest(BaseModel):
     policy: Dict
 
+class SimulatedMetricsRequest(BaseModel):
+    rps: float = 0
+    p95LatencyMs: float = 0
+    activeConnections: int = 0
+    cpuPercent: float = 0
+    memoryPercent: float = 0
+    healthyReplicas: int | None = None
+    evaluate: bool = True  # whether to immediately evaluate and act on scaling
+
 class AppRegistrationResponse(BaseModel):
     status: str
     app: str
@@ -52,6 +61,10 @@ state_store: Optional[StateStore] = None
 nginx_manager: Optional[DockerNginxManager] = None
 auto_scaler: Optional[AutoScaler] = None
 health_checker: Optional[HealthChecker] = None
+
+# Nginx request tracking to compute RPS
+_prev_nginx_requests: Optional[int] = None
+_prev_nginx_time: Optional[float] = None
 
 # Background monitoring task
 monitoring_task: Optional[threading.Thread] = None
@@ -132,6 +145,35 @@ def background_monitoring():
             
             # Get list of all apps
             apps = state_store.list_apps()
+
+            # Fetch nginx status once per loop for reuse
+            try:
+                nginx_status_snapshot = nginx_manager.get_nginx_status()
+            except Exception as e:
+                logger.warning(f"Unable to fetch nginx status: {e}")
+                nginx_status_snapshot = {}
+
+            # Compute global RPS from nginx stub status
+            global _prev_nginx_requests, _prev_nginx_time
+            rps_global = 0.0
+            now_time = time.time()
+            if isinstance(nginx_status_snapshot, dict) and 'requests' in nginx_status_snapshot:
+                current_requests = nginx_status_snapshot.get('requests')
+                if _prev_nginx_requests is not None and _prev_nginx_time is not None and current_requests is not None:
+                    delta_req = current_requests - _prev_nginx_requests
+                    delta_time = max(now_time - _prev_nginx_time, 1e-6)
+                    if delta_req >= 0:
+                        rps_global = delta_req / delta_time
+                _prev_nginx_requests = current_requests
+                _prev_nginx_time = now_time
+
+            active_connections_global = nginx_status_snapshot.get('active_connections', 0) if isinstance(nginx_status_snapshot, dict) else 0
+
+            # Pre-calculate total replicas across all apps for fair-share metrics
+            total_replicas_global = 0
+            for app_info in apps:
+                insts = app_manager.instances.get(app_info['name'], [])
+                total_replicas_global += len(insts)
             
             for app_info in apps:
                 app_name = app_info["name"]
@@ -151,12 +193,16 @@ def background_monitoring():
                 healthy_count = sum(1 for inst in instances if inst.state == "ready")
                 total_cpu = sum(inst.cpu_percent for inst in instances) / len(instances) if instances else 0
                 total_memory = sum(inst.memory_percent for inst in instances) / len(instances) if instances else 0
-                
-                # Create metrics object (simplified for now)
+
+                # Fair-share distribution of global RPS & connections by replica fraction
+                share = (len(instances) / total_replicas_global) if total_replicas_global > 0 else 0
+                app_rps = rps_global * share
+                app_active_conns = int(active_connections_global * share)
+
                 metrics = ScalingMetrics(
-                    rps=0,  # Would come from nginx stats or app metrics
-                    p95_latency_ms=0,  # Would come from app metrics
-                    active_connections=0,  # Would come from nginx stats
+                    rps=app_rps,
+                    p95_latency_ms=0,  # latency collection not implemented yet
+                    active_connections=app_active_conns,
                     cpu_percent=total_cpu,
                     memory_percent=total_memory,
                     healthy_replicas=healthy_count,
@@ -171,10 +217,13 @@ def background_monitoring():
                 
                 # Debug: Always log scaling decisions for debugging
                 policy = auto_scaler.get_policy(app_name)
-                logger.info(f"Scaling evaluation for {app_name}: CPU={total_cpu:.1f}%, Memory={total_memory:.1f}%, "
-                          f"Decision={decision.should_scale}, Reason={decision.reason}, "
-                          f"Thresholds: out={policy.scale_out_threshold_pct if policy else 'N/A'}%, "
-                          f"in={policy.scale_in_threshold_pct if policy else 'N/A'}%")
+                logger.info(
+                    f"Scaling evaluation for {app_name}: RPS={metrics.rps:.2f}, Conns={metrics.active_connections}, "
+                    f"CPU={total_cpu:.1f}%, Mem={total_memory:.1f}%, Replicas={len(instances)}, "
+                    f"Decision={decision.should_scale}, Reason={decision.reason}, "
+                    f"Thresholds: out={policy.scale_out_threshold_pct if policy else 'N/A'}%, "
+                    f"in={policy.scale_in_threshold_pct if policy else 'N/A'}%"
+                )
                 
                 if decision.should_scale:
                     logger.info(f"Scaling {app_name}: {decision.reason}")
@@ -418,6 +467,71 @@ async def get_app_metrics(name: str):
         
     except Exception as e:
         logger.error(f"Failed to get metrics for app {name}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/apps/{name}/simulateMetrics")
+async def simulate_metrics(name: str, sim: SimulatedMetricsRequest):
+    """Inject simulated metrics for an app and optionally trigger immediate autoscale evaluation.
+    Helpful for verifying autoscaling without generating real load."""
+    try:
+        if name not in app_manager.instances:
+            raise HTTPException(status_code=404, detail="App not running")
+
+        instances = app_manager.instances[name]
+        replica_count = len(instances)
+        healthy = sum(1 for i in instances if i.state == 'ready')
+        healthy_replicas = sim.healthyReplicas if sim.healthyReplicas is not None else healthy
+        metrics = ScalingMetrics(
+            rps=sim.rps,
+            p95_latency_ms=sim.p95LatencyMs,
+            active_connections=sim.activeConnections,
+            cpu_percent=sim.cpuPercent,
+            memory_percent=sim.memoryPercent,
+            healthy_replicas=healthy_replicas,
+            total_replicas=replica_count
+        )
+        auto_scaler.add_metrics(name, metrics)
+
+        evaluation = None
+        action = None
+        if sim.evaluate:
+            evaluation = auto_scaler.evaluate_scaling(name, replica_count)
+            if evaluation.should_scale:
+                result = app_manager.scale(name, evaluation.target_replicas)
+                if result.get('status') == 'scaled':
+                    auto_scaler.record_scaling_action(name, evaluation.target_replicas)
+                    state_store.log_scaling_action(
+                        name,
+                        evaluation.current_replicas,
+                        evaluation.target_replicas,
+                        evaluation.reason,
+                        evaluation.triggered_by,
+                        evaluation.metrics.__dict__ if evaluation.metrics else None
+                    )
+                    action = {
+                        "scaled": True,
+                        "from": evaluation.current_replicas,
+                        "to": evaluation.target_replicas,
+                        "reason": evaluation.reason
+                    }
+                else:
+                    action = {"scaled": False, "error": result}
+
+        return {
+            "app": name,
+            "metrics_added": metrics.__dict__,
+            "evaluation": {
+                "should_scale": evaluation.should_scale if evaluation else None,
+                "target_replicas": evaluation.target_replicas if evaluation else None,
+                "reason": evaluation.reason if evaluation else None,
+                "scale_factors": auto_scaler.last_scale_factors.get(name)
+            } if evaluation else None,
+            "action": action
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to simulate metrics for {name}: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/metrics")
