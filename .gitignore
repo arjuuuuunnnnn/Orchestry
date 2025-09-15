@@ -8,3 +8,4 @@ data/
 docker_configs/nginx/
 hello.md
 logs/
+Env/
