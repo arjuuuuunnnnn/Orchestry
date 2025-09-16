@@ -35,7 +35,8 @@ class StateStore:
             volumes TEXT,
             labels TEXT,
             created_at REAL,
-            updated_at REAL
+            updated_at REAL,
+            raw_spec TEXT
         )""")
         
         # Instances table - tracks running container instances
@@ -86,11 +87,19 @@ class StateStore:
         cur.execute("CREATE INDEX IF NOT EXISTS idx_events_timestamp ON events (timestamp)")
         cur.execute("CREATE INDEX IF NOT EXISTS idx_scaling_app ON scaling_history (app)")
         
+        # Migration: Add raw_spec column if it doesn't exist
+        try:
+            cur.execute("SELECT raw_spec FROM apps LIMIT 1")
+        except sqlite3.OperationalError:
+            logger.info("Adding raw_spec column to apps table")
+            cur.execute("ALTER TABLE apps ADD COLUMN raw_spec TEXT")
+        
         self.conn.commit()
         logger.info("Database schema initialized")
 
-    def save_app(self, name: str, spec: Dict[str, Any]):
-        """Save or update an application specification."""
+    def save_app(self, name: str, spec: Dict[str, Any], raw_spec: Dict[str, Any] = None):
+        """Save or update an application specification.
+        raw_spec retains original user submission (metadata + spec + extras)."""
         cur = self.conn.cursor()
         now = time.time()
         
@@ -104,6 +113,7 @@ class StateStore:
         termination_json = json.dumps(spec.get("termination", {}))
         volumes_json = json.dumps(spec.get("volumes", []))
         labels_json = json.dumps(spec.get("labels", {}))
+        raw_spec_json = json.dumps(raw_spec) if raw_spec is not None else None
         
         # Check if app exists
         existing = cur.execute("SELECT name FROM apps WHERE name=?", (name,)).fetchone()
@@ -114,24 +124,24 @@ class StateStore:
                 UPDATE apps SET 
                     type=?, image=?, command=?, env=?, ports=?, health=?, 
                     resources=?, scaling=?, retries=?, termination=?, 
-                    volumes=?, labels=?, updated_at=?
+                    volumes=?, labels=?, updated_at=?, raw_spec=?
                 WHERE name=?
             """, (
                 spec["type"], spec["image"], spec.get("command"),
                 env_json, ports_json, health_json, resources_json,
                 scaling_json, retries_json, termination_json,
-                volumes_json, labels_json, now, name
+                volumes_json, labels_json, now, raw_spec_json, name
             ))
             logger.info(f"Updated app specification for {name}")
         else:
             # Insert new app
             cur.execute("""
-                INSERT INTO apps VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO apps VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
                 name, spec["type"], spec["image"], spec.get("command"),
                 env_json, ports_json, health_json, resources_json,
                 scaling_json, retries_json, termination_json,
-                volumes_json, labels_json, now, now
+                volumes_json, labels_json, now, now, raw_spec_json
             ))
             logger.info(f"Created new app specification for {name}")
         
@@ -166,6 +176,20 @@ class StateStore:
             }
         except json.JSONDecodeError as e:
             logger.error(f"Failed to parse app data for {name}: {e}")
+            return None
+
+    def get_raw_spec(self, name: str) -> Optional[Dict[str, Any]]:
+        """Get the raw specification as submitted by the user."""
+        cur = self.conn.cursor()
+        row = cur.execute("SELECT raw_spec FROM apps WHERE name=?", (name,)).fetchone()
+        
+        if not row or not row["raw_spec"]:
+            return None
+            
+        try:
+            return json.loads(row["raw_spec"])
+        except json.JSONDecodeError as e:
+            logger.error(f"Failed to parse raw spec for {name}: {e}")
             return None
 
     def list_apps(self) -> List[Dict[str, Any]]:

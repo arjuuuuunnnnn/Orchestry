@@ -104,12 +104,19 @@ async def startup_event():
         # Start health checker
         await health_checker.start()
         
+        # Reconcile existing containers BEFORE cleanup
+        try:
+            adopted_summary = app_manager.reconcile_all()
+            logger.info(f"Reconciliation summary on startup: {adopted_summary}")
+        except Exception as e:
+            logger.error(f"Failed initial reconciliation: {e}")
+
         # Start background monitoring
         monitoring_active = True
         monitoring_task = threading.Thread(target=background_monitoring, daemon=True)
         monitoring_task.start()
         
-        # Clean up orphaned containers
+        # Clean only containers whose app spec no longer exists
         app_manager.cleanup_orphaned_containers()
         
         logger.info("AutoServe Controller API started successfully")
@@ -430,6 +437,29 @@ async def list_apps():
         
     except Exception as e:
         logger.error(f"Failed to list apps: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/apps/{name}/raw")
+async def get_app_raw_spec(name: str):
+    """Get the raw and parsed spec for an application."""
+    try:
+        # Get the parsed spec (normalized)
+        parsed_spec = state_store.get_app(name)
+        if not parsed_spec:
+            raise HTTPException(status_code=404, detail=f"App {name} not found")
+            
+        # Get the raw spec (as submitted by user)
+        raw_spec = state_store.get_raw_spec(name)
+        
+        return {
+            "name": name,
+            "raw": raw_spec,
+            "parsed": parsed_spec
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to get raw spec for app {name}: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/apps/{name}/logs")

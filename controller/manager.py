@@ -36,6 +36,78 @@ class AppManager:
         
         #create net if not exists
         self._ensure_network()
+        logger.info("AppManager initialized")
+
+    # ------------------------- Reconciliation Logic -------------------------
+    def reconcile_app(self, app_name: str) -> int:
+        """Adopt existing Docker containers for a registered app.
+        Returns number of adopted (ready) instances."""
+        try:
+            app_spec_record = self.state_store.get_app(app_name)
+            if not app_spec_record:
+                logger.warning(f"reconcile_app: app {app_name} not found in state store")
+                return 0
+
+            # Ensure list initialized
+            if app_name not in self.instances:
+                self.instances[app_name] = []
+
+            # List containers with label
+            containers = self.docker_client.containers.list(all=True, filters={"label": f"autoserve.app={app_name}"})
+            adopted = 0
+            for c in containers:
+                try:
+                    # Start if not running
+                    if c.status != "running":
+                        logger.info(f"Adopting container {c.name} (was {c.status}), starting...")
+                        c.start()
+                        c.reload()
+                    # Extract replica index
+                    replica_label = c.labels.get("autoserve.replica")
+                    if replica_label is not None and replica_label.isdigit():
+                        replica_index = int(replica_label)
+                    else:
+                        # Fallback: parse trailing dash number
+                        parts = c.name.split('-')
+                        replica_index = int(parts[-1]) if parts[-1].isdigit() else 0
+                    network_settings = c.attrs.get("NetworkSettings", {})
+                    ip = network_settings.get("Networks", {}).get("autoserve", {}).get("IPAddress", "")
+                    port = app_spec_record.get("ports", [{}])[0].get("containerPort", 0)
+                    # Skip if already tracked
+                    if any(inst.container_id == c.id for inst in self.instances[app_name]):
+                        continue
+                    instance = ContainerInstance(
+                        container_id=c.id,
+                        ip=ip,
+                        port=port,
+                        state="ready",
+                        last_seen=time.time()
+                    )
+                    self.instances[app_name].append(instance)
+                    adopted += 1
+                except Exception as e:
+                    logger.warning(f"Failed to adopt container {c.id} for {app_name}: {e}")
+            if adopted:
+                self._update_nginx_config(app_name)
+            if adopted:
+                logger.info(f"Reconciled {adopted} container(s) for {app_name}")
+            return adopted
+        except Exception as e:
+            logger.error(f"reconcile_app failed for {app_name}: {e}")
+            return 0
+
+    def reconcile_all(self) -> Dict[str, int]:
+        """Reconcile all registered apps. Returns mapping of app->adopted count."""
+        results = {}
+        try:
+            apps = self.state_store.list_apps()
+            for app in apps:
+                adopted = self.reconcile_app(app["name"])
+                results[app["name"]] = adopted
+            return results
+        except Exception as e:
+            logger.error(f"reconcile_all failed: {e}")
+            return results
         
     def _ensure_network(self):
         """Ensure AutoServe network exists for container communication."""
@@ -52,7 +124,7 @@ class AppManager:
         """Register a new application with the given spec."""
         try:
             app_name = spec["metadata"]["name"]
-            app_spec = spec["spec"]
+            app_spec = spec["spec"].copy()  # Make a copy to avoid modifying original
             
             #rn only for http servers
             if app_spec["type"] != "http":
@@ -60,9 +132,19 @@ class AppManager:
                 
             if "ports" not in app_spec or not app_spec["ports"]:
                 return {"error": "HTTP apps must specify at least one port"}
+            
+            # Map healthCheck -> health for backward compatibility
+            if "healthCheck" in app_spec:
+                app_spec["health"] = app_spec.pop("healthCheck")
+            
+            # Merge metadata.labels into spec.labels
+            if "labels" not in app_spec:
+                app_spec["labels"] = {}
+            if "labels" in spec.get("metadata", {}):
+                app_spec["labels"].update(spec["metadata"]["labels"])
                 
-            # Save to state store
-            self.state_store.save_app(app_name, app_spec)
+            # Save to state store with raw spec
+            self.state_store.save_app(app_name, app_spec, raw_spec=spec)
             
             # Initialize empty instance list
             self.instances[app_name] = []
@@ -98,20 +180,42 @@ class AppManager:
             
             logger.info(f"Parsed app spec for {app_name}: {app_spec}")
             
-            # Start with minimum replicas
+            # Adopt existing containers first
+            adopted = self.reconcile_app(app_name)
+
+            # Determine existing replica indices
+            existing_indices = set()
+            for inst in self.instances.get(app_name, []):
+                try:
+                    c = self.docker_client.containers.get(inst.container_id)
+                    idx_label = c.labels.get("autoserve.replica")
+                    if idx_label and idx_label.isdigit():
+                        existing_indices.add(int(idx_label))
+                except Exception:
+                    pass
+
+            # Start additional replicas if below min
             min_replicas = app_spec["scaling"].get("minReplicas", 1)
-            logger.info(f"Starting {min_replicas} replicas for {app_name}")
-            
-            for i in range(min_replicas):
-                logger.info(f"Starting container {i} for {app_name}")
-                result = self._start_container(app_name, app_spec, i)
-                logger.info(f"Container {i} start result: {result}")
+            logger.info(f"Ensuring minimum {min_replicas} replicas for {app_name} (adopted {adopted})")
+            next_index = 0
+            started = 0
+            while len(self.instances.get(app_name, [])) < min_replicas:
+                # Find next unused index
+                while next_index in existing_indices:
+                    next_index += 1
+                logger.info(f"Creating new container replica index {next_index} for {app_name}")
+                result = self._start_container(app_name, app_spec, next_index)
+                if result:
+                    existing_indices.add(next_index)
+                    started += 1
+                next_index += 1
+            total = len(self.instances.get(app_name, []))
             
             # Update nginx configuration
             self._update_nginx_config(app_name)
             
-            logger.info(f"Started app {app_name} with {min_replicas} replicas")
-            return {"status": "started", "app": app_name, "replicas": min_replicas}
+            logger.info(f"App {app_name} now running with {total} replicas (adopted={adopted}, started={started})")
+            return {"status": "started", "app": app_name, "replicas": total, "adopted": adopted, "started": started}
             
         except Exception as e:
             logger.error(f"Failed to start app {app_name}: {e}")
@@ -439,6 +543,9 @@ class AppManager:
             for container in containers:
                 app_name = container.labels.get("autoserve.app")
                 container_id = container.id
+                # Skip cleanup if app exists in state store (will be or was reconciled)
+                if self.state_store.get_app(app_name):
+                    continue
                 
                 # Check if this container is tracked
                 is_tracked = False
