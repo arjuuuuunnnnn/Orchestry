@@ -12,6 +12,10 @@ import logging
 import signal
 import argparse
 from pathlib import Path
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Add the project root to Python path
 project_root = Path(__file__).parent.parent
@@ -36,15 +40,15 @@ def signal_handler(signum, frame):
 def main():
     """Main entry point for the controller daemon."""
     parser = argparse.ArgumentParser(description="AutoServe Controller Daemon")
-    parser.add_argument("--host", default="0.0.0.0", help="Host to bind to")
-    parser.add_argument("--port", type=int, default=8000, help="Port to bind to")
+    parser.add_argument("--host", default=None, help="Host to bind to (default: from environment)")
+    parser.add_argument("--port", type=int, default=None, help="Port to bind to (default: from environment)")
     parser.add_argument("--log-level", default="INFO", 
                        choices=["DEBUG", "INFO", "WARNING", "ERROR"],
                        help="Logging level")
     parser.add_argument("--db-path", default=None, 
-                       help="Path to SQLite database (default: from environment or ./data/autoscaler.db)")
+                       help="Path to SQLite database (default: from environment)")
     parser.add_argument("--nginx-container", default=None,
-                       help="Nginx container name (default: from environment or autoserve-nginx)")
+                       help="Nginx container name (default: from environment)")
     
     args = parser.parse_args()
     
@@ -56,12 +60,30 @@ def main():
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
     
+    # Get host and port from environment variables or command line args
+    host = args.host or os.getenv("AUTOSERVE_HOST")
+    if not host:
+        logger.error("AUTOSERVE_HOST environment variable is required. Please set it in .env file.")
+        sys.exit(1)
+        
+    port = args.port or (int(os.getenv("AUTOSERVE_PORT")) if os.getenv("AUTOSERVE_PORT") else None)
+    if port is None:
+        logger.error("AUTOSERVE_PORT environment variable is required. Please set it in .env file.")
+        sys.exit(1)
+    
     logger.info("Starting AutoServe Controller...")
-    logger.info(f"API will be available at http://{args.host}:{args.port}")
+    logger.info(f"API will be available at http://{host}:{port}")
     
     # Set environment variables that components will use
-    db_path = args.db_path or os.getenv("AUTOSERVE_DB_PATH", "./data/autoscaler.db")
-    nginx_container = args.nginx_container or os.getenv("AUTOSERVE_NGINX_CONTAINER", "autoserve-nginx")
+    db_path = args.db_path or os.getenv("AUTOSERVE_DB_PATH")
+    if not db_path:
+        logger.error("AUTOSERVE_DB_PATH environment variable is required. Please set it in .env file.")
+        sys.exit(1)
+        
+    nginx_container = args.nginx_container or os.getenv("AUTOSERVE_NGINX_CONTAINER")
+    if not nginx_container:
+        logger.error("AUTOSERVE_NGINX_CONTAINER environment variable is required. Please set it in .env file.")
+        sys.exit(1)
     
     os.environ["AUTOSERVE_DB_PATH"] = db_path
     os.environ["AUTOSERVE_NGINX_CONTAINER"] = nginx_container
@@ -79,8 +101,8 @@ def main():
         # Run the FastAPI server
         uvicorn.run(
             app, 
-            host=args.host, 
-            port=args.port,
+            host=host, 
+            port=port,
             log_level=args.log_level.lower(),
             access_log=True
         )

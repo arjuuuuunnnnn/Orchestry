@@ -1,3 +1,26 @@
+# AutoServe
+
+### Local Development
+1. Copy `.env.example` to `.env`
+2. Configure the values in `.env` for your local environment
+
+### Docker Usage
+1. Copy `.env.docker.example` to `.env.docker`  
+2. Configure the values in `.env.docker` for Docker container paths
+3. Run with `docker-compose up`
+
+### Required Environment Variables
+- `AUTOSERVE_HOST` - Host to bind controller to
+- `AUTOSERVE_PORT` - Port for controller to listen on
+- `AUTOSERVE_DB_PATH` - Path to SQLite database file
+- `AUTOSERVE_NGINX_CONTAINER` - Name of nginx container
+- `AUTOSERVE_NGINX_CONF_DIR` - Path to nginx configuration directory
+- `API_URL` - API endpoint URL for CLI
+
+**Important**: If any required environment variable is missing, the application will exit with an error message.
+
+## API Endpoints
+
 POST /api/v1/apps/register - Register applications
 
 POST /api/v1/apps/{app_name}/start - Start apps
@@ -12,6 +35,7 @@ GET /api/v1/apps - List all apps
 
 GET /health
 
+## Usage
 
 Python version == 3.13.5
 
@@ -23,48 +47,6 @@ python -m cli.main scale my-server 3
 python -m cli.main list
 python -m cli.main metrics
 
-## Restart & Recovery Behavior
-
-When the controller restarts, previously registered applications remain in the SQLite database (`apps` table). The controller now performs a reconciliation phase on startup:
-
-1. Scans Docker for containers labeled with `autoserve.app=<name>`.
-2. Adopts (starts if necessary) those containers instead of deleting them.
-3. Ensures at least `minReplicas` are running (launches new ones only if needed).
-4. Updates nginx upstream configuration with adopted instances.
-
-You can verify after a restart:
-
-```bash
-python -m cli.main status my-server      # Should show existing replicas without re-register
-python -m cli.main up my-server          # Idempotent; will adopt + top up to minReplicas
-```
-
-If containers were removed externally, `up` will recreate them. The start command response now includes fields:
-
-```json
-{"status":"started","app":"my-server","replicas":3,"adopted":2,"started":1}
-```
-
-Meaning: 2 existing containers adopted, 1 newly created, total 3.
-
-## Troubleshooting After Restart
-
-- If `status` shows replicas but `docker ps` does not: check logs for container creation failures.
-- Name conflicts (Exited containers with same name) are resolved by adoption logic (container is started rather than recreated). Remove stale containers manually if corrupt:
-	```bash
-	docker rm -f my-server-0 my-server-1
-	python -m cli.main up my-server
-	```
-- Network missing: controller recreates `autoserve` bridge automatically.
-- If nginx upstreams not updating, inspect logs and ensure `autoserve-nginx` container is running.
-
-## Database Persistence
-
-AutoServe stores all app specifications in SQLite database (`data/autoscaler.db`). This ensures:
-
-- **Restart Recovery**: After system restart, just run `python -m cli.main up my-server` - no need to re-register
-- **Spec Preservation**: Original user specifications are stored exactly as submitted
-- **Field Mapping**: `metadata.labels` are merged into `spec.labels`, `healthCheck` becomes `health`
 
 ### Retrieving Stored Specs
 
@@ -78,13 +60,6 @@ python -m cli.main spec my-server --raw
 # Via API
 curl http://localhost:8000/apps/my-server/raw
 ```
-
-The database persists:
-- All user specifications (normalized + raw)
-- Container instances and health status  
-- Scaling events and decisions
-- System events for audit
-
 
 
 # View all apps

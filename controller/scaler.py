@@ -111,9 +111,28 @@ class AutoScaler:
                 reason="No scaling policy configured"
             )
         
-        # Check cooldown period
+        # CRITICAL: Always enforce minimum replicas regardless of any other conditions
+        if current_replicas < policy.min_replicas:
+            return ScalingDecision(
+                should_scale=True,
+                target_replicas=policy.min_replicas,
+                current_replicas=current_replicas,
+                reason=f"Below minimum replicas: {current_replicas} < {policy.min_replicas}",
+                triggered_by=["min_replicas_enforcement"]
+            )
+        
+        # Check cooldown period (but allow minReplicas enforcement to bypass cooldown)
         last_scale = self.last_scale_time.get(app_name, 0)
         if time.time() - last_scale < policy.cooldown_seconds:
+            # Still enforce minimum replicas even during cooldown
+            if current_replicas < policy.min_replicas:
+                return ScalingDecision(
+                    should_scale=True,
+                    target_replicas=policy.min_replicas,
+                    current_replicas=current_replicas,
+                    reason=f"Below minimum replicas (bypassing cooldown): {current_replicas} < {policy.min_replicas}",
+                    triggered_by=["min_replicas_enforcement"]
+                )
             return ScalingDecision(
                 should_scale=False,
                 target_replicas=current_replicas,
@@ -124,6 +143,15 @@ class AutoScaler:
         # Get recent metrics
         metrics = self._get_recent_metrics(app_name, policy.window_seconds)
         if not metrics:
+            # Even without metrics, enforce minimum replicas
+            if current_replicas < policy.min_replicas:
+                return ScalingDecision(
+                    should_scale=True,
+                    target_replicas=policy.min_replicas,
+                    current_replicas=current_replicas,
+                    reason=f"No metrics, but enforcing minimum replicas: {current_replicas} < {policy.min_replicas}",
+                    triggered_by=["min_replicas_enforcement"]
+                )
             return ScalingDecision(
                 should_scale=False,
                 target_replicas=current_replicas,
@@ -141,6 +169,17 @@ class AutoScaler:
         decision = self._make_scaling_decision(
             app_name, current_replicas, scale_factors, policy, metrics
         )
+        
+        # Final safety check: never go below minReplicas
+        if decision.target_replicas < policy.min_replicas:
+            decision = ScalingDecision(
+                should_scale=True,
+                target_replicas=policy.min_replicas,
+                current_replicas=current_replicas,
+                reason=f"Enforcing minimum replicas: original target was {decision.target_replicas}, setting to {policy.min_replicas}",
+                triggered_by=decision.triggered_by + ["min_replicas_enforcement"],
+                metrics=decision.metrics
+            )
         
         # Record the decision
         self.scale_decisions[app_name].append(decision)
@@ -238,20 +277,29 @@ class AutoScaler:
         should_scale = False
         reason = "Metrics within thresholds"
         
+        logger.info(f"[SCALE] Scaling evaluation: max_factor={max_factor:.2f}, threshold={policy.scale_out_threshold_pct/100.0:.2f}, current={current_replicas}, max={policy.max_replicas}")
+        
         # Scale out if any metric is above threshold
         if max_factor > (policy.scale_out_threshold_pct / 100.0) and current_replicas < policy.max_replicas:
             # Calculate desired replicas based on the worst metric
-            desired_replicas = int(current_replicas * max_factor) + 1
+            desired_replicas = max(int(current_replicas * max_factor) + 1, current_replicas + 1)
             target_replicas = min(desired_replicas, policy.max_replicas)
-            should_scale = True
-            reason = f"Scale out: max factor {max_factor:.2f}"
+            logger.info(f"[SCALE] Scale out calculation: max_factor={max_factor:.2f}, current={current_replicas}, desired={desired_replicas}, target={target_replicas}, max_replicas={policy.max_replicas}")
+            # Only scale if target is actually different from current
+            if target_replicas > current_replicas:
+                should_scale = True
+                reason = f"Scale out: max factor {max_factor:.2f}"
+            else:
+                logger.info(f"[SCALE] Not scaling because target({target_replicas}) == current({current_replicas})")
         
         # Scale in if all metrics are below threshold
         elif max_factor < (policy.scale_in_threshold_pct / 100.0) and current_replicas > policy.min_replicas:
             # Conservative scale-in: only reduce by 1 replica at a time
             target_replicas = max(current_replicas - 1, policy.min_replicas)
-            should_scale = True
-            reason = f"Scale in: max factor {max_factor:.2f}"
+            # Only scale if target is actually different from current
+            if target_replicas < current_replicas:
+                should_scale = True
+                reason = f"Scale in: max factor {max_factor:.2f}"
         
         # Special case: no healthy replicas
         if "no_healthy" in scale_factors:
@@ -259,6 +307,12 @@ class AutoScaler:
             should_scale = True
             reason = "No healthy replicas available"
             triggered_by = ["no_healthy"]
+        
+        # Final check: Only mark as scaling decision if target != current
+        if should_scale and target_replicas == current_replicas:
+            should_scale = False
+            reason = f"Target replicas same as current ({target_replicas}), no scaling needed"
+            triggered_by = []
         
         decision = ScalingDecision(
             should_scale=should_scale,
@@ -269,8 +323,10 @@ class AutoScaler:
             metrics=metrics
         )
         
-        if should_scale:
+        if should_scale and target_replicas != current_replicas:
             logger.info(f"Scaling decision for app: {reason}, {current_replicas} -> {target_replicas}")
+        elif should_scale and target_replicas == current_replicas:
+            logger.info(f"[autoscale] Scaling trigger detected but no change needed for {app_name}: {reason}, {current_replicas} -> {target_replicas}")
         else:
             logger.debug(f"[autoscale] No scale for {app_name}: reason={reason}, factors={scale_factors}")
         

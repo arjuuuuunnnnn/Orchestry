@@ -11,14 +11,26 @@ import os
 from jinja2 import Template
 from pathlib import Path
 from typing import List, Dict
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 logger = logging.getLogger(__name__)
 
 class DockerNginxManager:
     def __init__(self, nginx_container_name: str = None, conf_dir: str = None, template_path: str = None):
         self.docker_client = docker.from_env()
-        self.nginx_container_name = nginx_container_name or os.getenv("AUTOSERVE_NGINX_CONTAINER", "autoserve-nginx")
-        self.conf_dir = Path(conf_dir or os.getenv("AUTOSERVE_NGINX_CONF_DIR", "./docker_configs/nginx"))
+        
+        self.nginx_container_name = nginx_container_name or os.getenv("AUTOSERVE_NGINX_CONTAINER")
+        if not self.nginx_container_name:
+            logger.error("AUTOSERVE_NGINX_CONTAINER environment variable is required. Please set it in .env file.")
+            raise RuntimeError("Missing required environment variable: AUTOSERVE_NGINX_CONTAINER")
+            
+        self.conf_dir = Path(conf_dir or os.getenv("AUTOSERVE_NGINX_CONF_DIR"))
+        if not conf_dir and not os.getenv("AUTOSERVE_NGINX_CONF_DIR"):
+            logger.error("AUTOSERVE_NGINX_CONF_DIR environment variable is required. Please set it in .env file.")
+            raise RuntimeError("Missing required environment variable: AUTOSERVE_NGINX_CONF_DIR")
         self.template_path = template_path or "docker_configs/nginx_template.conf"
         self._load_template()
         
@@ -144,9 +156,17 @@ class DockerNginxManager:
             )
             
             if result.exit_code == 0:
-                return self._parse_nginx_status(result.output)
+                # Decode bytes to string if needed
+                output = result.output
+                if isinstance(output, bytes):
+                    output = output.decode('utf-8')
+                return self._parse_nginx_status(output)
             else:
-                return {"error": "Failed to get nginx status", "details": result.output}
+                # Decode bytes to string if needed for error details
+                error_details = result.output
+                if isinstance(error_details, bytes):
+                    error_details = error_details.decode('utf-8')
+                return {"error": "Failed to get nginx status", "details": error_details}
                 
         except Exception as e:
             logger.error(f"Failed to get nginx status: {e}")

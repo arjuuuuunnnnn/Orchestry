@@ -10,7 +10,10 @@ load_dotenv()
 
 app = typer.Typer(name="autoserve", help="AutoServe SDK CLI")
 
-API_URL = os.getenv("API_URL", "http://localhost:8000")
+API_URL = os.getenv("API_URL")
+if not API_URL:
+    typer.echo("Error: API_URL environment variable is required. Please set it in .env file.", err=True)
+    raise typer.Exit(1)
 
 @app.command()
 def register(config: str):

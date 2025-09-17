@@ -6,10 +6,11 @@ Handles container creation, scaling, health checks, and removal.
 import docker
 import time
 import logging
+import threading
 from typing import Dict, List, Optional
 from dataclasses import dataclass
 
-from .state import StateStore
+from state.db import DatabaseManager, AppRecord
 from .nginx import DockerNginxManager
 from .health import HealthChecker
 
@@ -27,16 +28,23 @@ class ContainerInstance:
     failures: int = 0
 
 class AppManager:
-    def __init__(self, state_store: StateStore = None, nginx_manager: DockerNginxManager = None):
-        self.docker_client = docker.from_env()
-        self.state_store = state_store or StateStore()
-        self.nginx_manager = nginx_manager or DockerNginxManager()
+    def __init__(self, state_store: DatabaseManager = None, nginx_manager: DockerNginxManager = None):
+        self.client = docker.from_env()
+        self.state_store = state_store or DatabaseManager()
+        self.nginx = nginx_manager or DockerNginxManager()
         self.health_checker = HealthChecker()
-        self.instances: Dict[str, List[ContainerInstance]] = {}
-        
-        #create net if not exists
+        self.instances = {}  # app_name -> list of ContainerInstance
+        self._lock = threading.RLock()
+        self._restart_lock = threading.RLock()
+        self._shutdown = False
+        self.monitoring_active = False
+        self.monitoring_thread = None
         self._ensure_network()
-        logger.info("AppManager initialized")
+        
+    @property
+    def docker_client(self):
+        """Compatibility property for existing code."""
+        return self.client
 
     # ------------------------- Reconciliation Logic -------------------------
     def reconcile_app(self, app_name: str) -> int:
@@ -72,7 +80,7 @@ class AppManager:
                         replica_index = int(parts[-1]) if parts[-1].isdigit() else 0
                     network_settings = c.attrs.get("NetworkSettings", {})
                     ip = network_settings.get("Networks", {}).get("autoserve", {}).get("IPAddress", "")
-                    port = app_spec_record.get("ports", [{}])[0].get("containerPort", 0)
+                    port = app_spec_record.spec.get("ports", [{}])[0].get("containerPort", 0)
                     # Skip if already tracked
                     if any(inst.container_id == c.id for inst in self.instances[app_name]):
                         continue
@@ -126,6 +134,10 @@ class AppManager:
             app_name = spec["metadata"]["name"]
             app_spec = spec["spec"].copy()  # Make a copy to avoid modifying original
             
+            # Include scaling config from root level
+            if "scaling" in spec:
+                app_spec["scaling"] = spec["scaling"]
+            
             #rn only for http servers
             if app_spec["type"] != "http":
                 return {"error": "Only HTTP type is currently supported"}
@@ -143,13 +155,22 @@ class AppManager:
             if "labels" in spec.get("metadata", {}):
                 app_spec["labels"].update(spec["metadata"]["labels"])
                 
-            # Save to state store with raw spec
-            self.state_store.save_app(app_name, app_spec, raw_spec=spec)
+            # Create AppRecord with status='stopped' (no auto-start)
+            now = time.time()
+            app_record = AppRecord(
+                name=app_name,
+                spec=app_spec,
+                status='stopped',  # Start as stopped, not running
+                created_at=now,
+                updated_at=now,
+                replicas=0
+            )
+            self.state_store.save_app(app_record)
             
             # Initialize empty instance list
             self.instances[app_name] = []
             
-            logger.info(f"Registered app {app_name}")
+            logger.info(f"Registered app {app_name} with status='stopped'")
             return {"status": "registered", "app": app_name}
             
         except Exception as e:
@@ -160,25 +181,21 @@ class AppManager:
         """Start the application containers."""
         try:
             logger.info(f"Starting app {app_name}")
-            app_data = self.state_store.get_app(app_name)
-            if not app_data:
+            app_record = self.state_store.get_app(app_name)
+            if not app_record:
                 return {"error": f"App {app_name} not found"}
             
-            logger.info(f"Got app data for {app_name}: {app_data}")
+            logger.info(f"Got app record for {app_name}: {app_record}")
             
-            # Extract app spec from the dictionary returned by state store
-            app_spec = {
-                "type": app_data["type"],
-                "image": app_data["image"],
-                "ports": app_data["ports"],
-                "scaling": app_data["scaling"]
-            }
-            
-            # Add resources if they exist
-            if app_data.get("resources"):
-                app_spec["resources"] = app_data["resources"]
+            # Extract app spec from AppRecord
+            app_spec = app_record.spec
             
             logger.info(f"Parsed app spec for {app_name}: {app_spec}")
+            
+            # Set status to running first
+            app_record.status = 'running'
+            app_record.updated_at = time.time()
+            self.state_store.save_app(app_record)
             
             # Adopt existing containers first
             adopted = self.reconcile_app(app_name)
@@ -195,7 +212,8 @@ class AppManager:
                     pass
 
             # Start additional replicas if below min
-            min_replicas = app_spec["scaling"].get("minReplicas", 1)
+            scaling_config = app_spec.get("scaling", {})
+            min_replicas = scaling_config.get("minReplicas", 1)
             logger.info(f"Ensuring minimum {min_replicas} replicas for {app_name} (adopted {adopted})")
             next_index = 0
             started = 0
@@ -321,10 +339,18 @@ class AppManager:
             if app_name not in self.instances:
                 return {"error": f"App {app_name} not found or not running"}
             
+            # Set status to stopped first
+            app_record = self.state_store.get_app(app_name)
+            if app_record:
+                app_record.status = 'stopped'
+                app_record.updated_at = time.time()
+                app_record.replicas = 0
+                self.state_store.save_app(app_record)
+            
             stopped_count = 0
             for instance in self.instances[app_name]:
                 try:
-                    container = self.docker_client.containers.get(instance.container_id)
+                    container = self.client.containers.get(instance.container_id)
                     container.stop(timeout=30)
                     container.remove()
                     stopped_count += 1
@@ -362,10 +388,18 @@ class AppManager:
             # Update container stats
             self._update_container_stats(app_name)
             
+            # Clean up down containers
+            self._cleanup_down_containers(app_name)
+            
             instances_info = []
             ready_count = 0
+            running_count = 0
             
             for instance in self.instances[app_name]:
+                # Skip down containers in the instances list
+                if instance.state == "down":
+                    continue
+                    
                 instance_info = {
                     "container_id": instance.container_id[:12],  # Short ID
                     "ip": instance.ip,
@@ -376,14 +410,15 @@ class AppManager:
                     "failures": instance.failures
                 }
                 instances_info.append(instance_info)
+                running_count += 1
                 
                 if instance.state == "ready":
                     ready_count += 1
             
             return {
                 "app": app_name,
-                "status": "running" if ready_count > 0 else "degraded",
-                "replicas": len(self.instances[app_name]),
+                "status": "running" if ready_count > 0 else ("degraded" if running_count > 0 else "stopped"),
+                "replicas": running_count,  # Only count non-down containers
                 "ready_replicas": ready_count,
                 "instances": instances_info
             }
@@ -407,14 +442,8 @@ class AppManager:
             if not app_data:
                 return {"error": f"App {app_name} specification not found"}
                 
-            # app_data is a dictionary, not a tuple
-            app_spec = {
-                "type": app_data["type"],
-                "image": app_data["image"],
-                "ports": app_data["ports"],  # Already parsed as dict
-                "scaling": app_data["scaling"],  # Already parsed as dict
-                "resources": app_data["resources"]  # Already parsed as dict
-            }
+            # app_data is an AppRecord object
+            app_spec = app_data.spec.copy()
             
             if replicas > current_replicas:
                 # Scale up
@@ -454,6 +483,16 @@ class AppManager:
         for instance in self.instances[app_name]:
             try:
                 container = self.docker_client.containers.get(instance.container_id)
+                
+                # Check if container is still running
+                container.reload()  # Refresh container state
+                if container.status != "running":
+                    logger.info(f"Container {instance.container_id[:12]} is {container.status}, marking as down")
+                    instance.state = "down"
+                    instance.cpu_percent = 0.0
+                    instance.memory_percent = 0.0
+                    continue
+                
                 stats = container.stats(stream=False)
                 
                 # Calculate CPU percentage
@@ -504,15 +543,47 @@ class AppManager:
                 instance.last_seen = time.time()
                 
             except Exception as e:
-                logger.warning(f"Failed to update stats for container {instance.container_id}: {e}")
+                # Container is likely stopped or removed
+                logger.info(f"Container {instance.container_id[:12]} is no longer accessible: {e}")
+                instance.state = "down"
+                instance.cpu_percent = 0.0
+                instance.memory_percent = 0.0
                 instance.failures += 1
+
+    def _cleanup_down_containers(self, app_name: str):
+        """Remove down containers from tracking after a grace period."""
+        if app_name not in self.instances:
+            return
+            
+        # Remove containers that have been down for more than 30 seconds
+        current_time = time.time()
+        containers_to_remove = []
+        
+        for i, instance in enumerate(self.instances[app_name]):
+            if instance.state == "down":
+                # If it's been down for more than 30 seconds, remove it from tracking
+                if hasattr(instance, 'last_seen') and (current_time - instance.last_seen) > 30:
+                    containers_to_remove.append(i)
+                elif not hasattr(instance, 'last_seen'):
+                    # If no last_seen timestamp, remove immediately
+                    containers_to_remove.append(i)
+        
+        # Remove from list in reverse order to maintain indices
+        for i in reversed(containers_to_remove):
+            removed_instance = self.instances[app_name].pop(i)
+            logger.info(f"Removed down container {removed_instance.container_id[:12]} from tracking for {app_name}")
+            
+        # If no instances left, remove the app key
+        if not self.instances[app_name]:
+            del self.instances[app_name]
+            logger.info(f"No running instances left for {app_name}")
     
     def _update_nginx_config(self, app_name: str):
         """Update nginx configuration with current healthy instances."""
         if app_name not in self.instances:
             # No instances, remove config
             try:
-                self.nginx_manager.remove_app_config(app_name)
+                self.nginx.remove_app_config(app_name)
             except:
                 pass
             return
@@ -528,7 +599,7 @@ class AppManager:
         
         if healthy_servers:
             try:
-                self.nginx_manager.update_upstreams(app_name, healthy_servers)
+                self.nginx.update_upstreams(app_name, healthy_servers)
             except Exception as e:
                 logger.error(f"Failed to update nginx config for {app_name}: {e}")
     
@@ -562,3 +633,392 @@ class AppManager:
                     
         except Exception as e:
             logger.error(f"Failed to cleanup orphaned containers: {e}")
+
+    def start_container_monitoring(self):
+        """Start the container monitoring thread."""
+        if self.monitoring_active:
+            logger.warning("Container monitoring is already active")
+            return
+        
+        self.monitoring_active = True
+        self.monitoring_thread = threading.Thread(target=self._container_monitoring_loop, daemon=True)
+        self.monitoring_thread.start()
+        logger.info("Started container monitoring thread")
+
+    def stop_container_monitoring(self):
+        """Stop the container monitoring thread."""
+        self.monitoring_active = False
+        if self.monitoring_thread and self.monitoring_thread.is_alive():
+            self.monitoring_thread.join(timeout=5)
+        logger.info("Stopped container monitoring thread")
+
+    def _container_monitoring_loop(self):
+        """Main loop for monitoring container health and ensuring minReplicas."""
+        logger.info("Container monitoring loop started")
+        
+        while self.monitoring_active:
+            try:
+                self._check_and_restart_containers()
+                self._ensure_min_replicas()
+                time.sleep(10)  # Check every 10 seconds
+            except Exception as e:
+                logger.error(f"Error in container monitoring loop: {e}")
+                time.sleep(5)  # Wait a bit before retrying
+
+    def _check_and_restart_containers(self):
+        """Check all tracked containers and restart any that are stopped."""
+        with self._restart_lock:
+            for app_name in list(self.instances.keys()):
+                app_spec_record = self.state_store.get_app(app_name)
+                if not app_spec_record:
+                    continue
+                    
+                instances_to_remove = []
+                instances_to_restart = []
+                
+                for i, instance in enumerate(self.instances[app_name]):
+                    try:
+                        # Get container object
+                        container = self.docker_client.containers.get(instance.container_id)
+                        container.reload()
+                        
+                        # Check if container is not running
+                        if container.status != "running":
+                            logger.warning(f"Container {container.name} ({container.id[:12]}) for app {app_name} is {container.status}")
+                            
+                            # Try to restart the existing container first
+                            if container.status in ["stopped", "exited"]:
+                                try:
+                                    logger.info(f"Attempting to restart existing container {container.name}")
+                                    container.start()
+                                    container.reload()
+                                    
+                                    if container.status == "running":
+                                        logger.info(f"Successfully restarted container {container.name}")
+                                        instance.state = "ready"
+                                        instance.last_seen = time.time()
+                                        continue
+                                except Exception as restart_e:
+                                    logger.warning(f"Failed to restart existing container {container.name}: {restart_e}")
+                            
+                            # If restart failed or container is in bad state, mark for recreation
+                            instances_to_remove.append(i)
+                            instances_to_restart.append(instance)
+                            
+                    except docker.errors.NotFound:
+                        # Container no longer exists, mark for recreation
+                        logger.warning(f"Container {instance.container_id[:12]} for app {app_name} no longer exists")
+                        instances_to_remove.append(i)
+                        instances_to_restart.append(instance)
+                    except Exception as e:
+                        logger.error(f"Error checking container {instance.container_id[:12]} for app {app_name}: {e}")
+                
+                # Remove failed instances and recreate them
+                for idx in reversed(instances_to_remove):
+                    self.instances[app_name].pop(idx)
+                
+                # Recreate containers for failed instances
+                for failed_instance in instances_to_restart:
+                    self._recreate_container(app_name, failed_instance)
+
+    def _recreate_container(self, app_name: str, failed_instance: ContainerInstance):
+        """Recreate a failed container."""
+        try:
+            logger.info(f"Recreating container for app {app_name}")
+            
+            app_spec_record = self.state_store.get_app(app_name)
+            if not app_spec_record:
+                logger.error(f"App spec not found for {app_name}")
+                return
+            
+            # Extract container port from app spec
+            container_port = app_spec_record.get("ports", [{}])[0].get("containerPort", 8080)
+            
+            # Find next available replica index
+            existing_indices = set()
+            for inst in self.instances.get(app_name, []):
+                try:
+                    container = self.docker_client.containers.get(inst.container_id)
+                    idx_label = container.labels.get("autoserve.replica")
+                    if idx_label and idx_label.isdigit():
+                        existing_indices.add(int(idx_label))
+                except:
+                    pass
+            
+            next_index = 0
+            while next_index in existing_indices:
+                next_index += 1
+            
+            # Create new container with same configuration as before
+            container_name = f"{app_name}-{next_index}"
+            
+            # Check if a container with this name already exists
+            try:
+                existing_container = self.docker_client.containers.get(container_name)
+                if existing_container.status == "running":
+                    logger.info(f"Container {container_name} already running, adopting it")
+                    # Adopt the existing running container
+                    network_settings = existing_container.attrs.get("NetworkSettings", {})
+                    container_ip = network_settings.get("Networks", {}).get("autoserve", {}).get("IPAddress", "")
+                    
+                    instance = ContainerInstance(
+                        container_id=existing_container.id,
+                        ip=container_ip,
+                        port=container_port,
+                        state="ready",
+                        last_seen=time.time()
+                    )
+                    self.instances[app_name].append(instance)
+                    self._update_nginx_config(app_name)
+                    return
+                else:
+                    # Start the existing stopped container
+                    logger.info(f"Starting existing stopped container {container_name}")
+                    existing_container.start()
+                    existing_container.reload()
+                    
+                    if existing_container.status == "running":
+                        network_settings = existing_container.attrs.get("NetworkSettings", {})
+                        container_ip = network_settings.get("Networks", {}).get("autoserve", {}).get("IPAddress", "")
+                        
+                        instance = ContainerInstance(
+                            container_id=existing_container.id,
+                            ip=container_ip,
+                            port=container_port,
+                            state="ready",
+                            last_seen=time.time()
+                        )
+                        self.instances[app_name].append(instance)
+                        self._update_nginx_config(app_name)
+                        return
+                    
+            except docker.errors.NotFound:
+                pass  # Container doesn't exist, we'll create it
+            except Exception as e:
+                logger.warning(f"Error checking existing container {container_name}: {e}")
+            
+            # Create completely new container
+            container_config = {
+                "image": app_spec_record["image"],
+                "name": container_name,
+                "network": "autoserve",
+                "detach": True,
+                "labels": {
+                    "autoserve.app": app_name,
+                    "autoserve.replica": str(next_index),
+                    "managed_by": "autoserve"
+                },
+                "restart_policy": {"Name": "unless-stopped"}
+            }
+            
+            # Add resource limits if specified
+            if "resources" in app_spec_record:
+                resources = app_spec_record["resources"]
+                if "cpu" in resources:
+                    cpu_str = resources["cpu"]
+                    if cpu_str.endswith("m"):
+                        cpu_value = float(cpu_str[:-1]) / 1000
+                    else:
+                        cpu_value = float(cpu_str)
+                    container_config["nano_cpus"] = int(cpu_value * 1_000_000_000)
+                if "memory" in resources:
+                    memory_str = resources["memory"]
+                    if memory_str.endswith("Mi"):
+                        memory_bytes = int(memory_str[:-2]) * 1024 * 1024
+                        container_config["mem_limit"] = memory_bytes
+            
+            # Add environment variables if specified
+            if "env" in app_spec_record:
+                env_vars = {}
+                for env in app_spec_record["env"]:
+                    if env.get("valueFrom") == "sdk":
+                        env_vars[env["name"]] = self._get_sdk_env_value(env["name"])
+                    else:
+                        env_vars[env["name"]] = env.get("value", "")
+                container_config["environment"] = env_vars
+            
+            # Create and start container
+            container_config.pop("detach", None)
+            container = self.docker_client.containers.create(**container_config)
+            container.start()
+            container.reload()
+            
+            if container.status != "running":
+                raise Exception(f"Container failed to start: {container.status}")
+            
+            # Get container IP
+            network_settings = container.attrs["NetworkSettings"]
+            container_ip = network_settings["Networks"]["autoserve"]["IPAddress"]
+            
+            # Create new instance record
+            instance = ContainerInstance(
+                container_id=container.id,
+                ip=container_ip,
+                port=container_port,
+                state="ready",
+                last_seen=time.time()
+            )
+            
+            self.instances[app_name].append(instance)
+            self._update_nginx_config(app_name)
+            
+            logger.info(f"Successfully recreated container {container_name} for app {app_name}")
+            
+        except Exception as e:
+            logger.error(f"Failed to recreate container for app {app_name}: {e}")
+
+    def _ensure_min_replicas(self):
+        """Ensure all RUNNING apps maintain their minimum replica count."""
+        with self._restart_lock:
+            for app_name in list(self.instances.keys()):
+                try:
+                    app_spec_record = self.state_store.get_app(app_name)
+                    if not app_spec_record:
+                        continue
+                    
+                    # Only maintain replicas for running apps
+                    if app_spec_record.status != 'running':
+                        logger.debug(f"Skipping app {app_name} with status '{app_spec_record.status}'")
+                        continue
+                    
+                    # Get minReplicas from scaling policy
+                    scaling_policy = app_spec_record.spec.get("scaling", {})
+                    min_replicas = scaling_policy.get("minReplicas", 1)
+                    
+                    # Count healthy running instances
+                    healthy_instances = []
+                    for instance in self.instances.get(app_name, []):
+                        try:
+                            container = self.client.containers.get(instance.container_id)
+                            container.reload()
+                            if container.status == "running" and instance.state == "ready":
+                                healthy_instances.append(instance)
+                        except docker.errors.NotFound:
+                            continue  # Container will be handled by _check_and_restart_containers
+                        except Exception:
+                            continue
+                    
+                    current_healthy = len(healthy_instances)
+                    
+                    if current_healthy < min_replicas:
+                        needed = min_replicas - current_healthy
+                        logger.info(f"App {app_name} has {current_healthy}/{min_replicas} minimum replicas, creating {needed} more")
+                        
+                        for _ in range(needed):
+                            self._create_additional_replica(app_name)
+                            
+                except Exception as e:
+                    logger.error(f"Error ensuring min replicas for app {app_name}: {e}")
+
+    def _create_additional_replica(self, app_name: str):
+        """Create an additional replica for an app."""
+        try:
+            app_spec_record = self.state_store.get_app(app_name)
+            if not app_spec_record:
+                return
+            
+            # Find next available replica index
+            existing_indices = set()
+            containers = self.client.containers.list(all=True, filters={"label": f"autoserve.app={app_name}"})
+            
+            for container in containers:
+                idx_label = container.labels.get("autoserve.replica")
+                if idx_label and idx_label.isdigit():
+                    existing_indices.add(int(idx_label))
+            
+            next_index = 0
+            while next_index in existing_indices:
+                next_index += 1
+            
+            # Create new replica
+            self._create_container_replica(app_name, app_spec_record.spec, next_index)
+            logger.info(f"Created additional replica {next_index} for app {app_name}")
+            
+        except Exception as e:
+            logger.error(f"Failed to create additional replica for app {app_name}: {e}")
+
+    def _create_container_replica(self, app_name: str, app_spec: dict, replica_index: int):
+        """Create a single container replica."""
+        container_port = app_spec.get("ports", [{}])[0].get("containerPort", 8080)
+        container_name = f"{app_name}-{replica_index}"
+        
+        # Check if container already exists and handle appropriately
+        try:
+            existing_container = self.docker_client.containers.get(container_name)
+            if existing_container.status == "running":
+                logger.info(f"Container {container_name} already running")
+                return  # Already handled
+            else:
+                existing_container.start()
+                existing_container.reload()
+                if existing_container.status == "running":
+                    logger.info(f"Restarted existing container {container_name}")
+                    return
+        except docker.errors.NotFound:
+            pass  # Container doesn't exist, create it
+        
+        container_config = {
+            "image": app_spec["image"],
+            "name": container_name,
+            "network": "autoserve",
+            "detach": True,
+            "labels": {
+                "autoserve.app": app_name,
+                "autoserve.replica": str(replica_index),
+                "managed_by": "autoserve"
+            },
+            "restart_policy": {"Name": "unless-stopped"}
+        }
+        
+        # Add resource limits if specified
+        if "resources" in app_spec:
+            resources = app_spec["resources"]
+            if "cpu" in resources:
+                cpu_str = resources["cpu"]
+                if cpu_str.endswith("m"):
+                    cpu_value = float(cpu_str[:-1]) / 1000
+                else:
+                    cpu_value = float(cpu_str)
+                container_config["nano_cpus"] = int(cpu_value * 1_000_000_000)
+            if "memory" in resources:
+                memory_str = resources["memory"]
+                if memory_str.endswith("Mi"):
+                    memory_bytes = int(memory_str[:-2]) * 1024 * 1024
+                    container_config["mem_limit"] = memory_bytes
+        
+        # Add environment variables if specified
+        if "env" in app_spec:
+            env_vars = {}
+            for env in app_spec["env"]:
+                if env.get("valueFrom") == "sdk":
+                    env_vars[env["name"]] = self._get_sdk_env_value(env["name"])
+                else:
+                    env_vars[env["name"]] = env.get("value", "")
+            container_config["environment"] = env_vars
+        
+        # Create and start container
+        container = self.docker_client.containers.create(**container_config)
+        container.start()
+        container.reload()
+        
+        if container.status != "running":
+            raise Exception(f"Container failed to start: {container.status}")
+        
+        # Get container IP
+        network_settings = container.attrs["NetworkSettings"]
+        container_ip = network_settings["Networks"]["autoserve"]["IPAddress"]
+        
+        # Create instance record
+        instance = ContainerInstance(
+            container_id=container.id,
+            ip=container_ip,
+            port=container_port,
+            state="ready",
+            last_seen=time.time()
+        )
+        
+        if app_name not in self.instances:
+            self.instances[app_name] = []
+        self.instances[app_name].append(instance)
+        
+        self._update_nginx_config(app_name)

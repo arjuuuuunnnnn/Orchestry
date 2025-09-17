@@ -11,9 +11,13 @@ from typing import Dict, List, Optional, Any
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 from .manager import AppManager
-from .state import StateStore  
+from state.db import DatabaseManager
 from .nginx import DockerNginxManager
 from .scaler import AutoScaler, ScalingPolicy, ScalingMetrics
 from .health import HealthChecker
@@ -57,7 +61,7 @@ class AppStatusResponse(BaseModel):
 
 # Global components - initialized when starting the API
 app_manager: Optional[AppManager] = None
-state_store: Optional[StateStore] = None
+state_store: Optional[DatabaseManager] = None
 nginx_manager: Optional[DockerNginxManager] = None
 auto_scaler: Optional[AutoScaler] = None
 health_checker: Optional[HealthChecker] = None
@@ -94,8 +98,12 @@ async def startup_event():
     
     try:
         # Initialize components with environment-based configuration
-        db_path = os.getenv("AUTOSERVE_DB_PATH", "autoscaler.db")
-        state_store = StateStore(db_path)
+        db_path = os.getenv("AUTOSERVE_DB_PATH")
+        if not db_path:
+            logger.error("AUTOSERVE_DB_PATH environment variable is required. Please set it in .env file.")
+            raise RuntimeError("Missing required environment variable: AUTOSERVE_DB_PATH")
+            
+        state_store = DatabaseManager(db_path)
         nginx_manager = DockerNginxManager()
         auto_scaler = AutoScaler()
         health_checker = HealthChecker()
@@ -108,8 +116,47 @@ async def startup_event():
         try:
             adopted_summary = app_manager.reconcile_all()
             logger.info(f"Reconciliation summary on startup: {adopted_summary}")
+            
+            # Re-register scaling policies for all existing apps
+            logger.info("About to query for apps to restore scaling policies")
+            apps = state_store.list_apps()
+            logger.info(f"Found {len(apps)} apps to restore scaling policies for: {[app['name'] for app in apps]}")
+            for app in apps:
+                app_name = app["name"]
+                logger.info(f"Attempting to restore scaling policy for {app_name}")
+                # Parse the raw_spec to get scaling configuration
+                import json
+                try:
+                    raw_spec = json.loads(app["raw_spec"])
+                    scaling_config = raw_spec.get("scaling", {})
+                    logger.info(f"Scaling config for {app_name}: {scaling_config}")
+                    
+                    from .scaler import ScalingPolicy
+                    policy = ScalingPolicy(
+                        min_replicas=scaling_config.get("minReplicas", 1),
+                        max_replicas=scaling_config.get("maxReplicas", 5),
+                        target_rps_per_replica=scaling_config.get("targetRPSPerReplica", 50),
+                        max_p95_latency_ms=scaling_config.get("maxP95LatencyMs", 250),
+                        scale_out_threshold_pct=scaling_config.get("scaleOutThresholdPct", 80),
+                        scale_in_threshold_pct=scaling_config.get("scaleInThresholdPct", 30),
+                        window_seconds=scaling_config.get("windowSeconds", 60),
+                        cooldown_seconds=scaling_config.get("cooldownSeconds", 300)
+                    )
+                    
+                    auto_scaler.set_policy(app_name, policy)
+                    logger.info(f"Successfully restored scaling policy for {app_name}")
+                except Exception as e:
+                    logger.error(f"Failed to restore scaling policy for {app_name}: {e}")
+                    import traceback
+                    logger.error(f"Full traceback: {traceback.format_exc()}")
+                    
         except Exception as e:
             logger.error(f"Failed initial reconciliation: {e}")
+            import traceback
+            logger.error(f"Full traceback: {traceback.format_exc()}")
+
+        # Start container monitoring for automatic restarts and minReplicas enforcement
+        app_manager.start_container_monitoring()
 
         # Start background monitoring
         monitoring_active = True
@@ -128,9 +175,12 @@ async def startup_event():
 @app.on_event("shutdown")
 async def shutdown_event():
     """Clean up resources when shutting down."""
-    global monitoring_active, health_checker
+    global monitoring_active, health_checker, app_manager
     
     monitoring_active = False
+    
+    if app_manager:
+        app_manager.stop_container_monitoring()
     
     if health_checker:
         await health_checker.stop()

@@ -68,6 +68,7 @@ class DatabaseManager:
     def _init_database(self):
         """Initialize database schema."""
         with self._get_connection() as conn:
+            # Create all tables first
             # Apps table
             conn.execute('''
                 CREATE TABLE IF NOT EXISTS apps (
@@ -105,9 +106,7 @@ class DatabaseManager:
                     event_type TEXT NOT NULL,
                     message TEXT NOT NULL,
                     timestamp REAL NOT NULL,
-                    details TEXT,
-                    INDEX idx_events_app_time (app_name, timestamp),
-                    INDEX idx_events_type_time (event_type, timestamp)
+                    details TEXT
                 )
             ''')
             
@@ -120,16 +119,22 @@ class DatabaseManager:
                     to_replicas INTEGER NOT NULL,
                     trigger_reason TEXT NOT NULL,
                     metrics_snapshot TEXT,
-                    timestamp REAL NOT NULL,
-                    INDEX idx_scaling_app_time (app_name, timestamp)
+                    timestamp REAL NOT NULL
                 )
             ''')
             
-            # Create indexes for better performance
+            # Commit table creation first
+            conn.commit()
+            
+            # Now create indexes after tables are committed
+            conn.execute('CREATE INDEX IF NOT EXISTS idx_events_app_time ON events (app_name, timestamp)')
+            conn.execute('CREATE INDEX IF NOT EXISTS idx_events_type_time ON events (event_type, timestamp)')
             conn.execute('CREATE INDEX IF NOT EXISTS idx_apps_status ON apps (status)')
             conn.execute('CREATE INDEX IF NOT EXISTS idx_instances_app ON instances (app_name)')
             conn.execute('CREATE INDEX IF NOT EXISTS idx_instances_status ON instances (status)')
+            conn.execute('CREATE INDEX IF NOT EXISTS idx_scaling_app_time ON scaling_history (app_name, timestamp)')
             
+            # Final commit for indexes
             conn.commit()
             
         logger.info(f"Database initialized at {self.db_path}")
@@ -549,3 +554,46 @@ class DatabaseManager:
             except sqlite3.Error as e:
                 logger.error(f"Failed to vacuum database: {e}")
                 return False
+    
+    # Compatibility methods for API layer
+    def close(self):
+        """Close database connections (compatibility method)."""
+        # DatabaseManager uses context managers, so no explicit close needed
+        logger.info("Database connections closed")
+        
+    def log_event(self, app_name: str, event_type: str, details: Dict[str, Any] = None):
+        """Log an event (compatibility method)."""
+        event = EventRecord(
+            id=None,
+            app_name=app_name,
+            event_type=event_type,
+            message=event_type,
+            timestamp=time.time(),
+            details=details
+        )
+        self.add_event(event)
+        
+    def log_scaling_action(self, app_name: str, old_replicas: int, new_replicas: int, 
+                          reason: str, triggered_by: List[str] = None, 
+                          metrics: Dict[str, Any] = None):
+        """Log a scaling action (compatibility method)."""
+        # If triggered_by is provided, append it to the reason for context
+        full_reason = reason
+        if triggered_by:
+            full_reason = f"{reason} (triggered by: {', '.join(triggered_by)})"
+            
+        self.add_scaling_event(
+            app_name=app_name,
+            from_replicas=old_replicas,
+            to_replicas=new_replicas,
+            trigger_reason=full_reason,
+            metrics_snapshot=metrics
+        )
+        
+    def get_raw_spec(self, name: str) -> Optional[Dict[str, Any]]:
+        """Get raw spec (compatibility method - not implemented in new schema)."""
+        # The new schema stores parsed spec, not raw spec
+        app_record = self.get_app(name)
+        if app_record:
+            return app_record.spec
+        return None

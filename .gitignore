@@ -4,6 +4,7 @@ __pycache__/
 *.pyc
 .DS_Store
 .env
+.env.docker
 data/
 docker_configs/nginx/
 hello.md
