@@ -33,6 +33,8 @@ class AppManager:
         self.state_store = state_store or DatabaseManager()
         self.nginx = nginx_manager or DockerNginxManager()
         self.health_checker = HealthChecker()
+        # Set up callback for health status changes
+        self.health_checker.set_health_change_callback(self._on_health_status_change)
         self.instances = {}  # app_name -> list of ContainerInstance
         self._lock = threading.RLock()
         self._restart_lock = threading.RLock()
@@ -40,6 +42,20 @@ class AppManager:
         self.monitoring_active = False
         self.monitoring_thread = None
         self._ensure_network()
+        
+    def _on_health_status_change(self, container_id: str, is_healthy: bool):
+        """Callback called when container health status changes."""
+        try:
+            # Find which app this container belongs to
+            for app_name, instances in self.instances.items():
+                for instance in instances:
+                    if instance.container_id == container_id:
+                        logger.info(f"Health status changed for {app_name} container {container_id[:12]}: {'healthy' if is_healthy else 'unhealthy'}")
+                        # Update nginx configuration to reflect health change
+                        self._update_nginx_config(app_name)
+                        return
+        except Exception as e:
+            logger.error(f"Error handling health status change for container {container_id}: {e}")
         
     @property
     def docker_client(self):
@@ -92,6 +108,14 @@ class AppManager:
                         last_seen=time.time()
                     )
                     self.instances[app_name].append(instance)
+                    
+                    # Register with health checker if health config is specified
+                    if "health" in app_spec_record.spec:
+                        from .health import HealthChecker
+                        health_config = HealthChecker.create_config_from_spec(app_spec_record.spec["health"])
+                        self.health_checker.add_target(c.id, ip, port, health_config)
+                        logger.info(f"Registered reconciled container {c.id[:12]} for health checking")
+                    
                     adopted += 1
                 except Exception as e:
                     logger.warning(f"Failed to adopt container {c.id} for {app_name}: {e}")
@@ -148,6 +172,9 @@ class AppManager:
             # Map healthCheck -> health for backward compatibility
             if "healthCheck" in app_spec:
                 app_spec["health"] = app_spec.pop("healthCheck")
+            # Also check for healthCheck at the root spec level
+            if "healthCheck" in spec:
+                app_spec["health"] = spec["healthCheck"]
             
             # Merge metadata.labels into spec.labels
             if "labels" not in app_spec:
@@ -359,6 +386,10 @@ class AppManager:
                     container.stop(timeout=30)
                     container.remove()
                     stopped_count += 1
+                    
+                    # Remove from health checker
+                    self.health_checker.remove_target(instance.container_id)
+                    
                 except Exception as e:
                     logger.warning(f"Failed to stop container {instance.container_id}: {e}")
             
@@ -477,6 +508,10 @@ class AppManager:
             container = self.docker_client.containers.get(instance.container_id)
             container.stop(timeout=30)
             container.remove()
+            
+            # Remove from health checker
+            self.health_checker.remove_target(instance.container_id)
+            
         except Exception as e:
             logger.warning(f"Failed to stop container {instance.container_id}: {e}")
     
@@ -596,11 +631,30 @@ class AppManager:
         # Filter for healthy instances
         healthy_servers = []
         for instance in self.instances[app_name]:
-            if instance.state == "ready":
-                healthy_servers.append({
-                    "ip": instance.ip,
-                    "port": instance.port
-                })
+            # Check both container state and health check status
+            container_ready = instance.state == "ready"
+            health_check_passed = self.health_checker.is_healthy(instance.container_id)
+            
+            # If health checking is configured, require both conditions
+            # If no health checking, just use container state
+            app_spec_record = self.state_store.get_app(app_name)
+            has_health_config = (app_spec_record and 
+                               app_spec_record.spec.get("health") is not None)
+            
+            if has_health_config:
+                # Health checking is configured, require both ready state and health check pass
+                if container_ready and health_check_passed:
+                    healthy_servers.append({
+                        "ip": instance.ip,
+                        "port": instance.port
+                    })
+            else:
+                # No health checking configured, just use ready state
+                if container_ready:
+                    healthy_servers.append({
+                        "ip": instance.ip,
+                        "port": instance.port
+                    })
         
         if healthy_servers:
             try:
@@ -720,6 +774,9 @@ class AppManager:
                 
                 # Remove failed instances and recreate them
                 for idx in reversed(instances_to_remove):
+                    failed_instance = self.instances[app_name][idx]
+                    # Remove from health checker
+                    self.health_checker.remove_target(failed_instance.container_id)
                     self.instances[app_name].pop(idx)
                 
                 # Recreate containers for failed instances
@@ -774,6 +831,14 @@ class AppManager:
                         last_seen=time.time()
                     )
                     self.instances[app_name].append(instance)
+                    
+                    # Register with health checker if health config is specified
+                    if "health" in app_spec_record.spec:
+                        from .health import HealthChecker
+                        health_config = HealthChecker.create_config_from_spec(app_spec_record.spec["health"])
+                        self.health_checker.add_target(existing_container.id, container_ip, container_port, health_config)
+                        logger.info(f"Registered adopted container {existing_container.id[:12]} for health checking")
+                    
                     self._update_nginx_config(app_name)
                     return
                 else:
@@ -794,6 +859,14 @@ class AppManager:
                             last_seen=time.time()
                         )
                         self.instances[app_name].append(instance)
+                        
+                        # Register with health checker if health config is specified
+                        if "health" in app_spec_record.spec:
+                            from .health import HealthChecker
+                            health_config = HealthChecker.create_config_from_spec(app_spec_record.spec["health"])
+                            self.health_checker.add_target(existing_container.id, container_ip, container_port, health_config)
+                            logger.info(f"Registered restarted container {existing_container.id[:12]} for health checking")
+                        
                         self._update_nginx_config(app_name)
                         return
                     
@@ -865,6 +938,14 @@ class AppManager:
             )
             
             self.instances[app_name].append(instance)
+            
+            # Register with health checker if health config is specified
+            if "health" in app_spec_record.spec:
+                from .health import HealthChecker
+                health_config = HealthChecker.create_config_from_spec(app_spec_record.spec["health"])
+                self.health_checker.add_target(container.id, container_ip, container_port, health_config)
+                logger.info(f"Registered recreated container {container.id[:12]} for health checking")
+            
             self._update_nginx_config(app_name)
             
             logger.info(f"Successfully recreated container {container_name} for app {app_name}")
@@ -958,6 +1039,15 @@ class AppManager:
                 existing_container.reload()
                 if existing_container.status == "running":
                     logger.info(f"Restarted existing container {container_name}")
+                    # Register with health checker if health config is specified
+                    if "health" in app_spec:
+                        network_settings = existing_container.attrs["NetworkSettings"]
+                        container_ip = network_settings["Networks"]["autoserve"]["IPAddress"]
+                        container_port = app_spec.get("ports", [{}])[0].get("containerPort", 8080)
+                        from .health import HealthChecker
+                        health_config = HealthChecker.create_config_from_spec(app_spec["health"])
+                        self.health_checker.add_target(existing_container.id, container_ip, container_port, health_config)
+                        logger.info(f"Registered restarted container {existing_container.id[:12]} for health checking")
                     return
         except docker.errors.NotFound:
             pass  # Container doesn't exist, create it
@@ -1025,5 +1115,12 @@ class AppManager:
         if app_name not in self.instances:
             self.instances[app_name] = []
         self.instances[app_name].append(instance)
+        
+        # Register with health checker if health config is specified
+        if "health" in app_spec:
+            from .health import HealthChecker
+            health_config = HealthChecker.create_config_from_spec(app_spec["health"])
+            self.health_checker.add_target(container.id, container_ip, container_port, health_config)
+            logger.info(f"Registered container {container.id[:12]} for health checking")
         
         self._update_nginx_config(app_name)
