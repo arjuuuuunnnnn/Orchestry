@@ -7,7 +7,7 @@ import docker
 import time
 import logging
 import threading
-from typing import Dict, List, Optional
+from typing import Dict, Optional
 from dataclasses import dataclass
 
 from state.db import DatabaseManager, AppRecord
