@@ -94,3 +94,5 @@ sqlite3 data/autoscaler.db "DELETE FROM scaling_history; DELETE FROM events; DEL
 (3)TODO: check if the image exists locally/remotely before registering
 
 (4)TODO: auto heal dead containers without loosing any req/res (auto healing is done, handling reqests of dead servers needs to be taken care)
+
+(5)TODO: save the state of the system, after restart reload to the same state

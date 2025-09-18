@@ -36,7 +36,8 @@ class StateStore:
             labels TEXT,
             created_at REAL,
             updated_at REAL,
-            raw_spec TEXT
+            raw_spec TEXT,
+            mode TEXT DEFAULT 'auto'
         )""")
         
         # Instances table - tracks running container instances

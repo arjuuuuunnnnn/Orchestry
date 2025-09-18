@@ -155,6 +155,10 @@ class AppManager:
             if "labels" in spec.get("metadata", {}):
                 app_spec["labels"].update(spec["metadata"]["labels"])
                 
+            # Extract scaling mode
+            scaling_config = spec.get("scaling", {})
+            scaling_mode = scaling_config.get("mode", "auto")
+            
             # Create AppRecord with status='stopped' (no auto-start)
             now = time.time()
             app_record = AppRecord(
@@ -163,7 +167,8 @@ class AppManager:
                 status='stopped',  # Start as stopped, not running
                 created_at=now,
                 updated_at=now,
-                replicas=0
+                replicas=0,
+                mode=scaling_mode
             )
             self.state_store.save_app(app_record)
             

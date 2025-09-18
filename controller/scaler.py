@@ -100,8 +100,18 @@ class AutoScaler:
             while points and points[0].timestamp < cutoff_time:
                 points.popleft()
     
-    def evaluate_scaling(self, app_name: str, current_replicas: int) -> ScalingDecision:
+    def evaluate_scaling(self, app_name: str, current_replicas: int, mode: str = "auto") -> ScalingDecision:
         """Evaluate if scaling is needed for an application."""
+        
+        # Check if app is in manual mode - no autoscaling
+        if mode == "manual":
+            return ScalingDecision(
+                should_scale=False,
+                target_replicas=current_replicas,
+                current_replicas=current_replicas,
+                reason="App is in manual scaling mode"
+            )
+        
         policy = self.policies.get(app_name)
         if not policy:
             return ScalingDecision(

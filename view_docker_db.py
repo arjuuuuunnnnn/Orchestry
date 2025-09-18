@@ -5,8 +5,20 @@ View the SQLite database stored in the Docker volume.
 
 Usage:
     python view_docker_db.py apps          # View all apps
+    python view_docker_db.py apps --status running --mode auto  # Filter apps
     python view_docker_db.py summary       # View database summary
-    python view_docker_db.py instances     # View container instances
+    python view_docker_db.py instances     # View         Examples:
+  python view_docker_db.py summary              # Show database overview
+  python view_docker_db.py apps                 # List all applications
+  python view_docker_db.py apps --status running # Filter apps by status
+  python view_docker_db.py apps --mode manual   # Filter apps by scaling mode
+  python view_docker_db.py apps --status running --mode auto # Multiple filters
+  python view_docker_db.py instances            # Show all instances  
+  python view_docker_db.py instances --app myapp # Filter by app name
+  python view_docker_db.py events               # Show recent events
+  python view_docker_db.py events --type scaling # Filter by event type
+  python view_docker_db.py scaling              # Show scaling history
+  python view_docker_db.py scaling --app myapp  # App-specific scalinginstances
     python view_docker_db.py events        # View system events
     python view_docker_db.py scaling       # View scaling history
     python view_docker_db.py --help        # Show help
@@ -95,7 +107,7 @@ class DockerVolumeDBViewer:
         except json.JSONDecodeError:
             return json_str
             
-    def view_apps(self, status_filter: Optional[str] = None):
+    def view_apps(self, status_filter: Optional[str] = None, mode_filter: Optional[str] = None):
         """View all applications."""
         print("=" * 80)
         print("APPLICATIONS")
@@ -108,15 +120,31 @@ class DockerVolumeDBViewer:
             cursor = conn.execute("PRAGMA table_info(apps)")
             columns = [col['name'] for col in cursor.fetchall()]
             
+            # Build query with filters
+            query = 'SELECT * FROM apps'
+            params = []
+            filters = []
+            
             if status_filter and 'status' in columns:
-                cursor = conn.execute(
-                    'SELECT * FROM apps WHERE status = ? ORDER BY name', 
-                    (status_filter,)
-                )
-                print(f"Filtered by status: {status_filter}")
-            else:
-                cursor = conn.execute('SELECT * FROM apps ORDER BY name')
+                filters.append('status = ?')
+                params.append(status_filter)
                 
+            if mode_filter and 'mode' in columns:
+                filters.append('mode = ?')
+                params.append(mode_filter)
+                
+            if filters:
+                query += ' WHERE ' + ' AND '.join(filters)
+                filter_desc = []
+                if status_filter:
+                    filter_desc.append(f"status: {status_filter}")
+                if mode_filter:
+                    filter_desc.append(f"mode: {mode_filter}")
+                print(f"Filtered by {', '.join(filter_desc)}")
+                
+            query += ' ORDER BY name'
+            
+            cursor = conn.execute(query, params)
             apps = cursor.fetchall()
             
             if not apps:
@@ -311,6 +339,18 @@ class DockerVolumeDBViewer:
                         print(f"  {status['status']}: {status['count']}")
             except sqlite3.Error:
                 print("\nApp Status Breakdown: Not available")
+                
+            # Try scaling mode breakdown if mode column exists  
+            try:
+                cursor = conn.execute('SELECT mode, COUNT(*) as count FROM apps GROUP BY mode')
+                app_modes = cursor.fetchall()
+                
+                if app_modes:
+                    print(f"\nScaling Mode Breakdown:")
+                    for mode in app_modes:
+                        print(f"  {mode['mode']}: {mode['count']}")
+            except sqlite3.Error:
+                print("\nScaling Mode Breakdown: Not available")
                     
             # Try instance status breakdown if status column exists
             try:
@@ -383,6 +423,10 @@ Examples:
     parser.add_argument('--status', 
                        help='Filter by status')
                        
+    parser.add_argument('--mode', 
+                       choices=['auto', 'manual'],
+                       help='Filter by scaling mode')
+                       
     parser.add_argument('--type', 
                        help='Filter by event type')
                        
@@ -402,7 +446,7 @@ Examples:
             if args.command == 'summary':
                 viewer.view_summary()
             elif args.command == 'apps':
-                viewer.view_apps(status_filter=args.status)
+                viewer.view_apps(status_filter=args.status, mode_filter=args.mode)
             elif args.command == 'instances':
                 viewer.view_instances(app_filter=args.app)
             elif args.command == 'events':

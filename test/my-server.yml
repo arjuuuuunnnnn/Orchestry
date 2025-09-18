@@ -1,0 +1,29 @@
+apiVersion: v1
+kind: App
+metadata:
+  name: my-server
+  labels:
+    app: "my-server"
+    version: "v1"
+spec:
+  type: http
+  image: "testing:latest"
+  ports:
+    - containerPort: 9010
+      protocol: HTTP
+  resources:
+    cpu: "100m"
+    memory: "128Mi"
+scaling:
+  mode: auto #manual
+  minReplicas: 1
+  maxReplicas: 5
+  targetRPSPerReplica: 100
+  maxP95LatencyMs: 500
+  scaleOutThresholdPct: 80
+  scaleInThresholdPct: 60
+healthCheck:
+  path: "/"
+  port: 9010
+  initialDelaySeconds: 5
+  periodSeconds: 10

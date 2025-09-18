@@ -62,11 +62,48 @@ def status(name: str):
 @app.command()
 def scale(name: str, replicas: int):
     """Scale app to specific replica count."""
-    response = requests.post(
-        f"{API_URL}/apps/{name}/scale",
-        json={"replicas": replicas}
-    )
-    typer.echo(response.json())
+    # First, get app info to check scaling mode
+    try:
+        info_response = requests.get(f"{API_URL}/apps/{name}/status")
+        if info_response.status_code == 404:
+            typer.echo(f"Error: App '{name}' not found")
+            raise typer.Exit(1)
+        elif info_response.status_code != 200:
+            typer.echo(f"Error: {info_response.json()}")
+            raise typer.Exit(1)
+        
+        app_info = info_response.json()
+        app_mode = app_info.get('mode', 'auto')
+        
+        # Inform user about the scaling mode
+        if app_mode == 'manual':
+            typer.echo(f"Scaling '{name}' to {replicas} replicas (manual mode)")
+        else:
+            typer.echo(f"Scaling '{name}' to {replicas} replicas (auto mode - may be overridden by autoscaler)")
+        
+        # Perform the scaling
+        response = requests.post(
+            f"{API_URL}/apps/{name}/scale",
+            json={"replicas": replicas}
+        )
+        
+        if response.status_code == 200:
+            result = response.json()
+            typer.echo(result)
+            
+            # Additional guidance for auto mode
+            if app_mode == 'auto':
+                typer.echo("\n💡 Tip: This app uses automatic scaling. To use manual scaling, set 'mode: manual' in the scaling section of your YAML spec.")
+        else:
+            typer.echo(f"Error: {response.json()}")
+            raise typer.Exit(1)
+            
+    except requests.exceptions.RequestException as e:
+        typer.echo(f"Error: Unable to connect to API - {e}")
+        raise typer.Exit(1)
+    except Exception as e:
+        typer.echo(f"Error: {e}")
+        raise typer.Exit(1)
 
 @app.command()
 def list():
