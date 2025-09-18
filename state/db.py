@@ -25,6 +25,7 @@ class AppRecord:
     updated_at: float
     replicas: int = 0
     last_scaled_at: Optional[float] = None
+    mode: str = 'auto'  # 'auto' or 'manual'
 
 @dataclass
 class InstanceRecord:
@@ -78,7 +79,8 @@ class DatabaseManager:
                     created_at REAL NOT NULL,
                     updated_at REAL NOT NULL,
                     replicas INTEGER DEFAULT 0,
-                    last_scaled_at REAL
+                    last_scaled_at REAL,
+                    mode TEXT DEFAULT 'auto'
                 )
             ''')
             
@@ -130,6 +132,7 @@ class DatabaseManager:
             conn.execute('CREATE INDEX IF NOT EXISTS idx_events_app_time ON events (app_name, timestamp)')
             conn.execute('CREATE INDEX IF NOT EXISTS idx_events_type_time ON events (event_type, timestamp)')
             conn.execute('CREATE INDEX IF NOT EXISTS idx_apps_status ON apps (status)')
+            conn.execute('CREATE INDEX IF NOT EXISTS idx_apps_mode ON apps (mode)')
             conn.execute('CREATE INDEX IF NOT EXISTS idx_instances_app ON instances (app_name)')
             conn.execute('CREATE INDEX IF NOT EXISTS idx_instances_status ON instances (status)')
             conn.execute('CREATE INDEX IF NOT EXISTS idx_scaling_app_time ON scaling_history (app_name, timestamp)')
@@ -163,8 +166,8 @@ class DatabaseManager:
                 with self._get_connection() as conn:
                     conn.execute('''
                         INSERT OR REPLACE INTO apps 
-                        (name, spec, status, created_at, updated_at, replicas, last_scaled_at)
-                        VALUES (?, ?, ?, ?, ?, ?, ?)
+                        (name, spec, status, created_at, updated_at, replicas, last_scaled_at, mode)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                     ''', (
                         app_record.name,
                         json.dumps(app_record.spec),
@@ -172,7 +175,8 @@ class DatabaseManager:
                         app_record.created_at,
                         app_record.updated_at,
                         app_record.replicas,
-                        app_record.last_scaled_at
+                        app_record.last_scaled_at,
+                        app_record.mode
                     ))
                     conn.commit()
                     return True
@@ -197,7 +201,8 @@ class DatabaseManager:
                             created_at=row['created_at'],
                             updated_at=row['updated_at'],
                             replicas=row['replicas'],
-                            last_scaled_at=row['last_scaled_at']
+                            last_scaled_at=row['last_scaled_at'],
+                            mode=row['mode'] if 'mode' in row.keys() else 'auto'  # Default to 'auto' for backward compatibility
                         )
             except sqlite3.Error as e:
                 logger.error(f"Failed to get app {name}: {e}")
@@ -223,7 +228,8 @@ class DatabaseManager:
                             'created_at': row['created_at'],
                             'updated_at': row['updated_at'],
                             'replicas': row['replicas'],
-                            'last_scaled_at': row['last_scaled_at']
+                            'last_scaled_at': row['last_scaled_at'],
+                            'mode': row['mode'] if 'mode' in row.keys() else 'auto'  # Default to 'auto' for backward compatibility
                         }
                         for row in cursor.fetchall()
                     ]
@@ -586,7 +592,7 @@ class DatabaseManager:
             app_name=app_name,
             from_replicas=old_replicas,
             to_replicas=new_replicas,
-            trigger_reason=full_reason,
+            reason=full_reason,
             metrics_snapshot=metrics
         )
         

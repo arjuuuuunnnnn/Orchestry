@@ -58,6 +58,7 @@ class AppStatusResponse(BaseModel):
     replicas: int
     ready_replicas: int
     instances: List[Dict]
+    mode: str = "auto"
 
 # Global components - initialized when starting the API
 app_manager: Optional[AppManager] = None
@@ -127,8 +128,16 @@ async def startup_event():
                 # Parse the raw_spec to get scaling configuration
                 import json
                 try:
-                    raw_spec = json.loads(app["raw_spec"])
-                    scaling_config = raw_spec.get("scaling", {})
+                    # Try to get raw_spec first, fallback to parsed spec
+                    if "raw_spec" in app and app["raw_spec"]:
+                        raw_spec = json.loads(app["raw_spec"])
+                        scaling_config = raw_spec.get("scaling", {})
+                    else:
+                        # Use the parsed spec if raw_spec is not available
+                        # The spec is already a dict in the modern database
+                        parsed_spec = app.get("spec", {})
+                        scaling_config = parsed_spec.get("scaling", {})
+                    
                     logger.info(f"Scaling config for {app_name}: {scaling_config}")
                     
                     from .scaler import ScalingPolicy
@@ -269,8 +278,12 @@ def background_monitoring():
                 # Add metrics to scaler
                 auto_scaler.add_metrics(app_name, metrics)
                 
+                # Get app mode from database
+                app_record = state_store.get_app(app_name)
+                app_mode = app_record.mode if app_record else "auto"
+                
                 # Evaluate scaling decision
-                decision = auto_scaler.evaluate_scaling(app_name, len(instances))
+                decision = auto_scaler.evaluate_scaling(app_name, len(instances), mode=app_mode)
                 
                 # Debug: Always log scaling decisions for debugging
                 policy = auto_scaler.get_policy(app_name)
@@ -407,6 +420,13 @@ async def app_status(name: str):
         
         if "error" in result:
             raise HTTPException(status_code=404, detail=result["error"])
+        
+        # Get app mode from database
+        app_record = state_store.get_app(name)
+        app_mode = app_record.mode if app_record else "auto"
+        
+        # Add mode to the result
+        result["mode"] = app_mode
         
         return AppStatusResponse(**result)
         
@@ -575,7 +595,11 @@ async def simulate_metrics(name: str, sim: SimulatedMetricsRequest):
         evaluation = None
         action = None
         if sim.evaluate:
-            evaluation = auto_scaler.evaluate_scaling(name, replica_count)
+            # Get app mode from database
+            app_record = state_store.get_app(name)
+            app_mode = app_record.mode if app_record else "auto"
+            
+            evaluation = auto_scaler.evaluate_scaling(name, replica_count, mode=app_mode)
             if evaluation.should_scale:
                 result = app_manager.scale(name, evaluation.target_replicas)
                 if result.get('status') == 'scaled':

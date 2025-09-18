@@ -37,6 +37,11 @@ class ScalingMetric(str, Enum):
     LATENCY = "latency"
     CONNECTIONS = "connections"
 
+class ScalingMode(str, Enum):
+    """Scaling modes."""
+    AUTO = "auto"
+    MANUAL = "manual"
+
 # Base models
 
 class EnvVar(BaseModel):
@@ -76,6 +81,7 @@ class HealthCheck(BaseModel):
 
 class ScalingPolicy(BaseModel):
     """Autoscaling policy configuration."""
+    mode: ScalingMode = Field(ScalingMode.AUTO, description="Scaling mode: auto or manual")
     minReplicas: int = Field(1, ge=0, le=100, description="Minimum number of replicas")
     maxReplicas: int = Field(5, ge=1, le=100, description="Maximum number of replicas")
     targetCPUUtilizationPercentage: Optional[int] = Field(70, ge=1, le=100)
@@ -262,6 +268,7 @@ def get_default_spec(app_name: str, image: str) -> Dict[str, Any]:
             }
         },
         "scaling": {
+            "mode": "auto",
             "minReplicas": 1,
             "maxReplicas": 3,
             "targetRPSPerReplica": 50,
@@ -330,6 +337,7 @@ def get_example_specs() -> Dict[str, Dict[str, Any]]:
                 }
             },
             "scaling": {
+                "mode": "auto",
                 "minReplicas": 2,
                 "maxReplicas": 10,
                 "targetRPSPerReplica": 100,
@@ -373,6 +381,7 @@ def get_example_specs() -> Dict[str, Dict[str, Any]]:
                 }
             },
             "scaling": {
+                "mode": "manual",  # ML services often need manual scaling due to model loading time
                 "minReplicas": 1,
                 "maxReplicas": 5,
                 "targetRPSPerReplica": 20,
