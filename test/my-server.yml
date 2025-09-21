@@ -3,7 +3,7 @@ kind: App
 metadata:
   name: my-server
   labels:
-    app: "my-server"
+    app: "my-server" #must be dns compatible
     version: "v1"
 spec:
   type: http

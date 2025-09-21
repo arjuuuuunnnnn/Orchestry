@@ -33,8 +33,14 @@ class HealthChecker:
     def __init__(self):
         self.health_configs: Dict[str, HealthCheckConfig] = {}
         self.health_status: Dict[str, HealthStatus] = {}
+        self.container_info: Dict[str, Dict] = {}  # Store container IP and port info
         self.session: Optional[aiohttp.ClientSession] = None
         self._running = False
+        self._health_change_callback = None  # Callback for when health status changes
+        
+    def set_health_change_callback(self, callback):
+        """Set callback function to be called when container health status changes."""
+        self._health_change_callback = callback
         
     async def start(self):
         """Start the health checker background task."""
@@ -59,12 +65,14 @@ class HealthChecker:
         target_key = f"{ip}:{port}"
         self.health_configs[container_id] = config or HealthCheckConfig()
         self.health_status[container_id] = HealthStatus(is_healthy=False)
-        logger.info(f"Added health check target: {target_key}")
+        self.container_info[container_id] = {"ip": ip, "port": port}
+        logger.info(f"Added health check target: {target_key} for container {container_id}")
     
     def remove_target(self, container_id: str):
         """Remove a container from health monitoring."""
         self.health_configs.pop(container_id, None)
         self.health_status.pop(container_id, None)
+        self.container_info.pop(container_id, None)
         logger.info(f"Removed health check target: {container_id}")
     
     def get_health_status(self, container_id: str) -> Optional[HealthStatus]:
@@ -137,32 +145,54 @@ class HealthChecker:
                 
                 # Mark as healthy if we've had enough consecutive successes
                 if status.consecutive_successes >= config.success_threshold:
-                    if not status.is_healthy:
-                        logger.info(f"Container {container_id} is now healthy")
+                    was_unhealthy = not status.is_healthy
                     status.is_healthy = True
+                    if was_unhealthy:
+                        logger.info(f"Container {container_id} is now healthy")
+                        # Notify callback of health status change
+                        if self._health_change_callback:
+                            self._health_change_callback(container_id, True)
             else:
                 status.consecutive_failures += 1
                 status.consecutive_successes = 0
                 
                 # Mark as unhealthy if we've had too many consecutive failures
                 if status.consecutive_failures >= config.failure_threshold:
-                    if status.is_healthy:
-                        logger.warning(f"Container {container_id} is now unhealthy")
+                    was_healthy = status.is_healthy
                     status.is_healthy = False
+                    if was_healthy:
+                        logger.warning(f"Container {container_id} is now unhealthy")
+                        # Notify callback of health status change
+                        if self._health_change_callback:
+                            self._health_change_callback(container_id, False)
                     
         except Exception as e:
             logger.error(f"Health check failed for container {container_id}: {e}")
             status.consecutive_failures += 1
             status.consecutive_successes = 0
             if status.consecutive_failures >= config.failure_threshold:
+                was_healthy = status.is_healthy
                 status.is_healthy = False
+                if was_healthy:
+                    logger.warning(f"Container {container_id} marked unhealthy due to health check failure")
+                    # Notify callback of health status change
+                    if self._health_change_callback:
+                        self._health_change_callback(container_id, False)
     
     def _get_container_info(self, container_id: str) -> Optional[Dict]:
-        """Get container IP and port info. This would be provided by the manager."""
-        # This is a placeholder method. In the real implementation,
-        # the manager would provide this information or we'd store it
-        # when adding targets.
-        return None
+        """Get container IP and port info."""
+        return self.container_info.get(container_id)
+
+    @staticmethod
+    def create_config_from_spec(health_spec: Dict) -> HealthCheckConfig:
+        """Create HealthCheckConfig from YAML health specification."""
+        return HealthCheckConfig(
+            path=health_spec.get("path", "/healthz"),
+            interval_seconds=health_spec.get("periodSeconds", 5),
+            timeout_seconds=health_spec.get("timeoutSeconds", 2),
+            failure_threshold=health_spec.get("failureThreshold", 3),
+            success_threshold=health_spec.get("successThreshold", 1)
+        )
     
     async def _perform_http_check(self, ip: str, port: int, config: HealthCheckConfig) -> bool:
         """Perform an HTTP health check against a container."""

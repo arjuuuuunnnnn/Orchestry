@@ -10,10 +10,18 @@ load_dotenv()
 
 app = typer.Typer(name="autoserve", help="AutoServe SDK CLI")
 
-API_URL = os.getenv("API_URL")
-if not API_URL:
-    typer.echo("Error: API_URL environment variable is required. Please set it in .env file.", err=True)
+AUTOSERVE_HOST = os.getenv("AUTOSERVE_HOST")
+if not AUTOSERVE_HOST:
+    typer.echo("Error: AUTOSERVE_HOST environment variable is required. Please set it in .env file.", err=True)
     raise typer.Exit(1)
+
+AUTOSERVE_PORT = os.getenv("AUTOSERVE_PORT")
+if not AUTOSERVE_PORT:
+    typer.echo("Error: AUTOSERVE_PORT environment variable is required. Please set it in .env file.", err=True)
+    raise typer.Exit(1)
+
+
+API_URL = f"http://{AUTOSERVE_HOST}:{AUTOSERVE_PORT}"
 
 @app.command()
 def register(config: str):
