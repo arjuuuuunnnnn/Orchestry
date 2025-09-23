@@ -1,0 +1,2 @@
+[console_scripts]
+autoserve = cli.main:app

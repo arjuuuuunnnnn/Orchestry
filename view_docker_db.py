@@ -8,17 +8,17 @@ Usage:
     python view_docker_db.py apps --status running --mode auto  # Filter apps
     python view_docker_db.py summary       # View database summary
     python view_docker_db.py instances     # View         Examples:
-  python view_docker_db.py summary              # Show database overview
-  python view_docker_db.py apps                 # List all applications
-  python view_docker_db.py apps --status running # Filter apps by status
-  python view_docker_db.py apps --mode manual   # Filter apps by scaling mode
-  python view_docker_db.py apps --status running --mode auto # Multiple filters
-  python view_docker_db.py instances            # Show all instances  
-  python view_docker_db.py instances --app myapp # Filter by app name
-  python view_docker_db.py events               # Show recent events
-  python view_docker_db.py events --type scaling # Filter by event type
-  python view_docker_db.py scaling              # Show scaling history
-  python view_docker_db.py scaling --app myapp  # App-specific scalinginstances
+    python view_docker_db.py summary              # Show database overview
+    python view_docker_db.py apps                 # List all applications
+    python view_docker_db.py apps --status running # Filter apps by status
+    python view_docker_db.py apps --mode manual   # Filter apps by scaling mode
+    python view_docker_db.py apps --status running --mode auto # Multiple filters
+    python view_docker_db.py instances            # Show all instances  
+    python view_docker_db.py instances --app myapp # Filter by app name
+    python view_docker_db.py events               # Show recent events
+    python view_docker_db.py events --type scaling # Filter by event type
+    python view_docker_db.py scaling              # Show scaling history
+    python view_docker_db.py scaling --app myapp  # App-specific scalinginstances
     python view_docker_db.py events        # View system events
     python view_docker_db.py scaling       # View scaling history
     python view_docker_db.py --help        # Show help
