@@ -96,6 +96,8 @@ This will start:
 
 ### 4. Install CLI
 ```bash
+python -m venv .autoserveenv
+source .autoserveenv/bin/activate
 pip install -e .
 ```
 
