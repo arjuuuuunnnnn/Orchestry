@@ -15,8 +15,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application code
 COPY . .
 
-# Create necessary directories
-RUN mkdir -p /app/data /app/logs /nginx-config
+# Create necessary directories with proper permissions
+RUN mkdir -p /app/data /app/logs /nginx-config && \
+    chmod 755 /app/logs /app/data
 
 # Set environment variables
 ENV PYTHONPATH=/app

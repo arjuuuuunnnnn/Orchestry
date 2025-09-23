@@ -22,14 +22,31 @@ sys.path.insert(0, str(project_root))
 
 def setup_logging(level: str = "INFO"):
     """Set up logging configuration."""
+    # Determine the appropriate logs directory
+    # In Docker, use /app/logs (mounted volume)
+    # Locally, use ./logs relative to project root
+    if os.path.exists('/app/logs'):
+        logs_dir = Path('/app/logs')
+    else:
+        logs_dir = Path(__file__).parent.parent / 'logs'
+    
+    # Ensure logs directory exists
+    logs_dir.mkdir(exist_ok=True)
+    
+    log_file_path = logs_dir / 'autoserve-controller.log'
+    
     logging.basicConfig(
         level=getattr(logging, level.upper()),
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
         handlers=[
             logging.StreamHandler(),
-            logging.FileHandler('autoserve-controller.log')
+            logging.FileHandler(log_file_path)
         ]
     )
+    
+    # Log where we're writing logs to
+    logger = logging.getLogger(__name__)
+    logger.info(f"Logging to file: {log_file_path}")
 
 def signal_handler(signum, frame):
     """Handle shutdown signals gracefully."""
@@ -97,13 +114,18 @@ def main():
         import uvicorn
         from controller.api import app
         
+        # Configure uvicorn logging to work with our setup
+        log_config = uvicorn.config.LOGGING_CONFIG
+        log_config["handlers"]["default"]["stream"] = "ext://sys.stdout"
+        
         # Run the FastAPI server
         uvicorn.run(
             app, 
             host=host, 
             port=port,
             log_level=args.log_level.lower(),
-            access_log=True
+            access_log=True,
+            log_config=log_config
         )
         
     except ImportError:
