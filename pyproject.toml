@@ -1,0 +1,82 @@
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "autoserve"
+version = "1.0.0"
+description = "AutoServe - Automatic scaling and load balancing for containerized applications"
+authors = [{name = "Hemanth S Banur", email = "arjunbanur27@gmail.com"}]
+readme = "README.md"
+requires-python = ">=3.8"
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers", 
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+]
+dependencies = [
+    "aiohappyeyeballs==2.6.1",
+    "aiohttp==3.11.10",
+    "aiosignal==1.4.0",
+    "annotated-types==0.7.0",
+    "anyio==4.10.0",
+    "attrs==25.3.0",
+    "certifi==2025.8.3",
+    "charset-normalizer==3.4.3",
+    "click==8.2.1",
+    "docker==7.1.0",
+    "fastapi==0.115.5",
+    "frozenlist==1.7.0",
+    "h11==0.16.0",
+    "idna==3.10",
+    "Jinja2==3.1.4",
+    "markdown-it-py==4.0.0",
+    "MarkupSafe==3.0.2",
+    "mdurl==0.1.2",
+    "multidict==6.6.4",
+    "propcache==0.3.2",
+    "psutil==6.1.0",
+    "pydantic==2.10.3",
+    "pydantic_core==2.27.1",
+    "Pygments==2.19.2",
+    "python-dotenv==1.1.1",
+    "PyYAML==6.0.2",
+    "requests==2.32.5",
+    "rich==14.1.0",
+    "shellingham==1.5.4",
+    "sniffio==1.3.1",
+    "starlette==0.41.3",
+    "typer==0.17.4",
+    "typing-inspection==0.4.1",
+    "typing_extensions==4.15.0",
+    "urllib3==2.5.0",
+    "uvicorn==0.32.1",
+    "yarl==1.20.1"
+]
+
+[tool.setuptools]
+packages = [
+    "cli",
+    "logs",
+    "data",
+    "state",
+    "docker",
+    "metrics",
+    "app_spec",
+    "controller",
+    "docker_configs"
+]
+
+[project.scripts]
+autoserve = "cli.main:app"
+
+[project.urls]
+Homepage = "https://github.com/arjuuuuunnnnn/AutoServe"
+Repository = "https://github.com/arjuuuuunnnnn/AutoServe"
