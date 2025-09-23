@@ -11,4 +11,4 @@ hello.md
 logs/
 Env/
 manual.md
-auto_serve.egg-info/
+autoserve.egg-info
