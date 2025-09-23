@@ -1,9 +1,0 @@
-app_spec
-cli
-controller
-data
-docker
-docker_configs
-logs
-metrics
-state
