@@ -17,7 +17,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from .manager import AppManager
-from state.db import DatabaseManager
+from state.db import get_database_manager
 from .nginx import DockerNginxManager
 from .scaler import AutoScaler, ScalingPolicy, ScalingMetrics
 from .health import HealthChecker
@@ -62,7 +62,7 @@ class AppStatusResponse(BaseModel):
 
 # Global components - initialized when starting the API
 app_manager: Optional[AppManager] = None
-state_store: Optional[DatabaseManager] = None
+state_store: Optional[Any] = None
 nginx_manager: Optional[DockerNginxManager] = None
 auto_scaler: Optional[AutoScaler] = None
 health_checker: Optional[HealthChecker] = None
@@ -98,13 +98,9 @@ async def startup_event():
     global monitoring_task, monitoring_active
     
     try:
-        # Initialize components with environment-based configuration
-        db_path = os.getenv("AUTOSERVE_DB_PATH")
-        if not db_path:
-            logger.error("AUTOSERVE_DB_PATH environment variable is required. Please set it in .env file.")
-            raise RuntimeError("Missing required environment variable: AUTOSERVE_DB_PATH")
-            
-        state_store = DatabaseManager(db_path)
+        # Initialize PostgreSQL High Availability database cluster
+        logger.info("🚀 Initializing PostgreSQL HA database cluster...")
+        state_store = get_database_manager()
         nginx_manager = DockerNginxManager()
         auto_scaler = AutoScaler()
         health_checker = HealthChecker()

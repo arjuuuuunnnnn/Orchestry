@@ -7,10 +7,10 @@ import docker
 import time
 import logging
 import threading
-from typing import Dict, Optional
+from typing import Dict, Optional, Any
 from dataclasses import dataclass
 
-from state.db import DatabaseManager, AppRecord
+from state.db import get_database_manager, AppRecord
 from .nginx import DockerNginxManager
 from .health import HealthChecker
 
@@ -28,9 +28,9 @@ class ContainerInstance:
     failures: int = 0
 
 class AppManager:
-    def __init__(self, state_store: DatabaseManager = None, nginx_manager: DockerNginxManager = None):
+    def __init__(self, state_store: Any = None, nginx_manager: DockerNginxManager = None):
         self.client = docker.from_env()
-        self.state_store = state_store or DatabaseManager()
+        self.state_store = state_store or get_database_manager()
         self.nginx = nginx_manager or DockerNginxManager()
         self.health_checker = HealthChecker()
         # Set up callback for health status changes

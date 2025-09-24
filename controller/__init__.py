@@ -6,7 +6,7 @@ Docker autoscaling SDK.
 
 Components:
 - AppManager: Container lifecycle management
-- StateStore: Persistent state management 
+- PostgreSQL Database: High-availability persistent state management 
 - NginxManager: Nginx configuration management
 - AutoScaler: Autoscaling decision engine
 - HealthChecker: Container health monitoring
@@ -14,7 +14,6 @@ Components:
 """
 
 from .manager import AppManager, ContainerInstance
-from .state import StateStore
 from .nginx import DockerNginxManager, NginxManager  # NginxManager is alias for backward compatibility
 from .scaler import AutoScaler, ScalingPolicy, ScalingMetrics, ScalingDecision
 from .health import HealthChecker, HealthCheckConfig, HealthStatus
@@ -25,7 +24,6 @@ __version__ = "1.0.0"
 __all__ = [
     "AppManager",
     "ContainerInstance", 
-    "StateStore",
     "DockerNginxManager",
     "NginxManager",
     "AutoScaler",

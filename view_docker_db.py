@@ -1,13 +1,18 @@
 #!/usr/bin/env python3
 """
-Docker Volume Database Viewer for AutoServe
-View the SQLite database stored in the Docker volume.
+Docker Database Viewer for AutoServe
+View the PostgreSQL databases (primary and replica) in AutoServe.
 
 Usage:
     python view_docker_db.py apps          # View all apps
     python view_docker_db.py apps --status running --mode auto  # Filter apps
     python view_docker_db.py summary       # View database summary
-    python view_docker_db.py instances     # View         Examples:
+    python view_docker_db.py instances     # View instances
+    python view_docker_db.py events        # View system events
+    python view_docker_db.py scaling       # View scaling history
+    python view_docker_db.py --help        # Show help
+
+Examples:
     python view_docker_db.py summary              # Show database overview
     python view_docker_db.py apps                 # List all applications
     python view_docker_db.py apps --status running # Filter apps by status
@@ -18,78 +23,80 @@ Usage:
     python view_docker_db.py events               # Show recent events
     python view_docker_db.py events --type scaling # Filter by event type
     python view_docker_db.py scaling              # Show scaling history
-    python view_docker_db.py scaling --app myapp  # App-specific scalinginstances
-    python view_docker_db.py events        # View system events
-    python view_docker_db.py scaling       # View scaling history
-    python view_docker_db.py --help        # Show help
+    python view_docker_db.py scaling --app myapp  # App-specific scaling
+    python view_docker_db.py --database replica   # View replica database
+    python view_docker_db.py --database primary   # View primary database (default)
 """
 
 import sys
-import sqlite3
 import json
-import subprocess
-import tempfile
 import os
 from datetime import datetime
-from typing import Dict, List, Any, Optional
+from typing import Optional, Dict, Any
 import argparse
 
-class DockerVolumeDBViewer:
-    """Viewer for AutoServe database in Docker volume."""
+try:
+    import psycopg2
+    import psycopg2.extras
+except ImportError:
+    print("Error: psycopg2 not found. Please install with: pip install psycopg2-binary")
+    sys.exit(1)
+
+class PostgreSQLDBViewer:
+    """Viewer for AutoServe PostgreSQL databases (primary and replica)."""
     
-    def __init__(self, volume_name: str = "autoserve_autoserve_db_data"):
-        self.volume_name = volume_name
-        self.temp_db_path = None
-        self.temp_dir = None
+    def __init__(self, 
+                 primary_host: str = "localhost", 
+                 primary_port: int = 5432,
+                 replica_host: str = "localhost", 
+                 replica_port: int = 5433,
+                 database: str = "autoserve",
+                 username: str = "autoserve",
+                 password: str = "autoserve_password",
+                 target_db: str = "primary"):
         
-    def _copy_db_from_volume(self) -> str:
-        """Copy database from Docker volume to temporary location."""
-        # Create temporary directory with proper permissions
-        temp_dir = tempfile.mkdtemp(prefix='autoserve_db_')
-        temp_path = os.path.join(temp_dir, 'autoscaler.db')
+        self.primary_dsn = f"host={primary_host} port={primary_port} dbname={database} user={username} password={password}"
+        self.replica_dsn = f"host={replica_host} port={replica_port} dbname={database} user={username} password={password}"
+        self.target_db = target_db
+        self.connection = None
         
-        # Copy database from volume using docker run
-        cmd = [
-            'docker', 'run', '--rm',
-            '-v', f'{self.volume_name}:/volume:ro',
-            '-v', f'{temp_dir}:/output',
-            'alpine:latest',
-            'sh', '-c', f'cp /volume/autoscaler.db /output/ && chmod 644 /output/autoscaler.db'
-        ]
-        
-        try:
-            result = subprocess.run(cmd, capture_output=True, text=True, check=True)
-            self.temp_db_path = temp_path
-            self.temp_dir = temp_dir
-            return temp_path
-        except subprocess.CalledProcessError as e:
-            print(f"Error copying database from volume: {e.stderr}")
-            if os.path.exists(temp_dir):
-                import shutil
-                shutil.rmtree(temp_dir, ignore_errors=True)
-            raise
-            
-    def _cleanup(self):
-        """Clean up temporary database file."""
-        if hasattr(self, 'temp_dir') and self.temp_dir and os.path.exists(self.temp_dir):
-            import shutil
-            shutil.rmtree(self.temp_dir, ignore_errors=True)
-            self.temp_dir = None
-        if self.temp_db_path:
-            self.temp_db_path = None
-            
     def __enter__(self):
-        self._copy_db_from_volume()
+        self._connect()
         return self
         
     def __exit__(self, exc_type, exc_val, exc_tb):
-        self._cleanup()
+        if self.connection:
+            self.connection.close()
+            
+    def _connect(self):
+        """Connect to the target database."""
+        dsn = self.primary_dsn if self.target_db == "primary" else self.replica_dsn
+        db_type = "Primary" if self.target_db == "primary" else "Replica"
+        
+        try:
+            print(f"Connecting to {db_type} database...")
+            self.connection = psycopg2.connect(dsn)
+            self.connection.set_session(readonly=True)  # Read-only for safety
+            print(f"✅ Connected to {db_type} database successfully")
+        except psycopg2.Error as e:
+            print(f"❌ Failed to connect to {db_type} database: {e}")
+            # Try the other database as fallback
+            if self.target_db == "replica":
+                print("Attempting to connect to Primary database as fallback...")
+                try:
+                    self.connection = psycopg2.connect(self.primary_dsn)
+                    self.connection.set_session(readonly=True)
+                    print("✅ Connected to Primary database (fallback)")
+                except psycopg2.Error as e2:
+                    raise Exception(f"Failed to connect to both databases. Primary: {e2}, Replica: {e}")
+            else:
+                raise
         
     def _get_connection(self):
-        """Get SQLite connection."""
-        if not self.temp_db_path:
-            raise RuntimeError("Database not copied from volume")
-        return sqlite3.connect(self.temp_db_path, timeout=30.0)
+        """Get PostgreSQL connection."""
+        if not self.connection:
+            raise RuntimeError("Database not connected")
+        return self.connection
         
     def _format_timestamp(self, timestamp: float) -> str:
         """Format timestamp as readable date."""
@@ -113,12 +120,18 @@ class DockerVolumeDBViewer:
         print("APPLICATIONS")
         print("=" * 80)
         
-        with self._get_connection() as conn:
-            conn.row_factory = sqlite3.Row
-            
+        conn = self._get_connection()
+        cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        
+        try:
             # First, let's see what columns exist
-            cursor = conn.execute("PRAGMA table_info(apps)")
-            columns = [col['name'] for col in cursor.fetchall()]
+            cursor.execute("""
+                SELECT column_name 
+                FROM information_schema.columns 
+                WHERE table_name = 'apps' 
+                ORDER BY ordinal_position
+            """)
+            columns = [row['column_name'] for row in cursor.fetchall()]
             
             # Build query with filters
             query = 'SELECT * FROM apps'
@@ -126,11 +139,11 @@ class DockerVolumeDBViewer:
             filters = []
             
             if status_filter and 'status' in columns:
-                filters.append('status = ?')
+                filters.append('status = %s')
                 params.append(status_filter)
                 
             if mode_filter and 'mode' in columns:
-                filters.append('mode = ?')
+                filters.append('mode = %s')
                 params.append(mode_filter)
                 
             if filters:
@@ -144,7 +157,7 @@ class DockerVolumeDBViewer:
                 
             query += ' ORDER BY name'
             
-            cursor = conn.execute(query, params)
+            cursor.execute(query, params)
             apps = cursor.fetchall()
             
             if not apps:
@@ -160,17 +173,23 @@ class DockerVolumeDBViewer:
                         continue
                     value = app[col]
                     if col in ['created_at', 'updated_at'] and value:
-                        value = self._format_timestamp(value)
-                    elif value and col in ['env', 'ports', 'health', 'resources', 'scaling', 'retries', 'termination', 'volumes', 'labels']:
-                        try:
-                            # Try to format as JSON if it looks like JSON
-                            if isinstance(value, str) and (value.startswith('{') or value.startswith('[')):
-                                value = self._format_json(value)
-                        except:
-                            pass
+                        if isinstance(value, (int, float)):
+                            value = self._format_timestamp(value)
+                        else:
+                            value = str(value)
+                    elif value and col in ['spec', 'env', 'ports', 'health', 'resources', 'scaling', 'retries', 'termination', 'volumes', 'labels']:
+                        if isinstance(value, dict):
+                            value = json.dumps(value, indent=2)
+                        elif isinstance(value, str) and (value.startswith('{') or value.startswith('[')):
+                            value = self._format_json(value)
                     
                     print(f"  {col.replace('_', ' ').title()}: {value}")
                 print("-" * 40)
+                
+        except psycopg2.Error as e:
+            print(f"Error querying apps: {e}")
+        finally:
+            cursor.close()
                 
     def view_instances(self, app_filter: Optional[str] = None):
         """View container instances."""
@@ -178,17 +197,18 @@ class DockerVolumeDBViewer:
         print("CONTAINER INSTANCES")
         print("=" * 80)
         
-        with self._get_connection() as conn:
-            conn.row_factory = sqlite3.Row
-            
+        conn = self._get_connection()
+        cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        
+        try:
             if app_filter:
-                cursor = conn.execute(
-                    'SELECT * FROM instances WHERE app = ? ORDER BY created_at DESC', 
+                cursor.execute(
+                    'SELECT * FROM instances WHERE app_name = %s ORDER BY created_at DESC', 
                     (app_filter,)
                 )
                 print(f"Filtered by app: {app_filter}")
             else:
-                cursor = conn.execute('SELECT * FROM instances ORDER BY app, created_at DESC')
+                cursor.execute('SELECT * FROM instances ORDER BY app_name, created_at DESC')
                 
             instances = cursor.fetchall()
             
@@ -197,17 +217,22 @@ class DockerVolumeDBViewer:
                 return
                 
             for instance in instances:
-                print(f"\nInstance ID: {instance['id']}")
-                print(f"  App: {instance['app']}")
-                print(f"  Container: {instance['container_id'][:12]}..." if instance['container_id'] else "N/A")
-                print(f"  State: {instance['state']}")
-                print(f"  Address: {instance['ip']}:{instance['port']}")
-                print(f"  CPU Usage: {instance['cpu_percent']:.1f}%" if instance['cpu_percent'] else "N/A")
-                print(f"  Memory Usage: {instance['memory_percent']:.1f}%" if instance['memory_percent'] else "N/A")
-                print(f"  Created: {self._format_timestamp(instance['created_at'])}")
-                print(f"  Last Seen: {self._format_timestamp(instance['last_seen'])}")
-                print(f"  Failures: {instance['failures']}")
+                print(f"\nInstance: {instance.get('container_id', 'N/A')[:12]}...")
+                print(f"  App: {instance.get('app_name', 'N/A')}")
+                print(f"  Container ID: {instance.get('container_id', 'N/A')}")
+                print(f"  Status: {instance.get('status', 'N/A')}")
+                print(f"  Address: {instance.get('ip', 'N/A')}:{instance.get('port', 'N/A')}")
+                print(f"  Created: {self._format_timestamp(instance.get('created_at'))}")
+                print(f"  Updated: {self._format_timestamp(instance.get('updated_at'))}")
+                print(f"  Failure Count: {instance.get('failure_count', 0)}")
+                if instance.get('last_health_check'):
+                    print(f"  Last Health Check: {self._format_timestamp(instance.get('last_health_check'))}")
                 print("-" * 40)
+                
+        except psycopg2.Error as e:
+            print(f"Error querying instances: {e}")
+        finally:
+            cursor.close()
                 
     def view_events(self, app_filter: Optional[str] = None, event_type_filter: Optional[str] = None, limit: int = 50):
         """View system events."""
@@ -215,26 +240,27 @@ class DockerVolumeDBViewer:
         print("SYSTEM EVENTS")
         print("=" * 80)
         
-        with self._get_connection() as conn:
-            conn.row_factory = sqlite3.Row
-            
+        conn = self._get_connection()
+        cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        
+        try:
             query = 'SELECT * FROM events WHERE 1=1'
             params = []
             
             if app_filter:
-                query += ' AND app = ?'
+                query += ' AND app_name = %s'
                 params.append(app_filter)
                 print(f"Filtered by app: {app_filter}")
                 
             if event_type_filter:
-                query += ' AND kind = ?'
+                query += ' AND event_type = %s'
                 params.append(event_type_filter)
                 print(f"Filtered by type: {event_type_filter}")
                 
-            query += ' ORDER BY timestamp DESC LIMIT ?'
+            query += ' ORDER BY timestamp DESC LIMIT %s'
             params.append(limit)
             
-            cursor = conn.execute(query, params)
+            cursor.execute(query, params)
             events = cursor.fetchall()
             
             if not events:
@@ -242,14 +268,24 @@ class DockerVolumeDBViewer:
                 return
                 
             for event in events:
-                print(f"\n[{self._format_timestamp(event['timestamp'])}] {event['kind'].upper()}")
-                print(f"  App: {event['app']}")
-                print(f"  ID: {event['id']}")
+                print(f"\n[{self._format_timestamp(event.get('timestamp'))}] {event.get('event_type', 'UNKNOWN').upper()}")
+                print(f"  App: {event.get('app_name', 'N/A')}")
+                print(f"  ID: {event.get('id', 'N/A')}")
+                print(f"  Message: {event.get('message', 'N/A')}")
                 
-                if event['payload']:
-                    payload = self._format_json(event['payload'])
-                    print(f"  Payload:\n    {payload.replace(chr(10), chr(10) + '    ')}")
+                if event.get('details'):
+                    details = event['details']
+                    if isinstance(details, dict):
+                        details = json.dumps(details, indent=2)
+                    elif isinstance(details, str):
+                        details = self._format_json(details)
+                    print(f"  Details:\n    {str(details).replace(chr(10), chr(10) + '    ')}")
                 print("-" * 40)
+                
+        except psycopg2.Error as e:
+            print(f"Error querying events: {e}")
+        finally:
+            cursor.close()
                 
     def view_scaling_history(self, app_filter: Optional[str] = None, limit: int = 30):
         """View scaling history."""
@@ -257,18 +293,37 @@ class DockerVolumeDBViewer:
         print("SCALING HISTORY")
         print("=" * 80)
         
-        with self._get_connection() as conn:
-            conn.row_factory = sqlite3.Row
+        conn = self._get_connection()
+        cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        
+        try:
+            # First check if scaling_history table exists, if not check events for scaling events
+            cursor.execute("""
+                SELECT table_name FROM information_schema.tables 
+                WHERE table_schema = 'public' AND table_name = 'scaling_history'
+            """)
             
-            if app_filter:
-                cursor = conn.execute(
-                    'SELECT * FROM scaling_history WHERE app = ? ORDER BY timestamp DESC LIMIT ?',
-                    (app_filter, limit)
-                )
-                print(f"Filtered by app: {app_filter}")
+            if cursor.fetchone():
+                # Use dedicated scaling_history table
+                if app_filter:
+                    cursor.execute(
+                        'SELECT * FROM scaling_history WHERE app_name = %s ORDER BY timestamp DESC LIMIT %s',
+                        (app_filter, limit)
+                    )
+                    print(f"Filtered by app: {app_filter}")
+                else:
+                    cursor.execute('SELECT * FROM scaling_history ORDER BY timestamp DESC LIMIT %s', (limit,))
             else:
-                cursor = conn.execute('SELECT * FROM scaling_history ORDER BY timestamp DESC LIMIT ?', (limit,))
-                
+                # Fall back to events table with scaling events
+                if app_filter:
+                    cursor.execute(
+                        'SELECT * FROM events WHERE app_name = %s AND event_type = %s ORDER BY timestamp DESC LIMIT %s',
+                        (app_filter, 'scaling', limit)
+                    )
+                    print(f"Filtered by app: {app_filter}")
+                else:
+                    cursor.execute('SELECT * FROM events WHERE event_type = %s ORDER BY timestamp DESC LIMIT %s', ('scaling', limit))
+                    
             scaling_events = cursor.fetchall()
             
             if not scaling_events:
@@ -276,101 +331,123 @@ class DockerVolumeDBViewer:
                 return
                 
             for event in scaling_events:
-                direction = "↗" if event['new_replicas'] > event['old_replicas'] else "↘" if event['new_replicas'] < event['old_replicas'] else "→"
+                timestamp = self._format_timestamp(event.get('timestamp'))
+                app_name = event.get('app_name', event.get('app', 'N/A'))
                 
-                print(f"\n[{self._format_timestamp(event['timestamp'])}] {direction} {event['app']}")
-                print(f"  Scale: {event['old_replicas']} → {event['new_replicas']}")
-                print(f"  Reason: {event['reason']}")
-                print(f"  Triggered By: {event['triggered_by']}")
+                print(f"\n[{timestamp}] 📊 {app_name}")
+                print(f"  Message: {event.get('message', 'N/A')}")
                 
-                if event['metrics']:
-                    metrics = self._format_json(event['metrics'])
-                    print(f"  Metrics:\n    {metrics.replace(chr(10), chr(10) + '    ')}")
+                # Try to extract scaling details from details/payload
+                details = event.get('details') or event.get('payload')
+                if details:
+                    if isinstance(details, dict):
+                        details_str = json.dumps(details, indent=2)
+                    elif isinstance(details, str):
+                        details_str = self._format_json(details)
+                    else:
+                        details_str = str(details)
+                    print(f"  Details:\n    {details_str.replace(chr(10), chr(10) + '    ')}")
                 print("-" * 40)
+                
+        except psycopg2.Error as e:
+            print(f"Error querying scaling history: {e}")
+        finally:
+            cursor.close()
                 
     def view_summary(self):
         """View database summary."""
         print("=" * 80)
-        print("DATABASE SUMMARY")
+        print(f"DATABASE SUMMARY - {self.target_db.upper()}")
         print("=" * 80)
         
-        with self._get_connection() as conn:
-            conn.row_factory = sqlite3.Row
+        conn = self._get_connection()
+        cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+        
+        try:
+            # Get all tables
+            cursor.execute("""
+                SELECT table_name FROM information_schema.tables 
+                WHERE table_schema = 'public' 
+                ORDER BY table_name
+            """)
+            tables = [row['table_name'] for row in cursor.fetchall()]
+            print(f"\nAvailable Tables: {', '.join(tables)}")
             
             # Count statistics
             stats = {}
             for table in ['apps', 'instances', 'events', 'scaling_history']:
                 try:
-                    cursor = conn.execute(f'SELECT COUNT(*) as count FROM {table}')
-                    stats[table] = cursor.fetchone()['count']
-                except sqlite3.Error as e:
+                    cursor.execute(f'SELECT COUNT(*) as count FROM {table}')
+                    result = cursor.fetchone()
+                    stats[table] = result['count'] if result else 0
+                except psycopg2.Error as e:
                     stats[table] = f"Error: {e}"
                 
             print(f"\nRecord Counts:")
-            print(f"  Applications: {stats['apps']}")
-            print(f"  Instances: {stats['instances']}")
-            print(f"  Events: {stats['events']}")
-            print(f"  Scaling History: {stats['scaling_history']}")
-            
-            # Check what tables actually exist
-            cursor = conn.execute("SELECT name FROM sqlite_master WHERE type='table'")
-            tables = [row['name'] for row in cursor.fetchall()]
-            print(f"\nAvailable Tables: {', '.join(tables)}")
+            print(f"  Applications: {stats.get('apps', 'N/A')}")
+            print(f"  Instances: {stats.get('instances', 'N/A')}")
+            print(f"  Events: {stats.get('events', 'N/A')}")
+            print(f"  Scaling History: {stats.get('scaling_history', 'N/A')}")
             
             # Get column info for apps table
             try:
-                cursor = conn.execute("PRAGMA table_info(apps)")
+                cursor.execute("""
+                    SELECT column_name, data_type 
+                    FROM information_schema.columns 
+                    WHERE table_name = 'apps' 
+                    ORDER BY ordinal_position
+                """)
                 columns = cursor.fetchall()
                 if columns:
                     print(f"\nApps Table Columns:")
                     for col in columns:
-                        print(f"  {col['name']} ({col['type']})")
-            except sqlite3.Error as e:
+                        print(f"  {col['column_name']} ({col['data_type']})")
+            except psycopg2.Error as e:
                 print(f"  Error getting table info: {e}")
             
             # Try app status breakdown if status column exists
             try:
-                cursor = conn.execute('SELECT status, COUNT(*) as count FROM apps GROUP BY status')
+                cursor.execute('SELECT status, COUNT(*) as count FROM apps GROUP BY status')
                 app_statuses = cursor.fetchall()
                 
                 if app_statuses:
                     print(f"\nApp Status Breakdown:")
                     for status in app_statuses:
                         print(f"  {status['status']}: {status['count']}")
-            except sqlite3.Error:
+            except psycopg2.Error:
                 print("\nApp Status Breakdown: Not available")
                 
             # Try scaling mode breakdown if mode column exists  
             try:
-                cursor = conn.execute('SELECT mode, COUNT(*) as count FROM apps GROUP BY mode')
+                cursor.execute('SELECT mode, COUNT(*) as count FROM apps GROUP BY mode')
                 app_modes = cursor.fetchall()
                 
                 if app_modes:
                     print(f"\nScaling Mode Breakdown:")
                     for mode in app_modes:
                         print(f"  {mode['mode']}: {mode['count']}")
-            except sqlite3.Error:
+            except psycopg2.Error:
                 print("\nScaling Mode Breakdown: Not available")
                     
             # Try instance status breakdown if status column exists
             try:
-                cursor = conn.execute('SELECT status, COUNT(*) as count FROM instances GROUP BY status')
+                cursor.execute('SELECT status, COUNT(*) as count FROM instances GROUP BY status')
                 instance_statuses = cursor.fetchall()
                 
                 if instance_statuses:
                     print(f"\nInstance Status Breakdown:")
                     for status in instance_statuses:
                         print(f"  {status['status']}: {status['count']}")
-            except sqlite3.Error:
+            except psycopg2.Error:
                 print("\nInstance Status Breakdown: Not available")
                     
             # Recent events by type
             try:
-                cursor = conn.execute('''
-                    SELECT kind, COUNT(*) as count 
+                cursor.execute('''
+                    SELECT event_type, COUNT(*) as count 
                     FROM events 
-                    WHERE timestamp > ? 
-                    GROUP BY kind 
+                    WHERE timestamp > %s 
+                    GROUP BY event_type 
                     ORDER BY count DESC
                 ''', (datetime.now().timestamp() - 86400,))  # Last 24 hours
                 recent_events = cursor.fetchall()
@@ -378,14 +455,21 @@ class DockerVolumeDBViewer:
                 if recent_events:
                     print(f"\nEvent Types (Last 24h):")
                     for event in recent_events:
-                        print(f"  {event['kind']}: {event['count']}")
-            except sqlite3.Error:
+                        print(f"  {event['event_type']}: {event['count']}")
+            except psycopg2.Error:
                 print("\nRecent Events: Not available")
-                    
-            # Database file info
-            if self.temp_db_path and os.path.exists(self.temp_db_path):
-                file_size = os.path.getsize(self.temp_db_path)
-                print(f"\nDatabase Size: {file_size:,} bytes ({file_size/1024:.1f} KB)")
+                
+            # Database connection info
+            print(f"\nDatabase Connection: {self.target_db.title()}")
+            if self.target_db == "primary":
+                print(f"  DSN: {self.primary_dsn}")
+            else:
+                print(f"  DSN: {self.replica_dsn}")
+                
+        except psycopg2.Error as e:
+            print(f"Error querying database: {e}")
+        finally:
+            cursor.close()
                 
         print("=" * 80)
 
@@ -393,7 +477,7 @@ class DockerVolumeDBViewer:
 def main():
     """Main entry point."""
     parser = argparse.ArgumentParser(
-        description='View AutoServe database from Docker volume',
+        description='View AutoServe PostgreSQL databases (primary and replica)',
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog='''
 Examples:
@@ -406,16 +490,49 @@ Examples:
   python view_docker_db.py events --type scaling # Filter by event type
   python view_docker_db.py scaling              # Show scaling history
   python view_docker_db.py scaling --app myapp  # App-specific scaling
+  python view_docker_db.py --database replica   # View replica database
+  python view_docker_db.py --database primary   # View primary database (default)
         '''
     )
     
     parser.add_argument('command', 
                        choices=['apps', 'summary', 'instances', 'events', 'scaling'],
                        help='What to view')
+    
+    parser.add_argument('--database', 
+                       choices=['primary', 'replica'],
+                       default='primary',
+                       help='Which database to connect to (default: primary)')
                        
-    parser.add_argument('--volume', 
-                       default='autoserve_autoserve_db_data',
-                       help='Docker volume name (default: autoserve_autoserve_db_data)')
+    parser.add_argument('--primary-host', 
+                       default='localhost',
+                       help='Primary database host (default: localhost)')
+                       
+    parser.add_argument('--primary-port', 
+                       type=int,
+                       default=5432,
+                       help='Primary database port (default: 5432)')
+                       
+    parser.add_argument('--replica-host', 
+                       default='localhost',
+                       help='Replica database host (default: localhost)')
+                       
+    parser.add_argument('--replica-port', 
+                       type=int,
+                       default=5433,
+                       help='Replica database port (default: 5433)')
+                       
+    parser.add_argument('--dbname', 
+                       default='autoserve',
+                       help='Database name (default: autoserve)')
+                       
+    parser.add_argument('--username', 
+                       default='autoserve',
+                       help='Database username (default: autoserve)')
+                       
+    parser.add_argument('--password', 
+                       default='autoserve_password',
+                       help='Database password (default: autoserve_password)')
                        
     parser.add_argument('--app', 
                        help='Filter by application name')
@@ -442,7 +559,16 @@ Examples:
     args = parser.parse_args()
     
     try:
-        with DockerVolumeDBViewer(args.volume) as viewer:
+        with PostgreSQLDBViewer(
+            primary_host=args.primary_host,
+            primary_port=args.primary_port,
+            replica_host=args.replica_host,
+            replica_port=args.replica_port,
+            database=args.dbname,
+            username=args.username,
+            password=args.password,
+            target_db=args.database
+        ) as viewer:
             if args.command == 'summary':
                 viewer.view_summary()
             elif args.command == 'apps':
