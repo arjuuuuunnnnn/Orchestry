@@ -10,10 +10,10 @@ services:
     volumes:
       - postgres_primary_data:/var/lib/postgresql/data
       - postgres_archive:/var/lib/postgresql/archive
-      - ./configs/postgresql-primary.conf:/etc/postgresql/postgresql.conf
-      - ./configs/pg_hba-primary.conf:/etc/postgresql/pg_hba.conf
-      - ./configs/postgres-init.sh:/docker-entrypoint-initdb.d/01-init.sh
-      - ./configs/setup-replication-slot.sh:/docker-entrypoint-initdb.d/02-replication-slot.sh
+      - ./configs/postgres/postgresql-primary.conf:/etc/postgresql/postgresql.conf
+      - ./configs/postgres/pg_hba-primary.conf:/etc/postgresql/pg_hba.conf
+      - ./configs/postgres/postgres-init.sh:/docker-entrypoint-initdb.d/01-init.sh
+      - ./configs/postgres/setup-replication-slot.sh:/docker-entrypoint-initdb.d/02-replication-slot.sh
     command: postgres -c config_file=/etc/postgresql/postgresql.conf -c hba_file=/etc/postgresql/pg_hba.conf
     ports:
       - "5432:5432"
@@ -40,9 +40,9 @@ services:
       PGPASSWORD: replication_password
     volumes:
       - postgres_replica_data:/var/lib/postgresql/data
-      - ./configs/postgresql-replica.conf:/docker-entrypoint-initdb.d/postgresql-replica.conf
-      - ./configs/pg_hba-replica.conf:/docker-entrypoint-initdb.d/pg_hba-replica.conf
-      - ./configs/setup-replica.sh:/usr/local/bin/setup-replica.sh
+      - ./configs/postgres/postgresql-replica.conf:/docker-entrypoint-initdb.d/postgresql-replica.conf
+      - ./configs/postgres/pg_hba-replica.conf:/docker-entrypoint-initdb.d/pg_hba-replica.conf
+      - ./configs/postgres/setup-replica.sh:/usr/local/bin/setup-replica.sh
     entrypoint: ["/usr/local/bin/setup-replica.sh"]
     ports:
       - "5433:5432"
