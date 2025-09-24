@@ -19,6 +19,7 @@ mdurl==0.1.2
 multidict==6.6.4
 propcache==0.3.2
 psutil==6.1.0
+psycopg2==2.9.10
 pydantic==2.10.3
 pydantic_core==2.27.1
 Pygments==2.19.2

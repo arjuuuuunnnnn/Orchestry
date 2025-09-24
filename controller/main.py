@@ -62,7 +62,7 @@ def main():
                        choices=["DEBUG", "INFO", "WARNING", "ERROR"],
                        help="Logging level")
     parser.add_argument("--db-path", default=None, 
-                       help="Path to SQLite database (default: from environment)")
+                       help="Database path (deprecated - using PostgreSQL HA cluster)")
     parser.add_argument("--nginx-container", default=None,
                        help="Nginx container name (default: from environment)")
     
@@ -91,20 +91,19 @@ def main():
     logger.info(f"API will be available at http://{host}:{port}")
     
     # Set environment variables that components will use
-    db_path = args.db_path or os.getenv("AUTOSERVE_DB_PATH")
-    if not db_path:
-        logger.error("AUTOSERVE_DB_PATH environment variable is required. Please set it in .env file.")
-        sys.exit(1)
-        
+    db_path = args.db_path or os.getenv("AUTOSERVE_DB_PATH")  # For backward compatibility, but not used
+    
     nginx_container = args.nginx_container or os.getenv("AUTOSERVE_NGINX_CONTAINER")
     if not nginx_container:
         logger.error("AUTOSERVE_NGINX_CONTAINER environment variable is required. Please set it in .env file.")
         sys.exit(1)
     
-    os.environ["AUTOSERVE_DB_PATH"] = db_path
+    # Keep for backward compatibility with any legacy scripts
+    if db_path:
+        os.environ["AUTOSERVE_DB_PATH"] = db_path
     os.environ["AUTOSERVE_NGINX_CONTAINER"] = nginx_container
     
-    logger.info(f"Database: {db_path}")
+    logger.info(f"Database: PostgreSQL HA Cluster (postgres-primary -> postgres-replica)")
     logger.info(f"Nginx container: {nginx_container}")
     
     # Ensure data directory exists

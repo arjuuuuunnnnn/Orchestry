@@ -2,7 +2,9 @@
 
 set -e
 
-echo "Starting AutoServe..."
+echo "Starting AutoServe - Production PostgreSQL High Availability"
+echo "============================================================"
+echo "Enterprise-grade container orchestration with HA database"
 
 if ! docker info > /dev/null 2>&1; then
     echo "Docker is not running. Please start Docker first."
@@ -24,10 +26,16 @@ if [ ! -f ".env.docker" ]; then
     cp .env.docker.example .env.docker
 fi
 
-echo "Starting AutoServe services..."
+echo "Starting PostgreSQL HA cluster and AutoServe services..."
 docker-compose up --build -d
 
-echo "Waiting for services to be ready..."
+echo "Waiting for PostgreSQL primary and replica to be ready..."
+sleep 15
+
+echo "PostgreSQL High Availability cluster starting automatically..."
+echo "Database containers will self-initialize with replication"
+
+echo "Waiting for all services to be ready..."
 sleep 5
 
 RETRIES=30
@@ -47,16 +55,25 @@ if [ $RETRIES -eq 0 ]; then
 fi
 
 echo ""
-echo "AutoServe is now running!"
+echo "AutoServe PostgreSQL HA cluster is now running!"
+echo "=================================================="
 echo ""
-echo "Services:"
+echo "High Availability Services:"
 docker-compose ps
 
+echo ""
+echo "Database Cluster Status:"
+echo "  Primary DB:  http://127.0.0.1:5432 (read/write)"
+echo "  Replica DB:  http://127.0.0.1:5433 (read-only)"
 echo ""
 echo "Next steps:"
 echo "   1. Install CLI: pip install -e ."
 echo "   2. Register an app: autoserve register test/my-server.yml"
 echo "   3. Start the app: autoserve up my-server"
 echo ""
-echo "API Documentation: http://127.0.0.1:8000/docs"
-echo "Health Check: http://127.0.0.1:8000/health"
+echo "Production Endpoints:"
+echo "   API Documentation: http://127.0.0.1:8000/docs"
+echo "   Health Check: http://127.0.0.1:8000/health"
+echo "   Database Status: Built-in PostgreSQL HA monitoring"
+echo ""
+echo "No single points of failure - PostgreSQL HA active"

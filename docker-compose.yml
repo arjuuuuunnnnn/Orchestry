@@ -1,4 +1,66 @@
 services:
+  postgres-primary:
+    image: postgres:15-alpine
+    container_name: autoserve-postgres-primary
+    environment:
+      POSTGRES_DB: autoserve
+      POSTGRES_USER: autoserve
+      POSTGRES_PASSWORD: autoserve_password
+      POSTGRES_INITDB_ARGS: "--auth-host=md5"
+    volumes:
+      - postgres_primary_data:/var/lib/postgresql/data
+      - postgres_archive:/var/lib/postgresql/archive
+      - ./docker_configs/postgresql-primary.conf:/etc/postgresql/postgresql.conf
+      - ./docker_configs/pg_hba-primary.conf:/etc/postgresql/pg_hba.conf
+      - ./docker_configs/postgres-init.sh:/docker-entrypoint-initdb.d/01-init.sh
+      - ./docker_configs/setup-replication-slot.sh:/docker-entrypoint-initdb.d/02-replication-slot.sh
+    command: postgres -c config_file=/etc/postgresql/postgresql.conf -c hba_file=/etc/postgresql/pg_hba.conf
+    ports:
+      - "5432:5432"
+    networks:
+      - autoserve
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U autoserve -d autoserve"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    labels:
+      - "autoserve.service=postgres-primary"
+      - "autoserve.managed=true"
+
+  postgres-replica:
+    image: postgres:15-alpine
+    container_name: autoserve-postgres-replica
+    environment:
+      POSTGRES_DB: autoserve
+      POSTGRES_USER: autoserve
+      POSTGRES_PASSWORD: autoserve_password
+      PGUSER: postgres
+      PGPASSWORD: replication_password
+    volumes:
+      - postgres_replica_data:/var/lib/postgresql/data
+      - ./docker_configs/postgresql-replica.conf:/docker-entrypoint-initdb.d/postgresql-replica.conf
+      - ./docker_configs/pg_hba-replica.conf:/docker-entrypoint-initdb.d/pg_hba-replica.conf
+      - ./docker_configs/setup-replica.sh:/usr/local/bin/setup-replica.sh
+    entrypoint: ["/usr/local/bin/setup-replica.sh"]
+    ports:
+      - "5433:5432"
+    networks:
+      - autoserve
+    depends_on:
+      postgres-primary:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U autoserve -d autoserve"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    labels:
+      - "autoserve.service=postgres-replica"
+      - "autoserve.managed=true"
+
   nginx:
     image: nginx:alpine
     container_name: autoserve-nginx
@@ -15,20 +77,6 @@ services:
       - "autoserve.service=nginx"
       - "autoserve.managed=true"
 
-  # redis:
-  #   image: redis:alpine
-  #   container_name: autoserve-redis
-  #   ports:
-  #     - "6379:6379"
-  #   volumes:
-  #     - autoserve_redis_data:/data
-  #   networks:
-  #     - autoserve
-  #   restart: unless-stopped
-  #   labels:
-  #     - "autoserve.service=redis"
-  #     - "autoserve.managed=true"
-
   controller:
     build:
       context: .
@@ -39,14 +87,28 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - ./docker_configs/nginx:/nginx-config
-      - autoserve_db_data:/app/data
       - ./logs:/app/logs
+    environment:
+      - POSTGRES_PRIMARY_HOST=postgres-primary
+      - POSTGRES_PRIMARY_PORT=5432
+      - POSTGRES_REPLICA_HOST=postgres-replica
+      - POSTGRES_REPLICA_PORT=5432
+      - POSTGRES_DB=autoserve
+      - POSTGRES_USER=autoserve
+      - POSTGRES_PASSWORD=autoserve_password
+      - POSTGRES_MIN_CONNECTIONS=5
+      - POSTGRES_MAX_CONNECTIONS=20
     env_file:
       - .env.docker
     networks:
       - autoserve
     depends_on:
-      - nginx
+      postgres-primary:
+        condition: service_healthy
+      postgres-replica:
+        condition: service_healthy
+      nginx:
+        condition: service_started
     restart: unless-stopped
     labels:
       - "autoserve.service=controller"
@@ -58,4 +120,9 @@ networks:
     name: autoserve
 
 volumes:
-  autoserve_db_data:
+  postgres_primary_data:
+    driver: local
+  postgres_replica_data:
+    driver: local
+  postgres_archive:
+    driver: local
