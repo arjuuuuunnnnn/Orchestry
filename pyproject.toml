@@ -71,7 +71,7 @@ packages = [
     "metrics",
     "app_spec",
     "controller",
-    "docker_configs"
+    "configs"
 ]
 
 [project.scripts]

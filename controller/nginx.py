@@ -31,7 +31,7 @@ class DockerNginxManager:
         if not conf_dir and not os.getenv("AUTOSERVE_NGINX_CONF_DIR"):
             logger.error("AUTOSERVE_NGINX_CONF_DIR environment variable is required. Please set it in .env file.")
             raise RuntimeError("Missing required environment variable: AUTOSERVE_NGINX_CONF_DIR")
-        self.template_path = template_path or "docker_configs/nginx_template.conf"
+        self.template_path = template_path or "configs/nginx_template.conf"
         self._load_template()
         
         # Ensure config directory exists
