@@ -6,7 +6,7 @@ __pycache__/
 .env
 .env.docker
 data/
-docker_configs/nginx/
+configs/nginx/
 hello.md
 logs/
 Env/

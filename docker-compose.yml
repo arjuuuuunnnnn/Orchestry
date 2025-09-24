@@ -10,10 +10,10 @@ services:
     volumes:
       - postgres_primary_data:/var/lib/postgresql/data
       - postgres_archive:/var/lib/postgresql/archive
-      - ./docker_configs/postgresql-primary.conf:/etc/postgresql/postgresql.conf
-      - ./docker_configs/pg_hba-primary.conf:/etc/postgresql/pg_hba.conf
-      - ./docker_configs/postgres-init.sh:/docker-entrypoint-initdb.d/01-init.sh
-      - ./docker_configs/setup-replication-slot.sh:/docker-entrypoint-initdb.d/02-replication-slot.sh
+      - ./configs/postgres/postgresql-primary.conf:/etc/postgresql/postgresql.conf
+      - ./configs/postgres/pg_hba-primary.conf:/etc/postgresql/pg_hba.conf
+      - ./configs/postgres/postgres-init.sh:/docker-entrypoint-initdb.d/01-init.sh
+      - ./configs/postgres/setup-replication-slot.sh:/docker-entrypoint-initdb.d/02-replication-slot.sh
     command: postgres -c config_file=/etc/postgresql/postgresql.conf -c hba_file=/etc/postgresql/pg_hba.conf
     ports:
       - "5432:5432"
@@ -40,9 +40,9 @@ services:
       PGPASSWORD: replication_password
     volumes:
       - postgres_replica_data:/var/lib/postgresql/data
-      - ./docker_configs/postgresql-replica.conf:/docker-entrypoint-initdb.d/postgresql-replica.conf
-      - ./docker_configs/pg_hba-replica.conf:/docker-entrypoint-initdb.d/pg_hba-replica.conf
-      - ./docker_configs/setup-replica.sh:/usr/local/bin/setup-replica.sh
+      - ./configs/postgres/postgresql-replica.conf:/docker-entrypoint-initdb.d/postgresql-replica.conf
+      - ./configs/postgres/pg_hba-replica.conf:/docker-entrypoint-initdb.d/pg_hba-replica.conf
+      - ./configs/postgres/setup-replica.sh:/usr/local/bin/setup-replica.sh
     entrypoint: ["/usr/local/bin/setup-replica.sh"]
     ports:
       - "5433:5432"
@@ -68,8 +68,8 @@ services:
       - "80:80"
       - "443:443"
     volumes:
-      - ./docker_configs/nginx:/etc/nginx/conf.d
-      - ./docker_configs/nginx-main.conf:/etc/nginx/nginx.conf
+      - ./configs/nginx:/etc/nginx/conf.d
+      - ./configs/nginx-main.conf:/etc/nginx/nginx.conf
     networks:
       - autoserve
     restart: unless-stopped
@@ -80,13 +80,13 @@ services:
   controller:
     build:
       context: .
-      dockerfile: docker_configs/Dockerfile.controller
+      dockerfile: configs/Dockerfile.controller
     container_name: autoserve-controller
     ports:
       - "${AUTOSERVE_PORT}:${AUTOSERVE_PORT}"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-      - ./docker_configs/nginx:/nginx-config
+      - ./configs/nginx:/nginx-config
       - ./logs:/app/logs
     environment:
       - POSTGRES_PRIMARY_HOST=postgres-primary

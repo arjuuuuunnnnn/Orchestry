@@ -33,7 +33,7 @@ def check_service_running():
         typer.echo("", err=True)
         raise typer.Exit(1)
     except requests.exceptions.Timeout:
-        typer.echo("❌ AutoServe controller is not responding (timeout).", err=True)
+        typer.echo("  AutoServe controller is not responding (timeout).", err=True)
         typer.echo("   Check if the service is healthy: docker-compose ps", err=True)
         raise typer.Exit(1)
     except Exception as e:
@@ -48,7 +48,7 @@ def register(config: str):
     check_service_running()
     
     if not os.path.exists(config):
-        typer.echo(f"❌ Config file '{config}' not found", err=True)
+        typer.echo(f" Config file '{config}' not found", err=True)
         raise typer.Exit(1)
         
     try:
@@ -66,14 +66,14 @@ def register(config: str):
         
         if response.status_code == 200:
             result = response.json()
-            typer.echo("✅ App registered successfully!")
+            typer.echo(" App registered successfully!")
             typer.echo(json.dumps(result, indent=2))
         else:
-            typer.echo(f"❌ Registration failed: {response.json()}")
+            typer.echo(f" Registration failed: {response.json()}")
             raise typer.Exit(1)
         
     except Exception as e:
-        typer.echo(f"❌ Error: {e}", err=True)
+        typer.echo(f" Error: {e}", err=True)
         raise typer.Exit(1)
 
 @app.command()
@@ -105,10 +105,10 @@ def scale(name: str, replicas: int):
     try:
         info_response = requests.get(f"{API_URL}/apps/{name}/status")
         if info_response.status_code == 404:
-            typer.echo(f"❌ App '{name}' not found", err=True)
+            typer.echo(f" App '{name}' not found", err=True)
             raise typer.Exit(1)
         elif info_response.status_code != 200:
-            typer.echo(f"❌ Error: {info_response.json()}", err=True)
+            typer.echo(f" Error: {info_response.json()}", err=True)
             raise typer.Exit(1)
         
         app_info = info_response.json()
@@ -116,9 +116,9 @@ def scale(name: str, replicas: int):
         
         # Inform user about the scaling mode
         if app_mode == 'manual':
-            typer.echo(f"⚙️  Scaling '{name}' to {replicas} replicas (manual mode)")
+            typer.echo(f"  Scaling '{name}' to {replicas} replicas (manual mode)")
         else:
-            typer.echo(f"⚙️  Scaling '{name}' to {replicas} replicas (auto mode - may be overridden by autoscaler)")
+            typer.echo(f"  Scaling '{name}' to {replicas} replicas (auto mode - may be overridden by autoscaler)")
         
         # Perform the scaling
         response = requests.post(
@@ -128,20 +128,20 @@ def scale(name: str, replicas: int):
         
         if response.status_code == 200:
             result = response.json()
-            typer.echo("✅ " + str(result))
+            typer.echo(" " + str(result))
             
             # Additional guidance for auto mode
             if app_mode == 'auto':
-                typer.echo("\n💡 Tip: This app uses automatic scaling. To use manual scaling, set 'mode: manual' in the scaling section of your YAML spec.")
+                typer.echo("\n Tip: This app uses automatic scaling. To use manual scaling, set 'mode: manual' in the scaling section of your YAML spec.")
         else:
-            typer.echo(f"❌ Error: {response.json()}", err=True)
+            typer.echo(f" Error: {response.json()}", err=True)
             raise typer.Exit(1)
             
     except requests.exceptions.RequestException as e:
-        typer.echo(f"❌ Error: Unable to connect to API - {e}", err=True)
+        typer.echo(f" Error: Unable to connect to API - {e}", err=True)
         raise typer.Exit(1)
     except Exception as e:
-        typer.echo(f"❌ Error: {e}", err=True)
+        typer.echo(f" Error: {e}", err=True)
         raise typer.Exit(1)
 
 @app.command()
@@ -168,7 +168,7 @@ def info():
     try:
         response = requests.get(f"{API_URL}/health", timeout=5)
         if response.status_code == 200:
-            typer.echo("✅ AutoServe Controller: Running")
+            typer.echo(" AutoServe Controller: Running")
             typer.echo(f"   API: {API_URL}")
             
             # Get apps count
@@ -178,7 +178,7 @@ def info():
                 typer.echo(f"   Apps: {len(apps)} registered")
             
             typer.echo("")
-            typer.echo("🐳 Docker Services:")
+            typer.echo(" Docker Services:")
             import subprocess
             result = subprocess.run(
                 ["docker-compose", "ps", "--format", "table"], 
@@ -190,13 +190,13 @@ def info():
                 typer.echo("   Unable to check Docker services")
                 
         else:
-            typer.echo("❌ AutoServe Controller: Not healthy")
+            typer.echo(" AutoServe Controller: Not healthy")
     except requests.exceptions.ConnectionError:
-        typer.echo("❌ AutoServe Controller: Not running")
+        typer.echo(" AutoServe Controller: Not running")
         typer.echo("")
-        typer.echo("💡 To start: docker-compose up -d")
+        typer.echo(" To start: docker-compose up -d")
     except Exception as e:
-        typer.echo(f"❌ Error checking status: {e}")
+        typer.echo(f" Error checking status: {e}")
 
 @app.command()
 def spec(name: str, raw: bool = False):
@@ -205,10 +205,10 @@ def spec(name: str, raw: bool = False):
     try:
         response = requests.get(f"{API_URL}/apps/{name}/raw")
         if response.status_code == 404:
-            typer.echo(f"❌ App '{name}' not found", err=True)
+            typer.echo(f" App '{name}' not found", err=True)
             raise typer.Exit(1)
         elif response.status_code != 200:
-            typer.echo(f"❌ Error: {response.json()}", err=True)
+            typer.echo(f" Error: {response.json()}", err=True)
             raise typer.Exit(1)
             
         data = response.json()
@@ -227,7 +227,7 @@ def spec(name: str, raw: bool = False):
             typer.echo(yaml.dump(parsed, default_flow_style=False))
             
     except Exception as e:
-        typer.echo(f"❌ Error: {e}", err=True)
+        typer.echo(f" Error: {e}", err=True)
         raise typer.Exit(1)
 
 if __name__ == "__main__":

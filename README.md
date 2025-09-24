@@ -11,7 +11,7 @@
 - **Health Monitoring**: Continuous health checks with automatic recovery
 - **CLI Management**: Powerful command-line interface for app lifecycle management
 - **RESTful API**: Complete REST API for programmatic control
-- **Persistent State**: SQLite-based state management with audit trails
+- **Persistent State**: Postgres state management with audit trails
 
 ### Advanced Features
 - **Scaling Policies**: Configurable scaling rules and thresholds
@@ -305,16 +305,16 @@ AutoServe continuously monitors application health through:
 ### Project Structure
 ```
 AutoServe/
-├── app_spec/              # Application specification models
-├── cli/                   # Command-line interface
-├── controller/            # Core controller logic
+├── app_spec/             # Application specification models
+├── cli/                  # Command-line interface
+├── controller/           # Core controller logic
 │   ├── api.py            # REST API endpoints
 │   ├── manager.py        # Application manager
 │   ├── scaler.py         # Auto-scaling engine
 │   ├── health.py         # Health monitoring
 │   ├── nginx.py          # Nginx configuration
 │   └── state.py          # State management
-├── docker_configs/        # Docker and Nginx configurations
+├── configs/              # Docker and Nginx configurations
 ├── metrics/              # Metrics collection
 ├── state/                # Database and persistence
 ├── test/                 # Test configurations
