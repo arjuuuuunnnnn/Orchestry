@@ -33,7 +33,6 @@ nav:
 theme:
   name: material
   palette:
-    # Palette toggle for light mode
     - scheme: default
       primary: blue
       accent: blue
