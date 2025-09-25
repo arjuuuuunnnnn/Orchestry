@@ -6,9 +6,9 @@
 
 set -e
 
-echo "🚀 Starting AutoServe Distributed Controller Cluster..."
+echo "Starting AutoServe Distributed Controller Cluster..."
 echo "=================================================="
-echo "💡 Alternatively, you can just run: docker compose up --build -d"
+echo "Alternatively, you can just run: docker compose up --build -d"
 echo ""
 
 # Check if Docker and Docker Compose are available

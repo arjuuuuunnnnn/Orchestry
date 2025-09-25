@@ -51,7 +51,7 @@ AutoServe is a container orchestration platform that provides:
 - **CLI and REST API**: Complete programmatic and command-line interfaces
 - **Persistent State**: PostgreSQL with primary-replica setup
 - **Event Logging**: Complete audit trail and cluster event tracking
-- **Resource Management**: CPU/memory constraints and intelligent scaling policies
+- **Resource Management**: CPU/memory constraints and intelligent scaling policies 
 
 ## Quick Links
 
