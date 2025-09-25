@@ -12,52 +12,63 @@ AutoServe follows a microservices architecture with clear separation of concerns
 └─────────────────────────┬───────────────────────────────────────────────────┘
                           │
 ┌─────────────────────────▼───────────────────────────────────────────────────┐
-│                     Nginx Load Balancer                                    │
-│  ┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐              │
-│  │   Upstream 1    │ │   Upstream 2    │ │   Upstream N    │              │
-│  │    (my-app)     │ │   (api-service) │ │   (worker-app)  │              │
-│  └─────────────────┘ └─────────────────┘ └─────────────────┘              │
+│                  Nginx Load Balancer (Port 8000)                            │
+│  ┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐                │
+│  │   Upstream 1    │ │   Upstream 2    │ │   Upstream N    │                │
+│  │    (my-app)     │ │   (api-service) │ │   (worker-app)  │                │
+│  └─────────────────┘ └─────────────────┘ └─────────────────┘                │
 └─────────────────────────┬───────────────────────────────────────────────────┘
                           │
 ┌─────────────────────────▼───────────────────────────────────────────────────┐
-│                     AutoServe Controller                                   │
+│                 AutoServe Controller Cluster                                │
+│                      (Distributed with Leader Election)                     │
 │                                                                             │
-│  ┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐              │
-│  │   API Server    │ │  App Manager    │ │   Auto Scaler   │              │
-│  │   (FastAPI)     │ │                 │ │                 │              │
-│  └─────────────────┘ └─────────────────┘ └─────────────────┘              │
+│  ┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐                │
+│  │ Controller-1    │ │ Controller-2    │ │ Controller-3    │                │
+│  │   (Leader)      │ │  (Follower)     │ │  (Follower)     │                │
+│  │   Port 8001     │ │   Port 8002     │ │   Port 8003     │                │
+│  │                 │ │                 │ │                 │                │
+│  └─────────────────┘ └─────────────────┘ └─────────────────┘                │
 │                                                                             │
-│  ┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐              │
-│  │ Health Checker  │ │ Nginx Manager   │ │ Metrics Collector│             │
-│  │                 │ │                 │ │                 │              │
-│  └─────────────────┘ └─────────────────┘ └─────────────────┘              │
+│  Each Controller Contains:                                                  │
+│  ┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐                │
+│  │   API Server    │ │  App Manager    │ │   Auto Scaler   │                │
+│  │   (FastAPI)     │ │                 │ │                 │                │
+│  └─────────────────┘ └─────────────────┘ └─────────────────┘                │
 │                                                                             │
-│  ┌─────────────────────────────────────────────────────────────────────┐   │
-│  │                     State Manager                                   │   │
-│  │         (Database abstraction and state persistence)               │   │
-│  └─────────────────────────────────────────────────────────────────────┘   │
+│  ┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐                │
+│  │ Health Checker  │ │ Nginx Manager   │ │ Metrics Collector│               │
+│  │                 │ │                 │ │                 │                │
+│  └─────────────────┘ └─────────────────┘ └─────────────────┘                │
+│                                                                             │
+│  ┌─────────────────────────────────────────────────────────────────────┐    │
+│  │              Distributed State Manager                              │    │
+│  │       (Database abstraction and leader election)                    │    │
+│  └─────────────────────────────────────────────────────────────────────┘    │
 └─────────────────────────┬───────────────────────────────────────────────────┘
                           │
 ┌─────────────────────────▼───────────────────────────────────────────────────┐
-│                    PostgreSQL Database                                     │
-│  ┌─────────────────┐                        ┌─────────────────┐            │
-│  │    Primary      │◄──── Replication ────►│     Replica     │            │
-│  │   (Read/Write)  │                        │   (Read Only)   │            │
-│  └─────────────────┘                        └─────────────────┘            │
+│                    PostgreSQL HA Cluster                                    │
+│  ┌─────────────────┐                        ┌─────────────────┐             │
+│  │    Primary      │◄──── Replication  ────►│     Replica     │             │
+│  │   (Read/Write)  │                        │   (Read Only)   │             │
+│  │  Leader Election│                        │   Coordination  │             │
+│  │   Coordination  │                        │      Data       │             │
+│  └─────────────────┘                        └─────────────────┘             │
 └─────────────────────────┬───────────────────────────────────────────────────┘
                           │
 ┌─────────────────────────▼───────────────────────────────────────────────────┐
-│                      Docker Engine                                         │
+│                      Docker Engine                                          │
 │                                                                             │
-│  ┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐              │
-│  │    my-app-1     │ │    my-app-2     │ │    my-app-3     │              │
-│  │   (Container)   │ │   (Container)   │ │   (Container)   │              │
-│  └─────────────────┘ └─────────────────┘ └─────────────────┘              │
+│  ┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐                │
+│  │    my-app-1     │ │    my-app-2     │ │    my-app-3     │                │
+│  │   (Container)   │ │   (Container)   │ │   (Container)   │                │
+│  └─────────────────┘ └─────────────────┘ └─────────────────┘                │
 │                                                                             │
-│  ┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐              │
-│  │  api-service-1  │ │  api-service-2  │ │   worker-app-1  │              │
-│  │   (Container)   │ │   (Container)   │ │   (Container)   │              │
-│  └─────────────────┘ └─────────────────┘ └─────────────────┘              │
+│  ┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐                │
+│  │  api-service-1  │ │  api-service-2  │ │   worker-app-1  │                │
+│  │   (Container)   │ │   (Container)   │ │   (Container)   │                │
+│  └─────────────────┘ └─────────────────┘ └─────────────────┘                │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -173,7 +184,55 @@ def should_scale(metrics, policy):
 - **TCP**: Socket connections to specified ports
 - **Custom**: Application-specific health logic
 
-### 5. Nginx Manager
+### 5. Distributed Controller (Leader Election)
+
+**Purpose**: Eliminates single point of failure through distributed controller architecture
+
+**Key Responsibilities**:
+- Coordinate leadership election among multiple controller nodes
+- Ensure only one active leader manages applications at a time
+- Handle automatic failover when leader becomes unavailable
+- Maintain cluster membership and health monitoring
+- Provide seamless leadership handoff
+
+**Technology**: PostgreSQL-based leader election with lease system
+
+**Key Files**:
+- `controller/cluster.py` - Distributed controller and leader election logic
+- `controller/api.py` - Leader-aware API decorators and routing
+
+**Key Features**:
+- **3-Node Cluster**: Production-ready high availability setup
+- **Automatic Failover**: 15-30 second failover on leader failure
+- **Split-Brain Prevention**: Database-based coordination prevents conflicts
+- **Load Balancer Integration**: Nginx routes write operations to leader only
+- **Health Monitoring**: Continuous node health and lease management
+
+**Leader Election Process**:
+```python
+# Nodes compete for leadership using atomic database operations
+def _try_acquire_leadership(self) -> bool:
+    # Atomic lease acquisition using PostgreSQL
+    cursor.execute("""
+        INSERT INTO leader_lease (leader_id, term, expires_at)
+        VALUES (%s, %s, CURRENT_TIMESTAMP + INTERVAL '%s seconds')
+        ON CONFLICT (id) DO UPDATE SET ...
+        WHERE leader_lease.expires_at <= CURRENT_TIMESTAMP
+    """)
+    return cursor.rowcount > 0
+```
+
+**API Integration**:
+```python
+@leader_required
+async def register_app(app_spec: AppSpec):
+    # Only leader can execute write operations
+    return await app_manager.register_app(app_spec.dict())
+```
+
+See [Leader Election Guide](leader-election.md) for detailed implementation.
+
+### 6. Nginx Manager
 
 **Purpose**: Manages dynamic load balancer configuration
 

@@ -20,10 +20,10 @@ AutoServe uses PostgreSQL as its primary datastore with an optional read replica
 ┌─────────────────────────┐    ┌─────────────────────────┐
 │    Primary Database     │    │    Replica Database     │
 │                         │    │                         │
-│  • Read/Write          │◄──►│  • Read Only            │
-│  • Real-time data      │    │  • Analytics queries    │
-│  • Critical operations │    │  • Reporting            │
-│  • Schema changes      │    │  • Backup source        │
+│  • Read/Write           │◄──►│  • Read Only            │
+│  • Real-time data       │    │  • Analytics queries    │
+│  • Critical operations  │    │  • Reporting            │
+│  • Schema changes       │    │  • Backup source        │
 └─────────────────────────┘    └─────────────────────────┘
 ```
 

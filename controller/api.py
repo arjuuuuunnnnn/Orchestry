@@ -21,8 +21,30 @@ from state.db import get_database_manager
 from .nginx import DockerNginxManager
 from .scaler import AutoScaler, ScalingPolicy, ScalingMetrics
 from .health import HealthChecker
+from .cluster import DistributedController, NodeState
+from functools import wraps
 
 logger = logging.getLogger(__name__)
+
+def leader_required(f):
+    """Decorator to ensure only the leader can execute certain operations"""
+    @wraps(f)
+    async def decorated_function(*args, **kwargs):
+        if cluster_controller and not cluster_controller.is_leader:
+            leader_info = cluster_controller.get_leader_info()
+            if leader_info:
+                raise HTTPException(
+                    status_code=307, 
+                    detail=f"Request must be sent to leader node: {leader_info['api_url']}",
+                    headers={"Location": leader_info['api_url']}
+                )
+            else:
+                raise HTTPException(
+                    status_code=503, 
+                    detail="No leader elected, cluster not ready"
+                )
+        return await f(*args, **kwargs)
+    return decorated_function
 
 class AppSpec(BaseModel):
     apiVersion: str = "v1"
@@ -66,6 +88,7 @@ state_store: Optional[Any] = None
 nginx_manager: Optional[DockerNginxManager] = None
 auto_scaler: Optional[AutoScaler] = None
 health_checker: Optional[HealthChecker] = None
+cluster_controller: Optional[DistributedController] = None
 
 # Nginx request tracking to compute RPS
 _prev_nginx_requests: Optional[int] = None
@@ -74,6 +97,34 @@ _prev_nginx_time: Optional[float] = None
 # Background monitoring task
 monitoring_task: Optional[threading.Thread] = None
 monitoring_active = False
+
+def on_become_leader():
+    """Called when this node becomes the cluster leader"""
+    logger.info("👑 This node has become the cluster leader - taking control of operations")
+    # Leader should handle all scaling operations, background tasks, etc.
+    if app_manager:
+        # Start container monitoring for automatic restarts and minReplicas enforcement
+        app_manager.start_container_monitoring()
+        
+        # Clean only containers whose app spec no longer exists
+        try:
+            app_manager.cleanup_orphaned_containers()
+            logger.info("✅ Leader completed orphaned container cleanup")
+        except Exception as e:
+            logger.error(f"❌ Leader failed orphaned container cleanup: {e}")
+    
+def on_lose_leadership():
+    """Called when this node loses leadership"""
+    logger.warning("💔 This node has lost cluster leadership - stepping down from operations")
+    # Follower nodes should stop active operations and just serve read requests
+    if app_manager:
+        app_manager.stop_container_monitoring()
+    
+def on_cluster_change(nodes):
+    """Called when cluster membership changes"""
+    node_count = len(nodes)
+    node_ids = [node.node_id for node in nodes.values()]
+    logger.info(f"🔄 Cluster membership changed: {node_count} nodes - {node_ids}")
 
 # FastAPI app
 app = FastAPI(
@@ -93,13 +144,32 @@ app.add_middleware(
 @app.on_event("startup")
 async def startup_event():
     """Initialize all components when the API starts."""
-    global app_manager, state_store, nginx_manager, auto_scaler, health_checker
+    global app_manager, state_store, nginx_manager, auto_scaler, health_checker, cluster_controller
     global monitoring_task, monitoring_active
     
     try:
         # Initialize PostgreSQL High Availability database cluster
         logger.info("🚀 Initializing PostgreSQL HA database cluster...")
         state_store = get_database_manager()
+        
+        # Initialize distributed controller cluster with leader election
+        logger.info("🏗️  Initializing distributed controller cluster...")
+        cluster_controller = DistributedController(
+            node_id=os.getenv("CLUSTER_NODE_ID"),
+            hostname=os.getenv("CLUSTER_HOSTNAME", "localhost"),
+            port=int(os.getenv("AUTOSERVE_PORT", "8000")),
+            db_manager=state_store
+        )
+        
+        # Set up cluster event handlers
+        cluster_controller.on_become_leader = on_become_leader
+        cluster_controller.on_lose_leadership = on_lose_leadership
+        cluster_controller.on_cluster_change = on_cluster_change
+        
+        # Start the cluster
+        cluster_controller.start()
+        
+        # Initialize other components
         nginx_manager = DockerNginxManager()
         auto_scaler = AutoScaler()
         health_checker = HealthChecker()
@@ -159,16 +229,14 @@ async def startup_event():
             import traceback
             logger.error(f"Full traceback: {traceback.format_exc()}")
 
-        # Start container monitoring for automatic restarts and minReplicas enforcement
-        app_manager.start_container_monitoring()
-
-        # Start background monitoring
+        # Start background monitoring (runs on all nodes but only leader does work)
         monitoring_active = True
         monitoring_task = threading.Thread(target=background_monitoring, daemon=True)
         monitoring_task.start()
         
-        # Clean only containers whose app spec no longer exists
-        app_manager.cleanup_orphaned_containers()
+        # Wait a bit for cluster to elect leader, then do cleanup
+        # Container monitoring and cleanup will be started by the leader
+        logger.info("Waiting for leader election before starting container operations...")
         
         logger.info("AutoServe Controller API started successfully")
         
@@ -179,9 +247,12 @@ async def startup_event():
 @app.on_event("shutdown")
 async def shutdown_event():
     """Clean up resources when shutting down."""
-    global monitoring_active, health_checker, app_manager
+    global monitoring_active, health_checker, app_manager, cluster_controller
     
     monitoring_active = False
+    
+    if cluster_controller:
+        cluster_controller.stop()
     
     if app_manager:
         app_manager.stop_container_monitoring()
@@ -201,6 +272,11 @@ def background_monitoring():
     while monitoring_active:
         try:
             if not app_manager or not auto_scaler:
+                time.sleep(5)
+                continue
+                
+            # Only run monitoring on the leader node
+            if cluster_controller and not cluster_controller.is_leader:
                 time.sleep(5)
                 continue
             
@@ -327,6 +403,7 @@ def background_monitoring():
 # API Endpoints
 
 @app.post("/apps/register", response_model=AppRegistrationResponse)
+@leader_required
 async def register_app(app_spec: AppSpec):
     """Register a new application."""
     try:
@@ -372,7 +449,8 @@ async def register_app(app_spec: AppSpec):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/apps/{name}/up")
-async def app_up(name: str):
+@leader_required
+async def start_app(name: str):
     """Start an application."""
     try:
         result = app_manager.start(name)
@@ -390,7 +468,8 @@ async def app_up(name: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/apps/{name}/down")
-async def app_down(name: str):
+@leader_required
+async def stop_app(name: str):
     """Stop an application."""
     try:
         result = app_manager.stop(name)
@@ -430,6 +509,7 @@ async def app_status(name: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/apps/{name}/scale")
+@leader_required
 async def scale_app(name: str, scale_request: ScaleRequest):
     """Manually scale an application."""
     try:
@@ -458,7 +538,8 @@ async def scale_app(name: str, scale_request: ScaleRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/apps/{name}/policy")
-async def update_policy(name: str, policy_request: PolicyRequest):
+@leader_required
+async def set_scaling_policy(name: str, policy_request: PolicyRequest):
     """Update scaling policy for an application."""
     try:
         policy_data = policy_request.policy
@@ -565,6 +646,7 @@ async def get_app_metrics(name: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/apps/{name}/simulateMetrics")
+@leader_required
 async def simulate_metrics(name: str, sim: SimulatedMetricsRequest):
     """Inject simulated metrics for an app and optionally trigger immediate autoscale evaluation.
     Helpful for verifying autoscaling without generating real load."""
@@ -661,6 +743,7 @@ async def get_system_metrics():
         
         return {
             "timestamp": time.time(),
+            "cluster": cluster_controller.get_cluster_status() if cluster_controller else None,
             "apps": {
                 "total": total_apps,
                 "running": running_apps
@@ -688,6 +771,71 @@ async def get_events(app: Optional[str] = None, limit: int = 100):
     except Exception as e:
         logger.error(f"Failed to get events: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/cluster/status")
+async def get_cluster_status():
+    """Get detailed cluster status and membership."""
+    if not cluster_controller:
+        raise HTTPException(status_code=503, detail="Clustering not enabled")
+        
+    try:
+        return cluster_controller.get_cluster_status()
+    except Exception as e:
+        logger.error(f"Failed to get cluster status: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/cluster/leader")
+async def get_cluster_leader():
+    """Get current cluster leader information."""
+    if not cluster_controller:
+        raise HTTPException(status_code=503, detail="Clustering not enabled")
+        
+    try:
+        leader_info = cluster_controller.get_leader_info()
+        if leader_info:
+            return leader_info
+        else:
+            raise HTTPException(status_code=503, detail="No leader elected")
+    except Exception as e:
+        logger.error(f"Failed to get cluster leader: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/cluster/health")
+async def cluster_health_check():
+    """Cluster-aware health check that includes leadership status."""
+    if not cluster_controller:
+        return {
+            "status": "healthy",
+            "clustering": "disabled",
+            "timestamp": time.time(),
+            "version": "1.0.0"
+        }
+        
+    try:
+        cluster_status = cluster_controller.get_cluster_status()
+        is_ready = cluster_controller.is_cluster_ready()
+        
+        return {
+            "status": "healthy" if is_ready else "degraded",
+            "clustering": "enabled",
+            "node_id": cluster_status["node_id"],
+            "state": cluster_status["state"],
+            "is_leader": cluster_status["is_leader"],
+            "leader_id": cluster_status["leader_id"],
+            "cluster_size": cluster_status["cluster_size"],
+            "cluster_ready": is_ready,
+            "timestamp": time.time(),
+            "version": "1.0.0"
+        }
+    except Exception as e:
+        logger.error(f"Failed cluster health check: {e}")
+        return {
+            "status": "unhealthy",
+            "clustering": "error",
+            "error": str(e),
+            "timestamp": time.time(),
+            "version": "1.0.0"
+        }
 
 @app.get("/health")
 async def health_check():

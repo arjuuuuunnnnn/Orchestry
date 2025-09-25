@@ -77,13 +77,15 @@ services:
       - "autoserve.service=nginx"
       - "autoserve.managed=true"
 
-  controller:
+  # Controller Node 1 (Primary)
+  controller-1:
     build:
       context: .
       dockerfile: configs/Dockerfile.controller
-    container_name: autoserve-controller
+    container_name: autoserve-controller-1
+    hostname: controller-1
     ports:
-      - "${AUTOSERVE_PORT}:${AUTOSERVE_PORT}"
+      - "${CONTROLLER_1_PORT}:${CONTROLLER_1_PORT}"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - ./configs/nginx:/nginx-config
@@ -98,8 +100,11 @@ services:
       - POSTGRES_PASSWORD=autoserve_password
       - POSTGRES_MIN_CONNECTIONS=5
       - POSTGRES_MAX_CONNECTIONS=20
-    env_file:
-      - .env.docker
+      - AUTOSERVE_HOST=${AUTOSERVE_HOST}
+      - AUTOSERVE_PORT=${CONTROLLER_1_PORT}
+      - AUTOSERVE_NGINX_CONTAINER=${AUTOSERVE_NGINX_CONTAINER}
+      - CLUSTER_NODE_ID=controller-1
+      - CLUSTER_HOSTNAME=controller-1
     networks:
       - autoserve
     depends_on:
@@ -112,6 +117,118 @@ services:
     restart: unless-stopped
     labels:
       - "autoserve.service=controller"
+      - "autoserve.node=controller-1"
+      - "autoserve.managed=true"
+
+  # Controller Node 2 (Secondary)
+  controller-2:
+    build:
+      context: .
+      dockerfile: configs/Dockerfile.controller
+    container_name: autoserve-controller-2
+    hostname: controller-2
+    ports:
+      - "${CONTROLLER_2_PORT}:${CONTROLLER_2_PORT}"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./configs/nginx:/nginx-config
+      - ./logs:/app/logs
+    environment:
+      - POSTGRES_PRIMARY_HOST=postgres-primary
+      - POSTGRES_PRIMARY_PORT=5432
+      - POSTGRES_REPLICA_HOST=postgres-replica
+      - POSTGRES_REPLICA_PORT=5432
+      - POSTGRES_DB=autoserve
+      - POSTGRES_USER=autoserve
+      - POSTGRES_PASSWORD=autoserve_password
+      - POSTGRES_MIN_CONNECTIONS=5
+      - POSTGRES_MAX_CONNECTIONS=20
+      - AUTOSERVE_HOST=${AUTOSERVE_HOST}
+      - AUTOSERVE_PORT=${CONTROLLER_2_PORT}
+      - AUTOSERVE_NGINX_CONTAINER=${AUTOSERVE_NGINX_CONTAINER}
+      - CLUSTER_NODE_ID=controller-2
+      - CLUSTER_HOSTNAME=controller-2
+    networks:
+      - autoserve
+    depends_on:
+      postgres-primary:
+        condition: service_healthy
+      postgres-replica:
+        condition: service_healthy
+      nginx:
+        condition: service_started
+      controller-1:
+        condition: service_started
+    restart: unless-stopped
+    labels:
+      - "autoserve.service=controller"
+      - "autoserve.node=controller-2"
+      - "autoserve.managed=true"
+
+  # Controller Node 3 (Tertiary)
+  controller-3:
+    build:
+      context: .
+      dockerfile: configs/Dockerfile.controller
+    container_name: autoserve-controller-3
+    hostname: controller-3
+    ports:
+      - "${CONTROLLER_3_PORT}:${CONTROLLER_3_PORT}"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./configs/nginx:/nginx-config
+      - ./logs:/app/logs
+    environment:
+      - POSTGRES_PRIMARY_HOST=postgres-primary
+      - POSTGRES_PRIMARY_PORT=5432
+      - POSTGRES_REPLICA_HOST=postgres-replica
+      - POSTGRES_REPLICA_PORT=5432
+      - POSTGRES_DB=autoserve
+      - POSTGRES_USER=autoserve
+      - POSTGRES_PASSWORD=autoserve_password
+      - POSTGRES_MIN_CONNECTIONS=5
+      - POSTGRES_MAX_CONNECTIONS=20
+      - AUTOSERVE_HOST=${AUTOSERVE_HOST}
+      - AUTOSERVE_PORT=${CONTROLLER_3_PORT}
+      - AUTOSERVE_NGINX_CONTAINER=${AUTOSERVE_NGINX_CONTAINER}
+      - CLUSTER_NODE_ID=controller-3
+      - CLUSTER_HOSTNAME=controller-3
+    networks:
+      - autoserve
+    depends_on:
+      postgres-primary:
+        condition: service_healthy
+      postgres-replica:
+        condition: service_healthy
+      nginx:
+        condition: service_started
+      controller-1:
+        condition: service_started
+      controller-2:
+        condition: service_started
+    restart: unless-stopped
+    labels:
+      - "autoserve.service=controller"
+      - "autoserve.node=controller-3"
+      - "autoserve.managed=true"
+
+  # Load Balancer for Controller API access
+  controller-lb:
+    image: nginx:alpine
+    container_name: autoserve-controller-lb
+    ports:
+      - "${CONTROLLER_LB_PORT}:80"
+    volumes:
+      - ./configs/controller-lb.conf:/etc/nginx/conf.d/default.conf
+    networks:
+      - autoserve
+    depends_on:
+      - controller-1
+      - controller-2
+      - controller-3
+    restart: unless-stopped
+    labels:
+      - "autoserve.service=controller-lb"
       - "autoserve.managed=true"
 
 networks:

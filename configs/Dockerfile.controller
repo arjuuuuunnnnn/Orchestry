@@ -21,9 +21,9 @@ ENV PYTHONPATH=/app
 ENV AUTOSERVE_DB_PATH=/app/data/autoscaler.db
 ENV AUTOSERVE_NGINX_CONTAINER=autoserve-nginx
 
-EXPOSE 8000
+EXPOSE 8000 8001 8002 8003
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8000/health || exit 1
+    CMD curl -f http://localhost:${AUTOSERVE_PORT:-8000}/health || exit 1
 
-CMD ["python", "controller/main.py", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["python", "controller/main.py"]
