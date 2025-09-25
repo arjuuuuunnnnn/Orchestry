@@ -2,22 +2,30 @@ name: Build and Deploy Docs
 
 on:
   push:
-    branches: [ master ]
+    branches: [ master, main, feat/elim-spof ]
     paths:
       - 'docs/**'
       - 'README.md'
+      - 'mkdocs.yml'
   workflow_dispatch:
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
     permissions:
-      contents: write
+      contents: read
       pages: write
       id-token: write
 
+    # Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
+    # However, do NOT cancel in-progress runs as we want to allow these production deployments to complete.
+    concurrency:
+      group: "pages"
+      cancel-in-progress: false
+
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout
+        uses: actions/checkout@v4
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -27,14 +35,19 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install mkdocs mkdocs-material
+          pip install -r docs-requirements.txt
 
       - name: Build documentation
-        run: mkdocs build 
+        run: mkdocs build --strict --verbose
 
-      - name: Deploy documentation
-        uses: peaceiris/actions-gh-pages@v3
+      - name: Setup Pages
+        uses: actions/configure-pages@v3
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v2
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./site
-          force_orphan: true
+          path: ./site
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v2
