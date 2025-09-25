@@ -2,25 +2,29 @@ name: Build and Deploy Docs
 
 on:
   push:
-    branches: [ master ]
+    branches: [ master, main ]
     paths:
       - 'docs/**'
       - 'README.md'
+      - 'mkdocs.yml'
+  pull_request:
+    branches: [ master, main ]
+    paths:
+      - 'docs/**'
+      - 'README.md'
+      - 'mkdocs.yml'
   workflow_dispatch:
 
 jobs:
-  build-and-deploy:
+  # Build job - runs on all branches for validation
+  build:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      pages: write
-      id-token: write
-
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout
+        uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.x'
 
@@ -30,11 +34,53 @@ jobs:
           pip install mkdocs mkdocs-material
 
       - name: Build documentation
-        run: mkdocs build 
+        run: mkdocs build --strict --verbose
 
-      - name: Deploy documentation
-        uses: peaceiris/actions-gh-pages@v3
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./site
-          force_orphan: true
+          name: docs-site
+          path: ./site
+
+  # Deploy job - only runs on main branches
+  deploy:
+    # Only deploy on main/master branches, not on PRs or feature branches
+    if: github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+    
+    runs-on: ubuntu-latest
+    needs: build
+    
+    # Environment is required for GitHub Pages deployment
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+
+    # Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
+    # However, do NOT cancel in-progress runs as we want to allow these production deployments to complete.
+    concurrency:
+      group: "pages"
+      cancel-in-progress: false
+
+    steps:
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: docs-site
+          path: ./site
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./site
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

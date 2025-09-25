@@ -1,12 +1,63 @@
-site_name: AutoServe
+site_name: AutoServe Documentation
 site_url: https://arjuuuuunnnnn.github.io/AutoServe/
-use_directory_urls: false
+site_description: AutoServe - Container Orchestration and Auto-Scaling Platform
+use_directory_urls: true
+repo_url: https://github.com/arjuuuuunnnnn/AutoServe
+repo_name: arjuuuuunnnnn/AutoServe
 
 nav:
-  - Home: README.md
+  - Home: index.md
+  
+  - User Guide:
+    - Quick Start: user-guide/quick-start.md
+    - CLI Reference: user-guide/cli-reference.md
+    - Application Specification: user-guide/app-spec.md
+    - Configuration: user-guide/configuration.md
+    - API Reference: user-guide/api-reference.md
+    - Troubleshooting: user-guide/troubleshooting.md
+    
+  - Developer Guide:
+    - Architecture Overview: developer-guide/architecture.md
+    - Core Components: developer-guide/components.md
+    - Leader Election: developer-guide/leader-election.md
+    - Database Schema: developer-guide/database.md
+    - Scaling Algorithm: developer-guide/scaling.md
+    - Health Monitoring: developer-guide/health.md
+    - Load Balancing: developer-guide/load-balancing.md
+    - Development Setup: developer-guide/development.md
+    - Extensions: developer-guide/extensions.md
+    
+  - Examples:
+    - Sample Applications: examples/applications.md
 
 theme:
   name: material
+  palette:
+    - scheme: default
+      primary: blue
+      accent: blue
+      toggle:
+        icon: material/brightness-7 
+        name: Switch to dark mode
+
+    # Palette toggle for dark mode
+    - scheme: slate
+      primary: blue
+      accent: blue
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+        
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - search.highlight
+    - search.share
+    - content.code.copy
+    - content.code.annotate
+
 site_dir: site
 
 plugins:
@@ -15,4 +66,26 @@ plugins:
 markdown_extensions:
   - toc:
       permalink: true
+      toc_depth: 3
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.tabbed:
+      alternate_style: true
+  - attr_list
+  - md_in_html
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/arjuuuuunnnnn/AutoServe
+  version:
+    provider: mike
 
