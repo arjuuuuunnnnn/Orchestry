@@ -33,20 +33,21 @@ nav:
 theme:
   name: material
   palette:
-    - scheme: default
-      primary: blue
-      accent: blue
-      toggle:
-        icon: material/brightness-7 
-        name: Switch to dark mode
-
-    # Palette toggle for dark mode
+    # Dark mode as default
     - scheme: slate
       primary: blue
       accent: blue
       toggle:
-        icon: material/brightness-4
+        icon: material/brightness-7 
         name: Switch to light mode
+
+    # Light mode toggle
+    - scheme: default
+      primary: blue
+      accent: blue
+      toggle:
+        icon: material/brightness-4
+        name: Switch to dark mode
         
   features:
     - navigation.tabs
