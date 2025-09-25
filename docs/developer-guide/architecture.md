@@ -27,7 +27,7 @@ AutoServe follows a microservices architecture with clear separation of concerns
 │  │ Controller-1    │ │ Controller-2    │ │ Controller-3    │                │
 │  │   (Leader)      │ │  (Follower)     │ │  (Follower)     │                │
 │  │   Port 8001     │ │   Port 8002     │ │   Port 8003     │                │
-│  │      👑         │ │                 │ │                 │                │
+│  │                 │ │                 │ │                 │                │
 │  └─────────────────┘ └─────────────────┘ └─────────────────┘                │
 │                                                                             │
 │  Each Controller Contains:                                                  │
