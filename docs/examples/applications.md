@@ -902,4 +902,4 @@ These examples demonstrate various patterns and configurations for different typ
 
 ---
 
-**Next Steps**: Explore [Deployment Scenarios](deployments.md) for different infrastructure patterns.
+**Next Steps**: Explore [Configuration Guide](../user-guide/configuration.md) for advanced deployment settings.

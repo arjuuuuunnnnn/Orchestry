@@ -283,7 +283,7 @@ Now that you have AutoServe running:
 2. **Understand App Specs**: Read the [Application Specification](app-spec.md) guide
 3. **Explore the API**: See the [REST API Reference](api-reference.md)
 4. **Configure Scaling**: Dive into [Configuration Guide](configuration.md)
-5. **Monitor Applications**: Learn about [monitoring and metrics](monitoring.md)
+5. **Monitor Applications**: Learn about [health monitoring](../developer-guide/health.md)
 
 ## Getting Help
 

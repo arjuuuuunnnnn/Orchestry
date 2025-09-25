@@ -6,29 +6,29 @@ repo_url: https://github.com/arjuuuuunnnnn/AutoServe
 repo_name: arjuuuuunnnnn/AutoServe
 
 nav:
-  - Home: README.md
+  - Home: index.md
   
   - User Guide:
-    - Quick Start: docs/user-guide/quick-start.md
-    - CLI Reference: docs/user-guide/cli-reference.md
-    - Application Specification: docs/user-guide/app-spec.md
-    - Configuration: docs/user-guide/configuration.md
-    - API Reference: docs/user-guide/api-reference.md
-    - Troubleshooting: docs/user-guide/troubleshooting.md
+    - Quick Start: user-guide/quick-start.md
+    - CLI Reference: user-guide/cli-reference.md
+    - Application Specification: user-guide/app-spec.md
+    - Configuration: user-guide/configuration.md
+    - API Reference: user-guide/api-reference.md
+    - Troubleshooting: user-guide/troubleshooting.md
     
   - Developer Guide:
-    - Architecture Overview: docs/developer-guide/architecture.md
-    - Core Components: docs/developer-guide/components.md
-    - Leader Election: docs/developer-guide/leader-election.md
-    - Database Schema: docs/developer-guide/database.md
-    - Scaling Algorithm: docs/developer-guide/scaling.md
-    - Health Monitoring: docs/developer-guide/health.md
-    - Load Balancing: docs/developer-guide/load-balancing.md
-    - Development Setup: docs/developer-guide/development.md
-    - Extensions: docs/developer-guide/extensions.md
+    - Architecture Overview: developer-guide/architecture.md
+    - Core Components: developer-guide/components.md
+    - Leader Election: developer-guide/leader-election.md
+    - Database Schema: developer-guide/database.md
+    - Scaling Algorithm: developer-guide/scaling.md
+    - Health Monitoring: developer-guide/health.md
+    - Load Balancing: developer-guide/load-balancing.md
+    - Development Setup: developer-guide/development.md
+    - Extensions: developer-guide/extensions.md
     
   - Examples:
-    - Sample Applications: docs/examples/applications.md
+    - Sample Applications: examples/applications.md
 
 theme:
   name: material
