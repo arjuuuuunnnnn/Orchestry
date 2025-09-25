@@ -1,6 +1,6 @@
 # AutoServe Documentation
 
-Welcome to AutoServe - A lightweight container orchestration and auto-scaling platform designed for web applications
+Welcome to AutoServe - A lightweight container orchestration and auto-scaling platform designed for web applications.
 
 ## Documentation Structure
 
