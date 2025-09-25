@@ -15,6 +15,7 @@ Welcome to AutoServe - a lightweight container orchestration and auto-scaling pl
 ### For Developers
 - [Architecture Overview](docs/developer-guide/architecture.md) - System design and components
 - [Core Components](docs/developer-guide/components.md) - Detailed component documentation
+- [Leader Election](docs/developer-guide/leader-election.md) - Distributed controller and high availability
 - [Database Schema](docs/developer-guide/database.md) - State management and persistence
 - [Scaling Algorithm](docs/developer-guide/scaling.md) - Auto-scaling logic and policies
 - [Health Monitoring](docs/developer-guide/health.md) - Health check system
@@ -36,18 +37,21 @@ AutoServe is a container orchestration platform that provides:
 - **Health Monitoring**: Continuous health checks with automatic recovery
 - **Simple Deployment**: YAML-based application specifications
 - **RESTful API**: Complete programmatic control
-- **High Availability**: PostgreSQL-based state management with replication
+- **High Availability**: Distributed controller with leader election eliminates single points of failure
+- **Database HA**: PostgreSQL-based state management with primary-replica replication
 
 ## Key Features
 
-- Container orchestration with Docker
-- Multi-metric auto-scaling (CPU, memory, RPS, latency, connections)
-- Dynamic load balancing with Nginx
-- Health monitoring and automatic recovery
-- CLI and REST API interfaces
-- Persistent state with PostgreSQL
-- Event logging and audit trails
-- Resource constraints and scaling policies
+- **Container Orchestration**: Docker-based application lifecycle management
+- **Multi-Metric Auto-Scaling**: CPU, memory, RPS, latency, and connection-based scaling
+- **Dynamic Load Balancing**: Nginx with health-aware routing and SSL termination
+- **Health Monitoring**: Continuous health checks with automatic recovery
+- **Distributed Architecture**: 3-node controller cluster with leader election
+- **High Availability**: Automatic failover and split-brain prevention
+- **CLI and REST API**: Complete programmatic and command-line interfaces
+- **Persistent State**: PostgreSQL with primary-replica setup
+- **Event Logging**: Complete audit trail and cluster event tracking
+- **Resource Management**: CPU/memory constraints and intelligent scaling policies
 
 ## Quick Links
 

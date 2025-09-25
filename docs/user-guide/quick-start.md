@@ -11,7 +11,7 @@ Get AutoServe up and running in minutes and deploy your first application.
 
 ## Installation
 
-### Option 1: Quick Start Script (Recommended)
+### Option 1: Single Node Setup (Development)
 
 ```bash
 # Clone the repository
@@ -23,10 +23,30 @@ cd AutoServe
 ```
 
 This script will:
-- Start all AutoServe services
+- Start a single AutoServe controller
 - Set up the PostgreSQL database
 - Configure Nginx load balancer
 - Install the CLI tool
+
+### Option 2: Distributed Cluster Setup (Production)
+
+```bash
+# Clone the repository
+git clone https://github.com/arjuuuuunnnnn/AutoServe.git
+cd AutoServe
+
+# Start the 3-node distributed cluster
+./start-cluster.sh
+```
+
+This script will:
+- Start 3 controller nodes with leader election
+- Set up PostgreSQL HA cluster (primary + replica)
+- Configure load balancer for cluster routing
+- Initialize cluster coordination
+- Install the CLI tool
+
+**Note**: For production deployments, use the distributed cluster setup for high availability.
 
 ### Option 2: Manual Setup
 
@@ -47,6 +67,8 @@ autoserve --help
 
 ## Verification
 
+### Single Node Setup
+
 Check that all services are running:
 
 ```bash
@@ -65,6 +87,30 @@ You should see:
 - ✅ `autoserve-postgres-primary` - Primary database
 - ✅ `autoserve-postgres-replica` - Replica database
 - ✅ `autoserve-nginx` - Load balancer
+
+### Distributed Cluster Setup
+
+Check cluster status:
+
+```bash
+# Check cluster health
+curl http://localhost:8000/cluster/health
+
+# Get cluster status
+curl http://localhost:8000/cluster/status
+
+# Check current leader
+curl http://localhost:8000/cluster/leader
+
+# View all services
+docker-compose ps
+```
+
+You should see:
+- ✅ `controller-1`, `controller-2`, `controller-3` - Controller cluster nodes
+- ✅ `postgres-primary`, `postgres-replica` - PostgreSQL HA cluster
+- ✅ `nginx-lb` - Load balancer with cluster routing
+- 👑 One controller node elected as leader
 
 ## Deploying Your First App
 

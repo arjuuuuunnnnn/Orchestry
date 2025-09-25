@@ -20,7 +20,7 @@ AutoServe uses **Nginx** as a dynamic load balancer to distribute traffic across
 
 ```
 ┌─────────────────────┐    ┌─────────────────────┐    ┌─────────────────────┐
-│    Client Request   │    │   Nginx Proxy      │    │  Application        │
+│    Client Request   │    │   Nginx Proxy       │    │  Application        │
 │                     │    │                     │    │  Instances          │
 │  • HTTP/HTTPS       │───►│  • Load balancing   │───►│                     │
 │  • WebSocket        │    │  • Health checks    │    │  • Instance 1       │

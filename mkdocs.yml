@@ -1,0 +1,13 @@
+site_name: AutoServe
+nav:
+  - Home: README.md
+
+theme:
+  name: material
+site_dir: site
+
+plugins:
+  - search
+markdown_extensions:
+  - toc:
+      permalink: true

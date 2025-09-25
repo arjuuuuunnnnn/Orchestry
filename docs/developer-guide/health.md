@@ -28,8 +28,8 @@ AutoServe's health monitoring system ensures application reliability through:
            │                           │                           │
            ▼                           ▼                           ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                           Database (State Persistence)                       │
-│  • Health status          • Failure counts         • Recovery attempts       │
+│                           Database (State Persistence)                      │
+│  • Health status          • Failure counts         • Recovery attempts      │
 │  • Check history         • Performance metrics    • Configuration           │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```

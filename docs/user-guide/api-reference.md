@@ -807,6 +807,172 @@ X-RateLimit-Reset: 1642248000
 | `VALIDATION_ERROR` | Request validation failed | 400 |
 | `RATE_LIMIT_EXCEEDED` | Rate limit exceeded | 429 |
 
+## Cluster Management
+
+These endpoints are available when AutoServe is running in distributed cluster mode.
+
+### Get Cluster Status
+
+Get comprehensive cluster status and node information.
+
+```http
+GET /cluster/status
+```
+
+**Response:**
+```json
+{
+  "node_id": "controller-1",
+  "hostname": "controller-1.local",
+  "state": "leader",
+  "term": 5,
+  "is_leader": true,
+  "leader_id": "controller-1",
+  "cluster_size": 3,
+  "nodes": [
+    {
+      "node_id": "controller-1",
+      "hostname": "controller-1.local",
+      "state": "leader",
+      "is_healthy": true,
+      "last_heartbeat": 1642248600.123
+    },
+    {
+      "node_id": "controller-2", 
+      "hostname": "controller-2.local",
+      "state": "follower",
+      "is_healthy": true,
+      "last_heartbeat": 1642248595.456
+    },
+    {
+      "node_id": "controller-3",
+      "hostname": "controller-3.local", 
+      "state": "follower",
+      "is_healthy": true,
+      "last_heartbeat": 1642248598.789
+    }
+  ],
+  "lease": {
+    "leader_id": "controller-1",
+    "term": 5,
+    "acquired_at": 1642248500.0,
+    "expires_at": 1642248630.0,
+    "renewed_at": 1642248600.0,
+    "hostname": "controller-1.local",
+    "api_url": "http://controller-1.local:8001"
+  }
+}
+```
+
+### Get Current Leader
+
+Get information about the current cluster leader.
+
+```http
+GET /cluster/leader
+```
+
+**Response:**
+```json
+{
+  "leader_id": "controller-1",
+  "hostname": "controller-1.local",
+  "api_url": "http://controller-1.local:8001",
+  "term": 5,
+  "lease_expires_at": 1642248630.0
+}
+```
+
+**Error Response (No leader elected):**
+```json
+{
+  "error": "No leader elected",
+  "code": "NO_LEADER",
+  "timestamp": "2024-01-15T10:30:00Z"
+}
+```
+
+### Cluster Health Check
+
+Get cluster health status with leadership information.
+
+```http
+GET /cluster/health
+```
+
+**Response (Healthy cluster):**
+```json
+{
+  "status": "healthy",
+  "clustering": "enabled",
+  "node_id": "controller-1",
+  "state": "leader",
+  "is_leader": true,
+  "leader_id": "controller-1",
+  "cluster_size": 3,
+  "cluster_ready": true,
+  "timestamp": 1642248600.123,
+  "version": "1.0.0"
+}
+```
+
+**Response (Single node mode):**
+```json
+{
+  "status": "healthy",
+  "clustering": "disabled",
+  "timestamp": 1642248600.123,
+  "version": "1.0.0"
+}
+```
+
+**Response (Degraded cluster):**
+```json
+{
+  "status": "degraded",
+  "clustering": "enabled",
+  "node_id": "controller-2",
+  "state": "follower",
+  "is_leader": false,
+  "leader_id": null,
+  "cluster_size": 2,
+  "cluster_ready": false,
+  "timestamp": 1642248600.123,
+  "version": "1.0.0"
+}
+```
+
+### Leader Redirection
+
+When write operations are sent to a non-leader node, the API returns a redirect response:
+
+```http
+POST /api/v1/apps/register
+```
+
+**Response (From non-leader node):**
+```json
+HTTP/1.1 307 Temporary Redirect
+Location: http://controller-1.local:8001/api/v1/apps/register
+
+{
+  "error": "Request must be sent to leader node: http://controller-1.local:8001",
+  "code": "NOT_LEADER",
+  "timestamp": "2024-01-15T10:30:00Z"
+}
+```
+
+**Response (No leader available):**
+```json
+HTTP/1.1 503 Service Unavailable
+
+{
+  "error": "No leader elected, cluster not ready",
+  "code": "CLUSTER_NOT_READY", 
+  "timestamp": "2024-01-15T10:30:00Z"
+}
+```
+
 ## SDKs and Libraries
 
 ### Python SDK
