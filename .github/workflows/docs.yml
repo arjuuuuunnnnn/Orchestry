@@ -7,21 +7,22 @@ on:
       - 'docs/**'
       - 'README.md'
       - 'mkdocs.yml'
-  pull_request:
-    branches: [ master, main ]
-    paths:
-      - 'docs/**'
-      - 'README.md'
-      - 'mkdocs.yml'
+      - '.github/workflows/docs.yml'
   workflow_dispatch:
 
 jobs:
-  # Build job - runs on all branches for validation
-  build:
+  build-and-deploy:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write  # Needed to push to gh-pages branch
+      pages: write
+      id-token: write
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch all history for gh-pages branch
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -36,51 +37,13 @@ jobs:
       - name: Build documentation
         run: mkdocs build --strict --verbose
 
-      - name: Upload build artifact
-        uses: actions/upload-artifact@v4
+      - name: Deploy to gh-pages branch
+        uses: peaceiris/actions-gh-pages@v3
         with:
-          name: docs-site
-          path: ./site
-
-  # Deploy job - only runs on main branches
-  deploy:
-    # Only deploy on main/master branches, not on PRs or feature branches
-    if: github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
-    
-    runs-on: ubuntu-latest
-    needs: build
-    
-    # Environment is required for GitHub Pages deployment
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    
-    permissions:
-      contents: read
-      pages: write
-      id-token: write
-
-    # Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
-    # However, do NOT cancel in-progress runs as we want to allow these production deployments to complete.
-    concurrency:
-      group: "pages"
-      cancel-in-progress: false
-
-    steps:
-      - name: Download build artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: docs-site
-          path: ./site
-
-      - name: Setup Pages
-        uses: actions/configure-pages@v4
-
-      - name: Upload pages artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: ./site
-
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./site
+          publish_branch: gh-pages
+          force_orphan: true
+          user_name: 'github-actions[bot]'
+          user_email: 'github-actions[bot]@users.noreply.github.com'
+          commit_message: 'Deploy documentation: ${{ github.sha }}'
