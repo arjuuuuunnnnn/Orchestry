@@ -158,11 +158,11 @@ class DistributedController:
         if self._monitoring_task and self._monitoring_task.is_alive():
             self._monitoring_task.join(timeout=5)
             
-        logger.info(f"✅ Distributed controller node {self.node_id} stopped")
+        logger.info(f"Distributed controller node {self.node_id} stopped")
         
     def _init_cluster_tables(self):
         """Initialize database tables for cluster coordination"""
-        logger.info("📋 Initializing cluster coordination tables...")
+        logger.info("Initializing cluster coordination tables...")
         
         try:
             with self._get_db_connection() as conn:
@@ -219,10 +219,10 @@ class DistributedController:
                     conn.commit()
                     
         except Exception as e:
-            logger.error(f"❌ Failed to initialize cluster tables: {e}")
+            logger.error(f"Failed to initialize cluster tables: {e}")
             raise
             
-        logger.info("✅ Cluster coordination tables initialized")
+        logger.info("Cluster coordination tables initialized")
         
     def _register_node(self):
         """Register this node in the cluster"""
