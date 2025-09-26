@@ -32,6 +32,8 @@ nav:
 
 theme:
   name: material
+  logo: images/log0.png
+  favicon: images/log0.png
   palette:
     # Dark mode as default
     - scheme: slate
@@ -89,4 +91,5 @@ extra:
       link: https://github.com/arjuuuuunnnnn/AutoServe
   version:
     provider: mike
+  generator: false
 
