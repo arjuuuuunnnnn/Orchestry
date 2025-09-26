@@ -418,6 +418,7 @@ class AppManager:
                     "app": app_name,
                     "status": "stopped",
                     "replicas": 0,
+                    "ready_replicas": 0,
                     "instances": []
                 }
             
@@ -426,6 +427,16 @@ class AppManager:
             
             # Clean up down containers
             self._cleanup_down_containers(app_name)
+            
+            # Check again if app was removed during cleanup
+            if app_name not in self.instances:
+                return {
+                    "app": app_name,
+                    "status": "stopped",
+                    "replicas": 0,
+                    "ready_replicas": 0,
+                    "instances": []
+                }
             
             instances_info = []
             ready_count = 0
