@@ -1,0 +1,261 @@
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&display=swap');
+/* If hosted without local font files, rely on system fallback monospace. */
+:root {
+  --font-text: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "DejaVu Sans Mono", monospace;
+  --font-code: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "DejaVu Sans Mono", monospace;
+
+  --color-text: #a1a1aa; /* normal text */
+  --color-link: #065f46; /* links */
+  --md-default-bg-color: #000000; /* make the whole site background black */
+  --md-primary-fg-color: #000000; /* keep headers neutral, no blue */
+  --md-accent-fg-color: #000000; /* neutral accent */
+}
+
+html, body {
+  font-family: var(--font-text) !important;
+  background-color: #000000 !important;
+}
+
+/* Global text color */
+.md-typeset,
+.md-nav__title,
+.md-nav__link,
+.md-nav__item,
+.md-footer,
+.md-header,
+body {
+  color: var(--color-text) !important;
+}
+
+/* Header and nav: remove colored backgrounds; keep neutral */
+.md-header,
+.md-tabs,
+.md-footer {
+  background-color: #000000 !important; /* near-black neutral */
+}
+
+/* Add a subtle separator line between header and body */
+.md-header {
+  border-bottom: 1px solid #111827 !important; /* subtle separator */
+  box-shadow: none !important; /* remove default elevation shadow */
+}
+
+/* Links color */
+.md-typeset a,
+.md-nav__link[href],
+.md-footer a {
+  color: var(--color-link) !important;
+}
+
+/* Link hover/focus: slightly darker */
+.md-typeset a:hover,
+.md-typeset a:focus,
+.md-nav__link[href]:hover,
+.md-nav__link[href]:focus,
+.md-footer a:hover,
+.md-footer a:focus {
+  color: #064e3b !important;
+}
+
+/* Code blocks and inline code use same mono font */
+.md-typeset code,
+.md-typeset pre,
+.md-typeset kbd,
+.md-typeset samp {
+  font-family: var(--font-code) !important;
+}
+
+/* Soften code block background to match neutral theme */
+:root {
+  --md-code-bg-color: #0f0f10; /* subtle dark */
+  --md-default-fg-color--light: var(--color-text);
+}
+
+/* Remove the "Made with Material for MkDocs" footer generator line only */
+/* We also have generator: false in mkdocs.yml, but this ensures it's hidden */
+.md-footer-meta__inner a[rel="generator"] {
+  display: none !important;
+}
+
+/* Keep only our copyright area visible if present */
+.md-footer__inner {
+  border-top: 1px solid #111827; /* subtle separator */
+}
+
+/* Optional: tone down primary colored UI elements from Material */
+.md-button,
+.md-tag,
+.md-typeset .md-button--primary {
+  background-color: #111827 !important; /* neutral */
+  color: var(--color-text) !important;
+}
+
+/* Search bar neutral styling */
+.md-search__input {
+  background-color: #0f0f10 !important;
+  color: var(--color-text) !important;
+}
+
+/* Tables */
+.md-typeset table th,
+.md-typeset table td {
+  border-color: #141d28 !important; /* slate-700-ish */
+}
+
+/* ACTIVE TAB STYLING - Green active states without fade effects */
+
+/* Style the active tab in the top navigation */
+.md-tabs__item--active .md-tabs__link,
+.md-tabs__link--active {
+  color: #10b981 !important; /* bright green text */
+  background-color: transparent !important; /* no background */
+  border-radius: 6px !important;
+  font-weight: 600 !important;
+  position: relative;
+}
+
+/* Add emerald-800 underline to active tab */
+.md-tabs__item--active .md-tabs__link::after,
+.md-tabs__link--active::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: #065f46 !important; /* emerald-800 */
+  border-radius: 2px;
+}
+
+/* Style active items in left sidebar navigation */
+.md-nav__item--active > .md-nav__link,
+.md-nav__link--active {
+  color: #10b981 !important; /* bright green */
+  background-color: rgba(16, 185, 129, 0.1) !important; /* subtle green background */
+  border-radius: 4px !important;
+  font-weight: 600 !important;
+  border-left: 3px solid #10b981 !important; /* green left border indicator */
+  padding-left: 1rem !important;
+}
+
+/* Style active items in right sidebar TOC */
+.md-nav--secondary .md-nav__link--active {
+  color: #10b981 !important; /* bright green */
+  background-color: rgba(16, 185, 129, 0.08) !important; /* very subtle green background */
+  border-radius: 4px !important;
+  font-weight: 500 !important;
+  border-left: 2px solid #10b981 !important; /* thin green left border */
+  padding-left: 0.75rem !important;
+}
+
+/* Hover effects for tabs and navigation */
+.md-tabs__link:hover,
+.md-nav__link:hover {
+  color: #34d399 !important; /* lighter green on hover */
+  background-color: rgba(16, 185, 129, 0.05) !important; /* subtle hover background */
+  border-radius: 4px !important;
+  transition: all 0.2s ease !important;
+}
+
+/* Focus states for accessibility */
+.md-tabs__link:focus,
+.md-nav__link:focus {
+  outline: 2px solid #10b981 !important;
+  outline-offset: 2px !important;
+  border-radius: 4px !important;
+}
+
+/* NUCLEAR OPTION: REMOVE ALL FADE/GRADIENT EFFECTS */
+
+/* Target the specific fade elements with maximum specificity */
+html .md-sidebar__scrollwrap::before,
+html .md-sidebar__scrollwrap::after,
+html .md-sidebar--primary .md-sidebar__scrollwrap::before,
+html .md-sidebar--primary .md-sidebar__scrollwrap::after,
+html .md-sidebar--secondary .md-sidebar__scrollwrap::before,
+html .md-sidebar--secondary .md-sidebar__scrollwrap::after {
+  display: none !important;
+  background: none !important;
+  background-image: none !important;
+  content: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+}
+
+/* Remove all pseudo-elements from navigation */
+html .md-nav::before,
+html .md-nav::after,
+html .md-nav__list::before,
+html .md-nav__list::after,
+html .md-nav__item::before,
+html .md-nav__item::after,
+html .md-nav__link::before,
+html .md-nav__link::after {
+  display: none !important;
+  background: none !important;
+  background-image: none !important;
+  content: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+}
+
+/* Specifically target the TOC fade */
+html [data-md-component="toc"] .md-sidebar__scrollwrap::before,
+html [data-md-component="toc"] .md-sidebar__scrollwrap::after,
+html [data-md-component="navigation"] .md-sidebar__scrollwrap::before,
+html [data-md-component="navigation"] .md-sidebar__scrollwrap::after {
+  display: none !important;
+  background: none !important;
+  background-image: none !important;
+  content: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+}
+
+/* Remove gradient masks */
+html .md-sidebar__scrollwrap {
+  -webkit-mask: none !important;
+  mask: none !important;
+  -webkit-mask-image: none !important;
+  mask-image: none !important;
+}
+
+/* Kill any remaining active/focus backgrounds */
+html .md-nav__item .md-nav__link--active,
+html .md-nav__item .md-nav__link--active::before,
+html .md-nav__link--active,
+html .md-nav__link--active::before,
+html .md-nav--secondary .md-nav__link--active,
+html .md-nav--secondary .md-nav__link--active:before {
+  background: none !important;
+  background-color: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
+}
+
+/* Remove any potential mask or clip-path effects */
+html .md-sidebar,
+html .md-sidebar__inner,
+html .md-sidebar__scrollwrap,
+html .md-nav,
+html .md-nav__list {
+  -webkit-mask: none !important;
+  mask: none !important;
+  -webkit-mask-image: none !important;
+  mask-image: none !important;
+  clip-path: none !important;
+  overflow: visible !important;
+}
+
+/* Ensure no gradients anywhere */
+html *[class*="md-sidebar"]::before,
+html *[class*="md-sidebar"]::after,
+html *[class*="md-nav"]::before,
+html *[class*="md-nav"]::after {
+  display: none !important;
+  background: none !important;
+  background-image: none !important;
+  content: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+}

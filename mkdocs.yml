@@ -35,21 +35,13 @@ theme:
   logo: images/log0.png
   favicon: images/log0.png
   palette:
-    # Dark mode as default
     - scheme: slate
-      primary: blue
-      accent: blue
-      toggle:
-        icon: material/brightness-7 
-        name: Switch to light mode
+      primary: grey
+      accent: grey
 
-    # Light mode toggle
-    - scheme: default
-      primary: blue
-      accent: blue
-      toggle:
-        icon: material/brightness-4
-        name: Switch to dark mode
+  font:
+    text: JetBrains Mono
+    code: JetBrains Mono
         
   features:
     - navigation.tabs
@@ -92,4 +84,7 @@ extra:
   version:
     provider: mike
   generator: false
+
+extra_css:
+  - styles/overrides.css
 
