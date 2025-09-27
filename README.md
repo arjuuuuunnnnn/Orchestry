@@ -1,4 +1,4 @@
-# <img src="docs/images/log0.png" alt="AutoServe logo" height="28" style="height:1em; vertical-align:-0.2em; margin-right:0.25em;"> AutoServe
+# <img src="docs/images/l0g0.png" alt="AutoServe logo" height="28" style="height:1em; vertical-align:-0.2em; margin-right:0.25em;"> AutoServe
 
 Lightweight container orchestration and auto-scaling platform for web applications.
 
