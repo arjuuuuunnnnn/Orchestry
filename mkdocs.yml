@@ -32,8 +32,8 @@ nav:
 
 theme:
   name: material
-  logo: images/log0.png
-  favicon: images/log0.png
+  logo: images/l0g0.png
+  favicon: images/l0g0.png
   palette:
     - scheme: slate
       primary: grey
