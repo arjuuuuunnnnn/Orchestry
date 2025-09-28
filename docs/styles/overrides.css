@@ -38,6 +38,8 @@ body {
 .md-header {
   border-bottom: 1px solid #111827 !important; /* subtle separator */
   box-shadow: none !important; /* remove default elevation shadow */
+  /* Ensure header stays above sidebars/drawers on small screens */
+  z-index: 1100;
 }
 
 /* Links color */
@@ -163,99 +165,4 @@ body {
   outline: 2px solid #10b981 !important;
   outline-offset: 2px !important;
   border-radius: 4px !important;
-}
-
-/* NUCLEAR OPTION: REMOVE ALL FADE/GRADIENT EFFECTS */
-
-/* Target the specific fade elements with maximum specificity */
-html .md-sidebar__scrollwrap::before,
-html .md-sidebar__scrollwrap::after,
-html .md-sidebar--primary .md-sidebar__scrollwrap::before,
-html .md-sidebar--primary .md-sidebar__scrollwrap::after,
-html .md-sidebar--secondary .md-sidebar__scrollwrap::before,
-html .md-sidebar--secondary .md-sidebar__scrollwrap::after {
-  display: none !important;
-  background: none !important;
-  background-image: none !important;
-  content: none !important;
-  opacity: 0 !important;
-  visibility: hidden !important;
-}
-
-/* Remove all pseudo-elements from navigation */
-html .md-nav::before,
-html .md-nav::after,
-html .md-nav__list::before,
-html .md-nav__list::after,
-html .md-nav__item::before,
-html .md-nav__item::after,
-html .md-nav__link::before,
-html .md-nav__link::after {
-  display: none !important;
-  background: none !important;
-  background-image: none !important;
-  content: none !important;
-  opacity: 0 !important;
-  visibility: hidden !important;
-}
-
-/* Specifically target the TOC fade */
-html [data-md-component="toc"] .md-sidebar__scrollwrap::before,
-html [data-md-component="toc"] .md-sidebar__scrollwrap::after,
-html [data-md-component="navigation"] .md-sidebar__scrollwrap::before,
-html [data-md-component="navigation"] .md-sidebar__scrollwrap::after {
-  display: none !important;
-  background: none !important;
-  background-image: none !important;
-  content: none !important;
-  opacity: 0 !important;
-  visibility: hidden !important;
-}
-
-/* Remove gradient masks */
-html .md-sidebar__scrollwrap {
-  -webkit-mask: none !important;
-  mask: none !important;
-  -webkit-mask-image: none !important;
-  mask-image: none !important;
-}
-
-/* Kill any remaining active/focus backgrounds */
-html .md-nav__item .md-nav__link--active,
-html .md-nav__item .md-nav__link--active::before,
-html .md-nav__link--active,
-html .md-nav__link--active::before,
-html .md-nav--secondary .md-nav__link--active,
-html .md-nav--secondary .md-nav__link--active:before {
-  background: none !important;
-  background-color: transparent !important;
-  background-image: none !important;
-  box-shadow: none !important;
-}
-
-/* Remove any potential mask or clip-path effects */
-html .md-sidebar,
-html .md-sidebar__inner,
-html .md-sidebar__scrollwrap,
-html .md-nav,
-html .md-nav__list {
-  -webkit-mask: none !important;
-  mask: none !important;
-  -webkit-mask-image: none !important;
-  mask-image: none !important;
-  clip-path: none !important;
-  overflow: visible !important;
-}
-
-/* Ensure no gradients anywhere */
-html *[class*="md-sidebar"]::before,
-html *[class*="md-sidebar"]::after,
-html *[class*="md-nav"]::before,
-html *[class*="md-nav"]::after {
-  display: none !important;
-  background: none !important;
-  background-image: none !important;
-  content: none !important;
-  opacity: 0 !important;
-  visibility: hidden !important;
 }
