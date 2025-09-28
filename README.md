@@ -55,4 +55,9 @@ Quick links on the site:
 
 ---
 
+## License
+
+This project is licensed under the [GNU GPLv3](LICENSE).
+
+
 AutoServe — built for simplicity, designed for scale.
