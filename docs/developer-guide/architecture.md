@@ -6,7 +6,7 @@ Understanding AutoServe's system design, components, and architectural decisions
 
 AutoServe follows a microservices architecture with clear separation of concerns. The system is designed to be scalable, resilient, and easy to maintain.
 
-<img src="../images/arch.png" alt="System Architecture Diagram" style="width:100%; max-width:800px;">
+<img src="../../images/arch.png" alt="System Architecture Diagram" style="width:100%; max-width:800px;">
 
 ## Core Components
 
