@@ -1,6 +1,6 @@
 # Quick Start Guide
 
-Get AutoServe up and running in minutes and deploy your first application.
+Get Orchestry up and running in minutes and deploy your first application.
 
 ## Prerequisites
 
@@ -15,15 +15,15 @@ Get AutoServe up and running in minutes and deploy your first application.
 
 ```bash
 # Clone the repository
-git clone https://github.com/arjuuuuunnnnn/AutoServe.git
-cd AutoServe
+git clone https://github.com/arjuuuuunnnnn/Orchestry.git
+cd Orchestry
 
 # Run the quick start script
 ./start.sh
 ```
 
 This script will:
-- Start a single AutoServe controller
+- Start a single Orchestry controller
 - Set up the PostgreSQL database
 - Configure Nginx load balancer
 - Install the CLI tool
@@ -32,8 +32,8 @@ This script will:
 
 ```bash
 # Clone the repository
-git clone https://github.com/arjuuuuunnnnn/AutoServe.git
-cd AutoServe
+git clone https://github.com/arjuuuuunnnnn/Orchestry.git
+cd Orchestry
 
 # Start the 3-node distributed cluster
 ./start-cluster.sh
@@ -52,8 +52,8 @@ This script will:
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/arjuuuuunnnnn/AutoServe.git
-cd AutoServe
+git clone https://github.com/arjuuuuunnnnn/Orchestry.git
+cd Orchestry
 
 # 2. Start services with Docker Compose
 docker-compose up -d
@@ -62,7 +62,7 @@ docker-compose up -d
 pip install -e .
 
 # 4. Verify installation
-autoserve --help
+orchestry --help
 ```
 
 ## Verification
@@ -79,14 +79,14 @@ docker-compose ps
 curl http://localhost:8000/health
 
 # Test CLI
-autoserve list
+orchestry list
 ```
 
 You should see:
-- ✅ `autoserve-controller` - Main orchestration service
-- ✅ `autoserve-postgres-primary` - Primary database
-- ✅ `autoserve-postgres-replica` - Replica database
-- ✅ `autoserve-nginx` - Load balancer
+- ✅ `orchestry-controller` - Main orchestration service
+- ✅ `orchestry-postgres-primary` - Primary database
+- ✅ `orchestry-postgres-replica` - Replica database
+- ✅ `orchestry-nginx` - Load balancer
 
 ### Distributed Cluster Setup
 
@@ -156,26 +156,26 @@ healthCheck:
 ### Step 2: Register the Application
 
 ```bash
-autoserve register my-app.yml
+orchestry register my-app.yml
 ```
 
 ### Step 3: Start the Application
 
 ```bash
-autoserve up my-web-app
+orchestry up my-web-app
 ```
 
 ### Step 4: Check Status
 
 ```bash
 # View application status
-autoserve status my-web-app
+orchestry status my-web-app
 
 # List all applications
-autoserve list
+orchestry list
 
 # View application logs
-autoserve logs my-web-app
+orchestry logs my-web-app
 ```
 
 ### Step 5: Test Your Application
@@ -196,15 +196,15 @@ open http://localhost/my-web-app
 
 ```bash
 # Scale to 3 replicas
-autoserve scale my-web-app 3
+orchestry scale my-web-app 3
 
 # Scale down to 1 replica
-autoserve scale my-web-app 1
+orchestry scale my-web-app 1
 ```
 
 ### Auto-Scaling
 
-AutoServe automatically scales based on:
+Orchestry automatically scales based on:
 - **CPU utilization** (target: 70%)
 - **Memory usage** (target: 75%)
 - **Requests per second** (50 RPS per replica)
@@ -215,48 +215,48 @@ Monitor scaling decisions:
 
 ```bash
 # View scaling events
-autoserve events my-web-app
+orchestry events my-web-app
 
 # View current metrics
-autoserve metrics my-web-app
+orchestry metrics my-web-app
 ```
 
 ## Management Commands
 
 ```bash
 # Stop application
-autoserve down my-web-app
+orchestry down my-web-app
 
 # Remove application
-autoserve remove my-web-app
+orchestry remove my-web-app
 
 # View all applications
-autoserve list
+orchestry list
 
 # Get application details
-autoserve describe my-web-app
+orchestry describe my-web-app
 
 # View system status
-autoserve status
+orchestry status
 ```
 
 ## Configuration
 
 ### Environment Variables
 
-Configure AutoServe behavior with environment variables:
+Configure Orchestry behavior with environment variables:
 
 ```bash
 # Controller API settings
-export AUTOSERVE_HOST=localhost
-export AUTOSERVE_PORT=8000
+export ORCHESTRY_HOST=localhost
+export ORCHESTRY_PORT=8000
 
 # Database settings
 export POSTGRES_HOST=localhost
 export POSTGRES_PORT=5432
-export POSTGRES_DB=autoserve
-export POSTGRES_USER=autoserve
-export POSTGRES_PASSWORD=autoserve_password
+export POSTGRES_DB=orchestry
+export POSTGRES_USER=orchestry
+export POSTGRES_PASSWORD=orchestry_password
 
 # Scaling settings
 export DEFAULT_SCALE_CHECK_INTERVAL=30
@@ -265,19 +265,19 @@ export DEFAULT_HEALTH_CHECK_INTERVAL=10
 
 ### Cluster Mode
 
-For high availability, run AutoServe in cluster mode:
+For high availability, run Orchestry in cluster mode:
 
 ```bash
 # Start cluster
 ./start-cluster.sh
 
 # Check cluster status
-autoserve cluster status
+orchestry cluster status
 ```
 
 ## Next Steps
 
-Now that you have AutoServe running:
+Now that you have Orchestry running:
 
 1. **Learn the CLI**: Check out the [CLI Reference](cli-reference.md)
 2. **Understand App Specs**: Read the [Application Specification](app-spec.md) guide

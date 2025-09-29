@@ -77,7 +77,7 @@ class AppManager:
                 self.instances[app_name] = []
 
             # List containers with label
-            containers = self.docker_client.containers.list(all=True, filters={"label": f"autoserve.app={app_name}"})
+            containers = self.docker_client.containers.list(all=True, filters={"label": f"orchestry.app={app_name}"})
             adopted = 0
             for c in containers:
                 try:
@@ -87,7 +87,7 @@ class AppManager:
                         c.start()
                         c.reload()
                     # Extract replica index
-                    replica_label = c.labels.get("autoserve.replica")
+                    replica_label = c.labels.get("orchestry.replica")
                     if replica_label is not None and replica_label.isdigit():
                         replica_index = int(replica_label)
                     else:
@@ -95,7 +95,7 @@ class AppManager:
                         parts = c.name.split('-')
                         replica_index = int(parts[-1]) if parts[-1].isdigit() else 0
                     network_settings = c.attrs.get("NetworkSettings", {})
-                    ip = network_settings.get("Networks", {}).get("autoserve", {}).get("IPAddress", "")
+                    ip = network_settings.get("Networks", {}).get("orchestry", {}).get("IPAddress", "")
                     port = app_spec_record.spec.get("ports", [{}])[0].get("containerPort", 0)
                     # Skip if already tracked
                     if any(inst.container_id == c.id for inst in self.instances[app_name]):
@@ -142,14 +142,14 @@ class AppManager:
             return results
         
     def _ensure_network(self):
-        """Ensure AutoServe network exists for container communication."""
+        """Ensure Orchestry network exists for container communication."""
         try:
-            self.docker_client.networks.get("autoserve")
+            self.docker_client.networks.get("orchestry")
         except docker.errors.NotFound:
             self.docker_client.networks.create(
-                "autoserve", 
+                "orchestry", 
                 driver="bridge",
-                labels={"managed_by": "autoserve"}
+                labels={"managed_by": "orchestry"}
             )
             
     def register(self, spec: dict) -> dict:
@@ -237,7 +237,7 @@ class AppManager:
             for inst in self.instances.get(app_name, []):
                 try:
                     c = self.docker_client.containers.get(inst.container_id)
-                    idx_label = c.labels.get("autoserve.replica")
+                    idx_label = c.labels.get("orchestry.replica")
                     if idx_label and idx_label.isdigit():
                         existing_indices.add(int(idx_label))
                 except Exception:
@@ -281,11 +281,11 @@ class AppManager:
                 "image": app_spec["image"],
                 "name": f"{app_name}-{replica_index}",
                 "labels": {
-                    "autoserve.app": app_name,
-                    "autoserve.replica": str(replica_index),
-                    "autoserve.type": app_spec["type"]
+                    "orchestry.app": app_name,
+                    "orchestry.replica": str(replica_index),
+                    "orchestry.type": app_spec["type"]
                 },
-                "network": "autoserve",
+                "network": "orchestry",
                 "detach": True,
                 "ports": {},
                 "publish_all_ports": False,
@@ -334,7 +334,7 @@ class AppManager:
             
             # Get container IP and port
             network_settings = container.attrs["NetworkSettings"]
-            container_ip = network_settings["Networks"]["autoserve"]["IPAddress"]
+            container_ip = network_settings["Networks"]["orchestry"]["IPAddress"]
             
             # Create instance record
             instance = ContainerInstance(
@@ -676,13 +676,13 @@ class AppManager:
     def cleanup_orphaned_containers(self):
         """Clean up containers that are not tracked in our state."""
         try:
-            # Get all autoserve containers
+            # Get all orchestry containers
             containers = self.docker_client.containers.list(
-                filters={"label": "autoserve.app"}
+                filters={"label": "orchestry.app"}
             )
             
             for container in containers:
-                app_name = container.labels.get("autoserve.app")
+                app_name = container.labels.get("orchestry.app")
                 container_id = container.id
                 # Skip cleanup if app exists in state store (will be or was reconciled)
                 if self.state_store.get_app(app_name):
@@ -812,7 +812,7 @@ class AppManager:
             for inst in self.instances.get(app_name, []):
                 try:
                     container = self.docker_client.containers.get(inst.container_id)
-                    idx_label = container.labels.get("autoserve.replica")
+                    idx_label = container.labels.get("orchestry.replica")
                     if idx_label and idx_label.isdigit():
                         existing_indices.add(int(idx_label))
                 except:
@@ -832,7 +832,7 @@ class AppManager:
                     logger.info(f"Container {container_name} already running, adopting it")
                     # Adopt the existing running container
                     network_settings = existing_container.attrs.get("NetworkSettings", {})
-                    container_ip = network_settings.get("Networks", {}).get("autoserve", {}).get("IPAddress", "")
+                    container_ip = network_settings.get("Networks", {}).get("orchestry", {}).get("IPAddress", "")
                     
                     instance = ContainerInstance(
                         container_id=existing_container.id,
@@ -860,7 +860,7 @@ class AppManager:
                     
                     if existing_container.status == "running":
                         network_settings = existing_container.attrs.get("NetworkSettings", {})
-                        container_ip = network_settings.get("Networks", {}).get("autoserve", {}).get("IPAddress", "")
+                        container_ip = network_settings.get("Networks", {}).get("orchestry", {}).get("IPAddress", "")
                         
                         instance = ContainerInstance(
                             container_id=existing_container.id,
@@ -890,12 +890,12 @@ class AppManager:
             container_config = {
                 "image": app_spec_record["image"],
                 "name": container_name,
-                "network": "autoserve",
+                "network": "orchestry",
                 "detach": True,
                 "labels": {
-                    "autoserve.app": app_name,
-                    "autoserve.replica": str(next_index),
-                    "managed_by": "autoserve"
+                    "orchestry.app": app_name,
+                    "orchestry.replica": str(next_index),
+                    "managed_by": "orchestry"
                 },
                 "restart_policy": {"Name": "unless-stopped"}
             }
@@ -937,7 +937,7 @@ class AppManager:
             
             # Get container IP
             network_settings = container.attrs["NetworkSettings"]
-            container_ip = network_settings["Networks"]["autoserve"]["IPAddress"]
+            container_ip = network_settings["Networks"]["orchestry"]["IPAddress"]
             
             # Create new instance record
             instance = ContainerInstance(
@@ -1016,10 +1016,10 @@ class AppManager:
             
             # Find next available replica index
             existing_indices = set()
-            containers = self.client.containers.list(all=True, filters={"label": f"autoserve.app={app_name}"})
+            containers = self.client.containers.list(all=True, filters={"label": f"orchestry.app={app_name}"})
             
             for container in containers:
-                idx_label = container.labels.get("autoserve.replica")
+                idx_label = container.labels.get("orchestry.replica")
                 if idx_label and idx_label.isdigit():
                     existing_indices.add(int(idx_label))
             
@@ -1053,7 +1053,7 @@ class AppManager:
                     # Register with health checker if health config is specified
                     if "health" in app_spec:
                         network_settings = existing_container.attrs["NetworkSettings"]
-                        container_ip = network_settings["Networks"]["autoserve"]["IPAddress"]
+                        container_ip = network_settings["Networks"]["orchestry"]["IPAddress"]
                         container_port = app_spec.get("ports", [{}])[0].get("containerPort", 8080)
                         from .health import HealthChecker
                         health_config = HealthChecker.create_config_from_spec(app_spec["health"])
@@ -1066,12 +1066,12 @@ class AppManager:
         container_config = {
             "image": app_spec["image"],
             "name": container_name,
-            "network": "autoserve",
+            "network": "orchestry",
             "detach": True,
             "labels": {
-                "autoserve.app": app_name,
-                "autoserve.replica": str(replica_index),
-                "managed_by": "autoserve"
+                "orchestry.app": app_name,
+                "orchestry.replica": str(replica_index),
+                "managed_by": "orchestry"
             },
             "restart_policy": {"Name": "unless-stopped"}
         }
@@ -1112,7 +1112,7 @@ class AppManager:
         
         # Get container IP
         network_settings = container.attrs["NetworkSettings"]
-        container_ip = network_settings["Networks"]["autoserve"]["IPAddress"]
+        container_ip = network_settings["Networks"]["orchestry"]["IPAddress"]
         
         # Create instance record
         instance = ContainerInstance(

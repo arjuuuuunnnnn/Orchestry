@@ -52,7 +52,7 @@ class EventRecord:
 
 class PostgreSQLManager:
     """
-    PostgreSQL-based high availability persistent storage for AutoServe.
+    PostgreSQL-based high availability persistent storage for Orchestry.
     Thread-safe with connection pooling, read/write splitting, and automatic failover.
     
     Features:
@@ -68,9 +68,9 @@ class PostgreSQLManager:
                  primary_port: int = 5432,
                  replica_host: str = "postgres-replica", 
                  replica_port: int = 5432,
-                 database: str = "autoserve",
-                 username: str = "autoserve",
-                 password: str = "autoserve_password",
+                 database: str = "orchestry",
+                 username: str = "orchestry",
+                 password: str = "orchestry_password",
                  min_conn: int = 5,
                  max_conn: int = 20):
         
@@ -939,7 +939,7 @@ class PostgreSQLManager:
 def get_database_manager(**kwargs) -> PostgreSQLManager:
     """
     Get PostgreSQL database manager for high availability.
-    AutoServe is designed exclusively for production use with PostgreSQL HA cluster.
+    Orchestry is designed exclusively for production use with PostgreSQL HA cluster.
     """
     logger.info("🚀 Initializing PostgreSQL High Availability database cluster")
     
@@ -951,9 +951,9 @@ def get_database_manager(**kwargs) -> PostgreSQLManager:
         'primary_port': int(pg_kwargs.get('primary_port', os.getenv('POSTGRES_PRIMARY_PORT', '5432'))),
         'replica_host': pg_kwargs.get('replica_host', os.getenv('POSTGRES_REPLICA_HOST', 'postgres-replica')),
         'replica_port': int(pg_kwargs.get('replica_port', os.getenv('POSTGRES_REPLICA_PORT', '5432'))),
-        'database': pg_kwargs.get('database', os.getenv('POSTGRES_DB', 'autoserve')),
-        'username': pg_kwargs.get('username', os.getenv('POSTGRES_USER', 'autoserve')),
-        'password': pg_kwargs.get('password', os.getenv('POSTGRES_PASSWORD', 'autoserve_password')),
+        'database': pg_kwargs.get('database', os.getenv('POSTGRES_DB', 'orchestry')),
+        'username': pg_kwargs.get('username', os.getenv('POSTGRES_USER', 'orchestry')),
+        'password': pg_kwargs.get('password', os.getenv('POSTGRES_PASSWORD', 'orchestry_password')),
         'min_conn': pg_kwargs.get('min_conn', int(os.getenv('POSTGRES_MIN_CONNECTIONS', '5'))),
         'max_conn': pg_kwargs.get('max_conn', int(os.getenv('POSTGRES_MAX_CONNECTIONS', '20'))),
     }
@@ -967,7 +967,7 @@ def get_database_manager(**kwargs) -> PostgreSQLManager:
         logger.error("💡 Ensure PostgreSQL primary and replica containers are running")
         logger.error("💡 Check connection parameters and network connectivity")
         raise RuntimeError(
-            f"Cannot start AutoServe without PostgreSQL High Availability cluster. "
+            f"Cannot start Orchestry without PostgreSQL High Availability cluster. "
             f"This is a production-grade system that requires HA database. Error: {e}"
         ) from e
 

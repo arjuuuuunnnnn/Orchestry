@@ -1,7 +1,7 @@
 """
-AutoServe Controller Package
+Orchestry Controller Package
 
-This package contains the core controller components for the AutoServe
+This package contains the core controller components for the Orchestry
 Docker autoscaling SDK.
 
 Components:

@@ -1,10 +1,10 @@
 # Load Balancing and Traffic Management
 
-Complete documentation of AutoServe's load balancing system, Nginx integration, and traffic management capabilities.
+Complete documentation of Orchestry's load balancing system, Nginx integration, and traffic management capabilities.
 
 ## Overview
 
-AutoServe uses **Nginx** as a dynamic load balancer to distribute traffic across application instances. The system provides:
+Orchestry uses **Nginx** as a dynamic load balancer to distribute traffic across application instances. The system provides:
 
 - **Dynamic Configuration**: Real-time updates without service interruption
 - **Health-Aware Routing**: Traffic only to healthy instances
@@ -154,7 +154,7 @@ class NginxConfigGenerator:
         server_config = {
             'app_name': app_name,
             'listen_port': networking.get('external_port', 80),
-            'server_name': networking.get('domain', f"{app_name}.autoserve.local"),
+            'server_name': networking.get('domain', f"{app_name}.orchestry.local"),
             'ssl_enabled': networking.get('ssl', {}).get('enabled', False),
             'ssl_cert_path': f"/etc/ssl/certs/{app_name}.crt",
             'ssl_key_path': f"/etc/ssl/private/{app_name}.key",
@@ -218,7 +218,7 @@ class NginxConfigGenerator:
 **Main Configuration Template (`nginx-main.conf`)**:
 
 ```nginx
-# AutoServe Nginx Configuration
+# Orchestry Nginx Configuration
 # Generated at: {{ timestamp }}
 
 user nginx;
@@ -676,7 +676,7 @@ class LoadBalancingStrategy:
 class SSLManager:
     """Manages SSL certificates for applications."""
     
-    def __init__(self, cert_dir: str = "/etc/ssl/autoserve"):
+    def __init__(self, cert_dir: str = "/etc/ssl/orchestry"):
         self.cert_dir = cert_dir
         self.ca_client = None  # ACME client for Let's Encrypt
         

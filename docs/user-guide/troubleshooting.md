@@ -1,6 +1,6 @@
 # Troubleshooting Guide
 
-Common issues, solutions, and debugging techniques for AutoServe.
+Common issues, solutions, and debugging techniques for Orchestry.
 
 ## Quick Diagnosis
 
@@ -9,26 +9,26 @@ Common issues, solutions, and debugging techniques for AutoServe.
 First, verify all services are running:
 
 ```bash
-# Check AutoServe services
+# Check Orchestry services
 docker-compose ps
 
 # Check API health
 curl http://localhost:8000/health
 
 # Check database connectivity
-docker exec -it autoserve-postgres-primary psql -U autoserve -d autoserve -c "SELECT 1;"
+docker exec -it orchestry-postgres-primary psql -U orchestry -d orchestry -c "SELECT 1;"
 
 # Check nginx status
-docker exec -it autoserve-nginx nginx -t
+docker exec -it orchestry-nginx nginx -t
 ```
 
 ### Common Status Issues
 
 | Service Status | Possible Cause | Solution |
 |---------------|----------------|----------|
-| `autoserve-controller` Exited | Configuration error | Check logs: `docker logs autoserve-controller` |
-| `autoserve-postgres-primary` Unhealthy | Database startup issue | Check DB logs: `docker logs autoserve-postgres-primary` |
-| `autoserve-nginx` Restarting | Config syntax error | Validate nginx config: `nginx -t` |
+| `orchestry-controller` Exited | Configuration error | Check logs: `docker logs orchestry-controller` |
+| `orchestry-postgres-primary` Unhealthy | Database startup issue | Check DB logs: `docker logs orchestry-postgres-primary` |
+| `orchestry-nginx` Restarting | Config syntax error | Validate nginx config: `nginx -t` |
 
 ## Application Issues
 
@@ -43,10 +43,10 @@ docker exec -it autoserve-nginx nginx -t
 
 ```bash
 # Check application status
-autoserve status my-app
+orchestry status my-app
 
 # View application events
-autoserve events my-app
+orchestry events my-app
 
 # Check Docker daemon
 docker info
@@ -55,7 +55,7 @@ docker info
 docker pull my-app:latest
 
 # Check network configuration
-docker network ls | grep autoserve
+docker network ls | grep orchestry
 ```
 
 **Common Causes and Solutions:**
@@ -103,7 +103,7 @@ docker ps --format "table {{.Names}}\t{{.Ports}}"
 
 ```bash
 # Check container logs for env var errors
-autoserve logs my-app --tail 50
+orchestry logs my-app --tail 50
 
 # Common issues:
 # - Missing required environment variables
@@ -122,13 +122,13 @@ autoserve logs my-app --tail 50
 
 ```bash
 # Check crash logs
-autoserve logs my-app --since 1h
+orchestry logs my-app --since 1h
 
 # View container restart events
-autoserve events my-app --type error
+orchestry events my-app --type error
 
 # Check resource usage
-docker stats $(docker ps -q --filter "label=autoserve.app=my-app")
+docker stats $(docker ps -q --filter "label=orchestry.app=my-app")
 ```
 
 **Common Solutions:**
@@ -161,7 +161,7 @@ environment:
 curl -f http://container-ip:port/health
 
 # Check health check configuration
-autoserve describe my-app --show-spec | grep -A 10 healthCheck
+orchestry describe my-app --show-spec | grep -A 10 healthCheck
 ```
 
 **Solution:**
@@ -180,7 +180,7 @@ healthCheck:
 
 ```bash
 # Check if app depends on external services
-autoserve logs my-app | grep -i "connection\|database\|redis\|timeout"
+orchestry logs my-app | grep -i "connection\|database\|redis\|timeout"
 ```
 
 **Solution:**
@@ -206,16 +206,16 @@ environment:
 
 ```bash
 # Check scaling policy
-autoserve describe my-app | grep -A 20 scaling
+orchestry describe my-app | grep -A 20 scaling
 
 # View scaling events
-autoserve events my-app --type scaling
+orchestry events my-app --type scaling
 
 # Check current metrics
-autoserve metrics my-app
+orchestry metrics my-app
 
 # Verify auto-scaling is enabled
-autoserve status my-app | grep -i mode
+orchestry status my-app | grep -i mode
 ```
 
 **Common Causes and Solutions:**
@@ -224,7 +224,7 @@ autoserve status my-app | grep -i mode
 
 ```bash
 # Check current mode
-autoserve describe my-app | grep mode
+orchestry describe my-app | grep mode
 
 # Solution: Enable auto scaling
 curl -X PUT http://localhost:8000/api/v1/apps/my-app/scaling \
@@ -236,7 +236,7 @@ curl -X PUT http://localhost:8000/api/v1/apps/my-app/scaling \
 
 ```bash
 # Check last scaling event
-autoserve events my-app --type scaling --limit 1
+orchestry events my-app --type scaling --limit 1
 
 # If recent scaling occurred, wait for cooldown period
 # Default cooldown is 180 seconds
@@ -246,10 +246,10 @@ autoserve events my-app --type scaling --limit 1
 
 ```bash
 # Check current metrics vs thresholds
-autoserve metrics my-app --format json | jq '.current'
+orchestry metrics my-app --format json | jq '.current'
 
 # View scaling thresholds
-autoserve describe my-app | grep -i threshold
+orchestry describe my-app | grep -i threshold
 ```
 
 **Solution:**
@@ -323,13 +323,13 @@ scaling:
 
 ```bash
 # Check nginx configuration
-docker exec autoserve-nginx nginx -t
+docker exec orchestry-nginx nginx -t
 
 # View nginx error logs
-docker logs autoserve-nginx
+docker logs orchestry-nginx
 
 # Check upstream configuration
-docker exec autoserve-nginx cat /etc/nginx/conf.d/my-app.conf
+docker exec orchestry-nginx cat /etc/nginx/conf.d/my-app.conf
 
 # Test container directly
 docker exec -it my-app-1 curl localhost:8080/health
@@ -341,39 +341,39 @@ docker exec -it my-app-1 curl localhost:8080/health
 
 ```bash
 # Check nginx config syntax
-docker exec autoserve-nginx nginx -t
+docker exec orchestry-nginx nginx -t
 
 # Reload nginx configuration
-docker exec autoserve-nginx nginx -s reload
+docker exec orchestry-nginx nginx -s reload
 
 # View generated upstream config
-docker exec autoserve-nginx ls -la /etc/nginx/conf.d/
+docker exec orchestry-nginx ls -la /etc/nginx/conf.d/
 ```
 
 #### 2. Container Network Issues
 
 ```bash
 # Check container network connectivity
-docker network inspect autoserve
+docker network inspect orchestry
 
 # Verify container IPs
-docker inspect my-app-1 | jq '.[0].NetworkSettings.Networks.autoserve.IPAddress'
+docker inspect my-app-1 | jq '.[0].NetworkSettings.Networks.orchestry.IPAddress'
 
 # Test inter-container connectivity
-docker exec autoserve-nginx ping container-ip
+docker exec orchestry-nginx ping container-ip
 ```
 
 #### 3. Health Check Failures
 
 ```bash
 # Check container health status
-autoserve status my-app
+orchestry status my-app
 
 # Test health checks manually
 curl http://container-ip:port/health
 
 # Check health check logs
-autoserve events my-app --type health
+orchestry events my-app --type health
 ```
 
 ### Load Distribution Issues
@@ -389,7 +389,7 @@ autoserve events my-app --type health
 
 ```bash
 # Check current load balancing method
-docker exec autoserve-nginx grep -r "least_conn\|ip_hash" /etc/nginx/conf.d/
+docker exec orchestry-nginx grep -r "least_conn\|ip_hash" /etc/nginx/conf.d/
 
 # For session-less apps, use least_conn (default)
 # For session-based apps, consider ip_hash
@@ -402,7 +402,7 @@ docker exec autoserve-nginx grep -r "least_conn\|ip_hash" /etc/nginx/conf.d/
 docker stats --format "table {{.Container}}\t{{.CPUPerc}}\t{{.MemUsage}}"
 
 # Ensure containers have same resource limits
-autoserve describe my-app | grep -A 5 resources
+orchestry describe my-app | grep -A 5 resources
 ```
 
 ## Database Issues
@@ -418,13 +418,13 @@ autoserve describe my-app | grep -A 5 resources
 
 ```bash
 # Check database status
-docker logs autoserve-postgres-primary
+docker logs orchestry-postgres-primary
 
 # Test database connectivity
-docker exec -it autoserve-postgres-primary psql -U autoserve -d autoserve -c "SELECT 1;"
+docker exec -it orchestry-postgres-primary psql -U orchestry -d orchestry -c "SELECT 1;"
 
 # Check active connections
-docker exec -it autoserve-postgres-primary psql -U autoserve -d autoserve -c "SELECT count(*) FROM pg_stat_activity;"
+docker exec -it orchestry-postgres-primary psql -U orchestry -d orchestry -c "SELECT count(*) FROM pg_stat_activity;"
 
 # Verify connection string format
 echo $DATABASE_URL
@@ -436,7 +436,7 @@ echo $DATABASE_URL
 
 ```bash
 # Check max connections
-docker exec -it autoserve-postgres-primary psql -U autoserve -d autoserve -c "SHOW max_connections;"
+docker exec -it orchestry-postgres-primary psql -U orchestry -d orchestry -c "SHOW max_connections;"
 
 # Increase max connections
 # Edit postgresql.conf or use environment variable
@@ -455,17 +455,17 @@ environment:
 docker exec -it my-app-1 nc -zv postgres-host 5432
 
 # Check Docker network
-docker network inspect autoserve
+docker network inspect orchestry
 ```
 
 #### 3. Authentication Issues
 
 ```bash
 # Check pg_hba.conf settings
-docker exec autoserve-postgres-primary cat /var/lib/postgresql/data/pg_hba.conf
+docker exec orchestry-postgres-primary cat /var/lib/postgresql/data/pg_hba.conf
 
 # Test authentication
-docker exec -it autoserve-postgres-primary psql -U autoserve -h localhost -d autoserve
+docker exec -it orchestry-postgres-primary psql -U orchestry -h localhost -d orchestry
 ```
 
 ### Database Performance Issues
@@ -522,10 +522,10 @@ environment:
 
 ```bash
 # Check application metrics
-autoserve metrics my-app
+orchestry metrics my-app
 
 # View scaling decisions
-autoserve events my-app --type scaling
+orchestry events my-app --type scaling
 
 # Check resource utilization
 docker stats my-app-1 my-app-2 my-app-3
@@ -540,7 +540,7 @@ curl -w "%{time_total}\n" -o /dev/null -s http://localhost/my-app/
 
 ```bash
 # Manual scaling
-autoserve scale my-app 5
+orchestry scale my-app 5
 
 # Or adjust auto-scaling thresholds
 ```
@@ -643,10 +643,10 @@ environment:
 
 ```bash
 # View logs from all replicas
-autoserve logs my-app --follow
+orchestry logs my-app --follow
 
 # View specific time range
-autoserve logs my-app --since 2h --until 1h
+orchestry logs my-app --since 2h --until 1h
 ```
 
 ### Missing Metrics
@@ -680,7 +680,7 @@ healthCheck:
   port: 8080
   headers:
     - name: "X-Health-Check"
-      value: "autoserve"
+      value: "orchestry"
 ```
 
 ## Configuration Issues
@@ -701,7 +701,7 @@ healthCheck:
 docker exec my-app-1 env | grep MY_VAR
 
 # Validate in application specification
-autoserve describe my-app | grep -A 20 environment
+orchestry describe my-app | grep -A 20 environment
 ```
 
 #### 2. Secret Management
@@ -727,7 +727,7 @@ environment:
 
 ### Complete System Recovery
 
-If AutoServe is completely down:
+If Orchestry is completely down:
 
 ```bash
 # 1. Stop all services
@@ -744,12 +744,12 @@ docker-compose up -d
 docker-compose ps
 
 # 5. Verify database connectivity
-docker exec -it autoserve-postgres-primary psql -U autoserve -d autoserve -c "SELECT count(*) FROM applications;"
+docker exec -it orchestry-postgres-primary psql -U orchestry -d orchestry -c "SELECT count(*) FROM applications;"
 
 # 6. Restart applications
-autoserve list
-for app in $(autoserve list --format json | jq -r '.apps[].name'); do
-  autoserve up $app
+orchestry list
+for app in $(orchestry list --format json | jq -r '.apps[].name'); do
+  orchestry up $app
 done
 ```
 
@@ -758,17 +758,17 @@ done
 If database is corrupted:
 
 ```bash
-# 1. Stop AutoServe
-docker-compose stop autoserve-controller
+# 1. Stop Orchestry
+docker-compose stop orchestry-controller
 
 # 2. Backup current database
-docker exec autoserve-postgres-primary pg_dump -U autoserve autoserve > backup.sql
+docker exec orchestry-postgres-primary pg_dump -U orchestry orchestry > backup.sql
 
 # 3. Check database integrity
-docker exec -it autoserve-postgres-primary psql -U autoserve -d autoserve -c "SELECT pg_database_size('autoserve');"
+docker exec -it orchestry-postgres-primary psql -U orchestry -d orchestry -c "SELECT pg_database_size('orchestry');"
 
 # 4. If needed, restore from backup
-docker exec -i autoserve-postgres-primary psql -U autoserve -d autoserve < backup.sql
+docker exec -i orchestry-postgres-primary psql -U orchestry -d orchestry < backup.sql
 
 # 5. Restart services
 docker-compose up -d
@@ -780,20 +780,20 @@ If specific application is stuck:
 
 ```bash
 # 1. Stop application
-autoserve down my-app --force
+orchestry down my-app --force
 
 # 2. Clean up containers
-docker rm -f $(docker ps -aq --filter "label=autoserve.app=my-app")
+docker rm -f $(docker ps -aq --filter "label=orchestry.app=my-app")
 
 # 3. Clear application state (if needed)
 # This will lose scaling history but preserve configuration
 curl -X DELETE http://localhost:8000/api/v1/apps/my-app/instances
 
 # 4. Restart application
-autoserve up my-app
+orchestry up my-app
 
 # 5. Monitor startup
-autoserve logs my-app --follow
+orchestry logs my-app --follow
 ```
 
 ## Getting Help
@@ -804,11 +804,11 @@ Before seeking help, collect this information:
 
 ```bash
 #!/bin/bash
-# AutoServe diagnostic script
+# Orchestry diagnostic script
 
-echo "=== AutoServe Diagnostic Information ==="
+echo "=== Orchestry Diagnostic Information ==="
 echo "Date: $(date)"
-echo "Version: $(autoserve --version)"
+echo "Version: $(orchestry --version)"
 echo
 
 echo "=== System Information ==="
@@ -826,11 +826,11 @@ curl -s http://localhost:8000/health | jq '.' || echo "API not responding"
 echo
 
 echo "=== Application Status ==="
-autoserve list
+orchestry list
 echo
 
 echo "=== Recent Events ==="
-autoserve events --limit 20
+orchestry events --limit 20
 echo
 
 echo "=== System Resources ==="
@@ -840,13 +840,13 @@ echo
 
 echo "=== Recent Logs ==="
 echo "Controller logs:"
-docker logs --tail 50 autoserve-controller
+docker logs --tail 50 orchestry-controller
 echo
 echo "Database logs:"
-docker logs --tail 20 autoserve-postgres-primary
+docker logs --tail 20 orchestry-postgres-primary
 echo
 echo "Nginx logs:"
-docker logs --tail 20 autoserve-nginx
+docker logs --tail 20 orchestry-nginx
 ```
 
 ### Support Channels

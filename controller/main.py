@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-AutoServe Controller Daemon
+Orchestry Controller Daemon
 
-Main entry point for running the AutoServe controller as a daemon.
+Main entry point for running the Orchestry controller as a daemon.
 This starts the FastAPI server and all background services.
 """
 
@@ -33,7 +33,7 @@ def setup_logging(level: str = "INFO"):
     # Ensure logs directory exists
     logs_dir.mkdir(exist_ok=True)
     
-    log_file_path = logs_dir / 'autoserve-controller.log'
+    log_file_path = logs_dir / 'orchestry-controller.log'
     
     logging.basicConfig(
         level=getattr(logging, level.upper()),
@@ -55,7 +55,7 @@ def signal_handler(signum, frame):
 
 def main():
     """Main entry point for the controller daemon."""
-    parser = argparse.ArgumentParser(description="AutoServe Controller Daemon")
+    parser = argparse.ArgumentParser(description="Orchestry Controller Daemon")
     parser.add_argument("--host", default=None, help="Host to bind to (default: from environment)")
     parser.add_argument("--port", type=int, default=None, help="Port to bind to (default: from environment)")
     parser.add_argument("--log-level", default="INFO", 
@@ -77,31 +77,31 @@ def main():
     signal.signal(signal.SIGTERM, signal_handler)
     
     # Get host and port from environment variables or command line args
-    host = args.host or os.getenv("AUTOSERVE_HOST")
+    host = args.host or os.getenv("ORCHESTRY_HOST")
     if not host:
-        logger.error("AUTOSERVE_HOST environment variable is required. Please set it in .env file.")
+        logger.error("ORCHESTRY_HOST environment variable is required. Please set it in .env file.")
         sys.exit(1)
         
-    port = args.port or (int(os.getenv("AUTOSERVE_PORT")) if os.getenv("AUTOSERVE_PORT") else None)
+    port = args.port or (int(os.getenv("ORCHESTRY_PORT")) if os.getenv("ORCHESTRY_PORT") else None)
     if port is None:
-        logger.error("AUTOSERVE_PORT environment variable is required. Please set it in .env file.")
+        logger.error("ORCHESTRY_PORT environment variable is required. Please set it in .env file.")
         sys.exit(1)
     
-    logger.info("Starting AutoServe Controller...")
+    logger.info("Starting Orchestry Controller...")
     logger.info(f"API will be available at http://{host}:{port}")
     
     # Set environment variables that components will use
-    db_path = args.db_path or os.getenv("AUTOSERVE_DB_PATH")  # For backward compatibility, but not used
+    db_path = args.db_path or os.getenv("ORCHESTRY_DB_PATH")  # For backward compatibility, but not used
     
-    nginx_container = args.nginx_container or os.getenv("AUTOSERVE_NGINX_CONTAINER")
+    nginx_container = args.nginx_container or os.getenv("ORCHESTRY_NGINX_CONTAINER")
     if not nginx_container:
-        logger.error("AUTOSERVE_NGINX_CONTAINER environment variable is required. Please set it in .env file.")
+        logger.error("ORCHESTRY_NGINX_CONTAINER environment variable is required. Please set it in .env file.")
         sys.exit(1)
     
     # Keep for backward compatibility with any legacy scripts
     if db_path:
-        os.environ["AUTOSERVE_DB_PATH"] = db_path
-    os.environ["AUTOSERVE_NGINX_CONTAINER"] = nginx_container
+        os.environ["ORCHESTRY_DB_PATH"] = db_path
+    os.environ["ORCHESTRY_NGINX_CONTAINER"] = nginx_container
     
     logger.info(f"Database: PostgreSQL HA Cluster (postgres-primary -> postgres-replica)")
     logger.info(f"Nginx container: {nginx_container}")

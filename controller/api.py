@@ -1,5 +1,5 @@
 """
-FastAPI-based Admin API for the AutoServe controller.
+FastAPI-based Admin API for the Orchestry controller.
 Provides endpoints for app management, scaling, and monitoring.
 """
 
@@ -128,7 +128,7 @@ def on_cluster_change(nodes):
 
 # FastAPI app
 app = FastAPI(
-    title="AutoServe Controller API",
+    title="Orchestry Controller API",
     description="Docker-based autoscaling controller API",
     version="1.0.0"
 )
@@ -157,7 +157,7 @@ async def startup_event():
         cluster_controller = DistributedController(
             node_id=os.getenv("CLUSTER_NODE_ID"),
             hostname=os.getenv("CLUSTER_HOSTNAME", "localhost"),
-            port=int(os.getenv("AUTOSERVE_PORT", "8000")),
+            port=int(os.getenv("ORCHESTRY_PORT", "8000")),
             db_manager=state_store
         )
         
@@ -238,7 +238,7 @@ async def startup_event():
         # Container monitoring and cleanup will be started by the leader
         logger.info("Waiting for leader election before starting container operations...")
         
-        logger.info("AutoServe Controller API started successfully")
+        logger.info("Orchestry Controller API started successfully")
         
     except Exception as e:
         logger.error(f"Failed to start controller: {e}")
@@ -263,7 +263,7 @@ async def shutdown_event():
     if state_store:
         state_store.close()
     
-    logger.info("AutoServe Controller API shut down")
+    logger.info("Orchestry Controller API shut down")
 
 def background_monitoring():
     """Background thread for monitoring and autoscaling."""

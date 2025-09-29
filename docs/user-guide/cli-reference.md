@@ -1,13 +1,13 @@
 # CLI Reference
 
-Complete reference for the AutoServe command-line interface.
+Complete reference for the Orchestry command-line interface.
 
 ## Installation
 
-The CLI is automatically installed when you install AutoServe:
+The CLI is automatically installed when you install Orchestry:
 
 ```bash
-pip install autoserve
+pip install orchestry
 ```
 
 Or install from source
@@ -19,7 +19,7 @@ pip install -e .
 ## Global Options
 
 ```bash
-autoserve [GLOBAL_OPTIONS] COMMAND [COMMAND_OPTIONS]
+orchestry [GLOBAL_OPTIONS] COMMAND [COMMAND_OPTIONS]
 ```
 
 ### Environment Variables
@@ -27,9 +27,9 @@ autoserve [GLOBAL_OPTIONS] COMMAND [COMMAND_OPTIONS]
 Configure the CLI with environment variables:
 
 ```bash
-export AUTOSERVE_HOST=localhost      # Controller host
-export AUTOSERVE_PORT=8000          # Controller port
-export AUTOSERVE_TIMEOUT=30         # Request timeout (seconds)
+export ORCHESTRY_HOST=localhost      # Controller host
+export ORCHETSRY_PORT=8000          # Controller port
+export ORCHESTRY_TIMEOUT=30         # Request timeout (seconds)
 ```
 
 ## Commands Overview
@@ -57,7 +57,7 @@ export AUTOSERVE_TIMEOUT=30         # Request timeout (seconds)
 Interactively configure the controller endpoint used by all commands.
 
 ```bash
-autoserve config
+orchestry config
 ```
 
 This command:
@@ -66,13 +66,13 @@ This command:
 - Saves the configuration to your OS config directory
 
 On Linux the file is typically saved to:
-- ~/.config/autoserve/config.yaml
+- ~/.config/orchestry/config.yaml
 
 On macOS:
-- ~/Library/Application Support/autoserve/config.yaml
+- ~/Library/Application Support/orchestry/config.yaml
 
 On Windows:
-- %AppData%\autoserve\config.yaml
+- %AppData%\orchestry\config.yaml
 
 Saved file format:
 
@@ -84,7 +84,7 @@ port: 8000
 Examples:
 ```bash
 # Run interactive setup
-autoserve config
+orchestry config
 ```
 
 ### register
@@ -92,7 +92,7 @@ autoserve config
 Register an application from a specification file.
 
 ```bash
-autoserve register [OPTIONS] CONFIG_FILE
+orchestry register [OPTIONS] CONFIG_FILE
 ```
 
 **Arguments:**
@@ -104,13 +104,13 @@ autoserve register [OPTIONS] CONFIG_FILE
 **Examples:**
 ```bash
 # Register from YAML file
-autoserve register my-app.yml
+orchestry register my-app.yml
 
 # Register from JSON file  
-autoserve register my-app.json
+orchestry register my-app.json
 
 # Validate specification only
-autoserve register --validate-only my-app.yml
+orchestry register --validate-only my-app.yml
 ```
 
 ### up
@@ -118,7 +118,7 @@ autoserve register --validate-only my-app.yml
 Start a registered application.
 
 ```bash
-autoserve up [OPTIONS] APP_NAME
+orchestry up [OPTIONS] APP_NAME
 ```
 
 **Arguments:**
@@ -132,13 +132,13 @@ autoserve up [OPTIONS] APP_NAME
 **Examples:**
 ```bash
 # Start application
-autoserve up my-app
+orchestry up my-app
 
 # Start with specific replica count
-autoserve up my-app --replicas 3
+orchestry up my-app --replicas 3
 
 # Start and wait for readiness
-autoserve up my-app --wait --timeout 120
+orchestry up my-app --wait --timeout 120
 ```
 
 ### down
@@ -146,7 +146,7 @@ autoserve up my-app --wait --timeout 120
 Stop a running application.
 
 ```bash
-autoserve down [OPTIONS] APP_NAME
+orchestry down [OPTIONS] APP_NAME
 ```
 
 **Arguments:**
@@ -159,13 +159,13 @@ autoserve down [OPTIONS] APP_NAME
 **Examples:**
 ```bash
 # Graceful stop
-autoserve down my-app
+orchestry down my-app
 
 # Force stop
-autoserve down my-app --force
+orchestry down my-app --force
 
 # Stop with custom timeout
-autoserve down my-app --timeout 60
+orchestry down my-app --timeout 60
 ```
 
 ### scale
@@ -173,7 +173,7 @@ autoserve down my-app --timeout 60
 Scale an application to a specific number of replicas.
 
 ```bash
-autoserve scale [OPTIONS] APP_NAME REPLICAS
+orchestry scale [OPTIONS] APP_NAME REPLICAS
 ```
 
 **Arguments:**
@@ -187,13 +187,13 @@ autoserve scale [OPTIONS] APP_NAME REPLICAS
 **Examples:**
 ```bash
 # Scale to 5 replicas
-autoserve scale my-app 5
+orchestry scale my-app 5
 
 # Scale and wait for completion
-autoserve scale my-app 3 --wait
+orchestry scale my-app 3 --wait
 
 # Scale with custom timeout
-autoserve scale my-app 2 --wait --timeout 180
+orchestry scale my-app 2 --wait --timeout 180
 ```
 
 ## Information Commands
@@ -203,7 +203,7 @@ autoserve scale my-app 2 --wait --timeout 180
 Show application status and health.
 
 ```bash
-autoserve status [OPTIONS] [APP_NAME]
+orchestry status [OPTIONS] [APP_NAME]
 ```
 
 **Arguments:**
@@ -217,16 +217,16 @@ autoserve status [OPTIONS] [APP_NAME]
 **Examples:**
 ```bash
 # Show status of specific app
-autoserve status my-app
+orchestry status my-app
 
 # Show all applications
-autoserve status
+orchestry status
 
 # Watch status updates
-autoserve status my-app --watch
+orchestry status my-app --watch
 
 # JSON output
-autoserve status my-app --format json
+orchestry status my-app --format json
 ```
 
 ### list
@@ -234,7 +234,7 @@ autoserve status my-app --format json
 List all registered applications.
 
 ```bash
-autoserve list [OPTIONS]
+orchestry list [OPTIONS]
 ```
 
 **Options:**
@@ -245,16 +245,16 @@ autoserve list [OPTIONS]
 **Examples:**
 ```bash
 # List all applications
-autoserve list
+orchestry list
 
 # List only running applications
-autoserve list --filter running
+orchestry list --filter running
 
 # JSON output
-autoserve list --format json
+orchestry list --format json
 
 # Sort by creation time
-autoserve list --sort created
+orchestry list --sort created
 ```
 
 ### describe
@@ -262,7 +262,7 @@ autoserve list --sort created
 Show detailed information about an application.
 
 ```bash
-autoserve describe [OPTIONS] APP_NAME
+orchestry describe [OPTIONS] APP_NAME
 ```
 
 **Arguments:**
@@ -276,13 +276,13 @@ autoserve describe [OPTIONS] APP_NAME
 **Examples:**
 ```bash
 # Describe application
-autoserve describe my-app
+orchestry describe my-app
 
 # Include specification
-autoserve describe my-app --show-spec
+orchestry describe my-app --show-spec
 
 # JSON output with events
-autoserve describe my-app --format json --show-events
+orchestry describe my-app --format json --show-events
 ```
 
 ## Monitoring Commands
@@ -292,7 +292,7 @@ autoserve describe my-app --format json --show-events
 View application container logs.
 
 ```bash
-autoserve logs [OPTIONS] APP_NAME
+orchestry logs [OPTIONS] APP_NAME
 ```
 
 **Arguments:**
@@ -307,19 +307,19 @@ autoserve logs [OPTIONS] APP_NAME
 **Examples:**
 ```bash
 # Show recent logs
-autoserve logs my-app
+orchestry logs my-app
 
 # Follow logs
-autoserve logs my-app --follow
+orchestry logs my-app --follow
 
 # Show last 50 lines
-autoserve logs my-app --tail 50
+orchestry logs my-app --tail 50
 
 # Show logs from last hour
-autoserve logs my-app --since 1h
+orchestry logs my-app --since 1h
 
 # Show logs from specific container
-autoserve logs my-app --container my-app-1
+orchestry logs my-app --container my-app-1
 ```
 
 ### events
@@ -327,7 +327,7 @@ autoserve logs my-app --container my-app-1
 Show application events and scaling decisions.
 
 ```bash
-autoserve events [OPTIONS] APP_NAME
+orchestry events [OPTIONS] APP_NAME
 ```
 
 **Arguments:**
@@ -341,16 +341,16 @@ autoserve events [OPTIONS] APP_NAME
 **Examples:**
 ```bash
 # Show recent events
-autoserve events my-app
+orchestry events my-app
 
 # Follow events
-autoserve events my-app --follow
+orchestry events my-app --follow
 
 # Show scaling events only
-autoserve events my-app --type scaling
+orchestry events my-app --type scaling
 
 # Show events from last 2 hours
-autoserve events my-app --since 2h
+orchestry events my-app --since 2h
 ```
 
 ### metrics
@@ -358,7 +358,7 @@ autoserve events my-app --since 2h
 Display application performance metrics.
 
 ```bash
-autoserve metrics [OPTIONS] APP_NAME
+orchestry metrics [OPTIONS] APP_NAME
 ```
 
 **Arguments:**
@@ -373,13 +373,13 @@ autoserve metrics [OPTIONS] APP_NAME
 **Examples:**
 ```bash
 # Show current metrics
-autoserve metrics my-app
+orchestry metrics my-app
 
 # Watch metrics updates
-autoserve metrics my-app --watch
+orchestry metrics my-app --watch
 
 # JSON output with history
-autoserve metrics my-app --format json --history 20
+orchestry metrics my-app --format json --history 20
 ```
 
 ## Management Commands
@@ -389,7 +389,7 @@ autoserve metrics my-app --format json --history 20
 Remove an application and all its resources.
 
 ```bash
-autoserve remove [OPTIONS] APP_NAME
+orchestry remove [OPTIONS] APP_NAME
 ```
 
 **Arguments:**
@@ -402,13 +402,13 @@ autoserve remove [OPTIONS] APP_NAME
 **Examples:**
 ```bash
 # Remove application (with confirmation)
-autoserve remove my-app
+orchestry remove my-app
 
 # Force remove without confirmation
-autoserve remove my-app --force
+orchestry remove my-app --force
 
 # Remove but keep data volumes
-autoserve remove my-app --keep-data
+orchestry remove my-app --keep-data
 ```
 
 ## Cluster Commands
@@ -418,7 +418,7 @@ autoserve remove my-app --keep-data
 Show cluster node status and leader information.
 
 ```bash
-autoserve cluster status [OPTIONS]
+orchestry cluster status [OPTIONS]
 ```
 
 **Options:**
@@ -428,13 +428,13 @@ autoserve cluster status [OPTIONS]
 **Examples:**
 ```bash
 # Show cluster status
-autoserve cluster status
+orchestry cluster status
 
 # Watch cluster changes
-autoserve cluster status --watch
+orchestry cluster status --watch
 
 # JSON output
-autoserve cluster status --format json
+orchestry cluster status --format json
 ```
 
 ### cluster nodes
@@ -442,7 +442,7 @@ autoserve cluster status --format json
 List all cluster nodes.
 
 ```bash
-autoserve cluster nodes [OPTIONS]
+orchestry cluster nodes [OPTIONS]
 ```
 
 **Options:**
@@ -453,7 +453,7 @@ autoserve cluster nodes [OPTIONS]
 Show current cluster leader information.
 
 ```bash
-autoserve cluster leader [OPTIONS]
+orchestry cluster leader [OPTIONS]
 ```
 
 ## Output Formats
@@ -517,24 +517,24 @@ The CLI provides helpful error messages and suggestions:
 
 ```bash
 # Service not running
-$ autoserve status my-app
-❌ AutoServe controller is not running.
+$ orchestry status my-app
+❌ Orchestry controller is not running.
 
-💡 To start AutoServe:
+💡 To start Orchestry:
    docker-compose up -d
 
    Or use the quick start script:
    ./start.sh
 
 # Application not found
-$ autoserve status nonexistent
+$ orchestry status nonexistent
 ❌ Application 'nonexistent' not found.
 
 💡 List available applications:
-   autoserve list
+   orchestry list
 
 # Invalid specification
-$ autoserve register invalid.yml
+$ orchestry register invalid.yml
 ❌ Validation failed: 
    - spec.image: Field required
    - scaling.minReplicas: Must be >= 1
@@ -544,7 +544,7 @@ $ autoserve register invalid.yml
 
 ### CLI Configuration
 
-Create `~/.autoserve/config.yaml`:
+Create `~/.orchestry/config.yaml`:
 
 ```yaml
 # Default controller endpoint
@@ -570,12 +570,12 @@ Create `.env` file in your working directory:
 
 ```bash
 # Controller settings
-AUTOSERVE_HOST=localhost
-AUTOSERVE_PORT=8000
-AUTOSERVE_TIMEOUT=30
+ORCHESTRY_HOST=localhost
+ORCHESTRY_PORT=8000
+ORCHESTRY_TIMEOUT=30
 
 # Authentication (future)
-AUTOSERVE_TOKEN=your-api-token
+ORCHESTRY_TOKEN=your-api-token
 ```
 
 ## Bash Completion
@@ -584,11 +584,11 @@ Enable bash completion for the CLI:
 
 ```bash
 # Add to ~/.bashrc or ~/.zshrc
-eval "$(_AUTOSERVE_COMPLETE=bash_source autoserve)"
+eval "$(_ORCHESTRY_COMPLETE=bash_source orchestry)"
 
 # Or generate completion script
-_AUTOSERVE_COMPLETE=bash_source autoserve > ~/.autoserve-complete.bash
-source ~/.autoserve-complete.bash
+_ORCHESTRY_COMPLETE=bash_source orchestry > ~/.orchestry-complete.bash
+source ~/.orchestry-complete.bash
 ```
 
 ## Tips and Best Practices

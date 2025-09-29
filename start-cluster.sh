@@ -1,12 +1,12 @@
 #!/bin/bash
 
-# AutoServe Cluster Startup Script
+# Orchestry Cluster Startup Script
 # Starts the 3-node controller cluster with leader election
 # Note: You can also just use: docker compose up --build -d
 
 set -e
 
-echo "Starting AutoServe Distributed Controller Cluster..."
+echo "Starting Orchestry Distributed Controller Cluster..."
 echo "=================================================="
 echo "Alternatively, you can just run: docker compose up --build -d"
 echo ""
@@ -23,7 +23,7 @@ mkdir -p logs
 mkdir -p configs/nginx
 
 # Start the entire cluster
-echo "� Starting AutoServe with clustered controllers..."
+echo "� Starting Orchestry with clustered controllers..."
 docker compose up --build -d
 
 # Wait for cluster to be ready
@@ -52,7 +52,7 @@ if [ $attempt -eq $max_attempts ]; then
 fi
 
 echo ""
-echo "🎉 AutoServe Distributed Controller Cluster is now running!"
+echo "🎉 Orchestry Distributed Controller Cluster is now running!"
 echo "=================================================="
 echo ""
 echo "🌐 Controller API Load Balancer: http://localhost:8000"
@@ -67,7 +67,7 @@ echo "   • curl http://localhost:8000/cluster/leader"
 echo "   • curl http://localhost:8000/cluster/health"
 echo ""
 echo "📋 Database Cluster Status:"
-docker compose exec postgres-primary psql -U autoserve -d autoserve -c "SELECT application_name, state, sync_state FROM pg_stat_replication;"
+docker compose exec postgres-primary psql -U orchestry -d orchestry -c "SELECT application_name, state, sync_state FROM pg_stat_replication;"
 
 echo ""
 echo "🔧 Container Status:"  

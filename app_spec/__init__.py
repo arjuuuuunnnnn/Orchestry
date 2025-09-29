@@ -1,5 +1,5 @@
 """
-Application specification models for AutoServe.
+Application specification models for Orchestry.
 """
 
 from .models import (

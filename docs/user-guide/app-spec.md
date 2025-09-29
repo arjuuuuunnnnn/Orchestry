@@ -1,10 +1,10 @@
 # Application Specification
 
-Learn how to define applications for AutoServe using YAML or JSON specifications.
+Learn how to define applications for Orchestry using YAML or JSON specifications.
 
 ## Overview
 
-AutoServe uses declarative specifications to define how your applications should be deployed, scaled, and monitored. These specifications are written in YAML or JSON format and contain all the information needed to run your application.
+Orchestry uses declarative specifications to define how your applications should be deployed, scaled, and monitored. These specifications are written in YAML or JSON format and contain all the information needed to run your application.
 
 ## Basic Structure
 
@@ -155,7 +155,7 @@ environment:
   - name: NODE_ENV
     value: "production"
   
-  # AutoServe-provided values
+  # Orchestry-provided values
   - name: INSTANCE_IP
     source: sdk
     key: "instance.ip"
@@ -222,7 +222,7 @@ scaling:
 
 #### Scaling Metrics
 
-AutoServe scales based on multiple metrics:
+Orchestry scales based on multiple metrics:
 
 1. **CPU Utilization**: Target 70% average across replicas
 2. **Memory Usage**: Target 75% average across replicas  
@@ -250,7 +250,7 @@ scaling:
 
 ### Health Check Configuration
 
-Define how AutoServe monitors your application health:
+Define how Orchestry monitors your application health:
 
 ```yaml
 healthCheck:
@@ -288,7 +288,7 @@ healthCheck:
   expectedStatusCodes: [200]
   headers:
     - name: "User-Agent"
-      value: "AutoServe-HealthCheck/1.0"
+      value: "Orchestry-HealthCheck/1.0"
 ```
 
 **TCP Health Checks:**
@@ -502,7 +502,7 @@ healthCheck:
 
 ## Validation Rules
 
-AutoServe validates specifications before deployment:
+Orchestry validates specifications before deployment:
 
 ### Required Fields
 
@@ -519,7 +519,7 @@ AutoServe validates specifications before deployment:
 - Lowercase letters, numbers, and hyphens only
 - Must start and end with alphanumeric character
 - Maximum 253 characters
-- Must be unique within AutoServe instance
+- Must be unique within Orchestry instance
 
 **Label Values:**
 - Same rules as application names

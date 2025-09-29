@@ -18,12 +18,12 @@ RUN mkdir -p /app/data /app/logs /nginx-config && \
     chmod 755 /app/logs /app/data
 
 ENV PYTHONPATH=/app
-ENV AUTOSERVE_DB_PATH=/app/data/autoscaler.db
-ENV AUTOSERVE_NGINX_CONTAINER=autoserve-nginx
+ENV ORCHESTRY_DB_PATH=/app/data/autoscaler.db
+ENV ORCHESTRY_NGINX_CONTAINER=orchestry-nginx
 
 EXPOSE 8000 8001 8002 8003
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:${AUTOSERVE_PORT:-8000}/health || exit 1
+    CMD curl -f http://localhost:${ORCHESTRY_PORT:-8000}/health || exit 1
 
 CMD ["python", "controller/main.py"]

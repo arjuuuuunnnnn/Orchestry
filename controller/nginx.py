@@ -1,5 +1,5 @@
 """
-Docker-based Nginx management for AutoServe.
+Docker-based Nginx management for Orchestry.
 Manages Nginx configuration through Docker container operations.
 """
 
@@ -22,15 +22,15 @@ class DockerNginxManager:
     def __init__(self, nginx_container_name: str = None, conf_dir: str = None, template_path: str = None):
         self.docker_client = docker.from_env()
         
-        self.nginx_container_name = nginx_container_name or os.getenv("AUTOSERVE_NGINX_CONTAINER")
+        self.nginx_container_name = nginx_container_name or os.getenv("ORCHESTRY_NGINX_CONTAINER")
         if not self.nginx_container_name:
-            logger.error("AUTOSERVE_NGINX_CONTAINER environment variable is required. Please set it in .env file.")
-            raise RuntimeError("Missing required environment variable: AUTOSERVE_NGINX_CONTAINER")
+            logger.error("ORCHESTRY_NGINX_CONTAINER environment variable is required. Please set it in .env file.")
+            raise RuntimeError("Missing required environment variable: ORCHESTRY_NGINX_CONTAINER")
             
-        self.conf_dir = Path(conf_dir or os.getenv("AUTOSERVE_NGINX_CONF_DIR"))
-        if not conf_dir and not os.getenv("AUTOSERVE_NGINX_CONF_DIR"):
-            logger.error("AUTOSERVE_NGINX_CONF_DIR environment variable is required. Please set it in .env file.")
-            raise RuntimeError("Missing required environment variable: AUTOSERVE_NGINX_CONF_DIR")
+        self.conf_dir = Path(conf_dir or os.getenv("ORCHESTRY_NGINX_CONF_DIR"))
+        if not conf_dir and not os.getenv("ORCHESTRY_NGINX_CONF_DIR"):
+            logger.error("ORCHESTRY_NGINX_CONF_DIR environment variable is required. Please set it in .env file.")
+            raise RuntimeError("Missing required environment variable: ORCHESTRY_NGINX_CONF_DIR")
         self.template_path = template_path or "configs/nginx_template.conf"
         self._load_template()
         
@@ -61,7 +61,7 @@ class DockerNginxManager:
                 container.start()
             logger.info(f"Nginx container {self.nginx_container_name} is running")
         except docker.errors.NotFound:
-            logger.error(f"Nginx container {self.nginx_container_name} not found. Please start the AutoServe infrastructure.")
+            logger.error(f"Nginx container {self.nginx_container_name} not found. Please start the Orchestry infrastructure.")
             raise Exception(f"Nginx container {self.nginx_container_name} not found")
         except Exception as e:
             logger.error(f"Failed to ensure nginx container: {e}")

@@ -9,9 +9,9 @@ from platformdirs import user_config_dir
 
 load_dotenv()
 
-app = typer.Typer(name="autoserve", help="AutoServe SDK CLI")
+app = typer.Typer(name="orchestry", help="Orchestry SDK CLI")
 
-CONFIG_DIR = user_config_dir("autoserve", "autoserve")
+CONFIG_DIR = user_config_dir("orchestry", "orchestry")
 CONFIG_FILE = os.path.join(CONFIG_DIR, "config.yaml")
 
 def save_config(host, port):
@@ -28,23 +28,23 @@ def load_config():
                 return f"http://{data['host']}:{data['port']}"
     return None
 
-AUTOSERVE_URL = load_config()
+ORCHESTRY_URL = load_config()
 
 def check_service_running(API_URL):
-    """Check if AutoServe controller is running and provide helpful error messages."""
+    """Check if orchestry controller is running and provide helpful error messages."""
     try:
         if API_URL is None:
-            typer.echo(" AutoServe is not configured.", err=True)
-            typer.echo(" Please run 'autoserve config' to set it up.", err=True)
+            typer.echo(" orchestry is not configured.", err=True)
+            typer.echo(" Please run 'orchestry config' to set it up.", err=True)
             raise typer.Exit(1)
         response = requests.get(f"{API_URL}/health", timeout=5)
         if response.status_code == 200:
             return True
     except requests.exceptions.ConnectionError:
-        typer.echo(" AutoServe controller is not running.", err=True)
+        typer.echo(" orchestry controller is not running.", err=True)
         typer.echo("", err=True)
-        typer.echo(" Please ensure you are running Autoserve", err=True)
-        typer.echo(" To start AutoServe:", err=True)
+        typer.echo(" Please ensure you are running orchestry", err=True)
+        typer.echo(" To start orchestry:", err=True)
         typer.echo(" docker-compose up -d", err=True)
         typer.echo("", err=True)
         typer.echo(" Or use the quick start script:", err=True)
@@ -52,35 +52,35 @@ def check_service_running(API_URL):
         typer.echo("", err=True)
         raise typer.Exit(1)
     except requests.exceptions.Timeout:
-        typer.echo(" AutoServe controller is not responding (timeout).", err=True)
+        typer.echo(" orchestry controller is not responding (timeout).", err=True)
         typer.echo(" Check if the service is healthy: docker-compose ps", err=True)
         raise typer.Exit(1)
     except Exception as e:
-        typer.echo(f" Error connecting to AutoServe: {e}", err=True)
+        typer.echo(f" Error connecting to orchestry: {e}", err=True)
         raise typer.Exit(1)
     return False
 
 
 @app.command()
 def config():
-    """Configure autoserve by adding AUTOSERVE_HOST and AUTOSERVE_PORT"""
-    typer.echo("To configure autoserve, please enter the following details:")
-    AUTOSERVE_HOST = typer.prompt("Host (e.g., localhost or an IP address)")
-    AUTOSERVE_PORT = typer.prompt("Port (e.g., 8000)")
+    """Configure orchestry by adding ORCHESTRY_HOST and orchestry_PORT"""
+    typer.echo("To configure orchestry, please enter the following details:")
+    ORCHESTRY_HOST = typer.prompt("Host (e.g., localhost or an IP address)")
+    ORCHESTRY_PORT = typer.prompt("Port (e.g., 8000)")
 
-    typer.echo(f"Connecting to Autoserve at http://{AUTOSERVE_HOST}:{AUTOSERVE_PORT}...")
-    if check_service_running(f"http://{AUTOSERVE_HOST}:{AUTOSERVE_PORT}") == True:
-        save_config(AUTOSERVE_HOST, AUTOSERVE_PORT)
+    typer.echo(f"Connecting to orchestry at http://{ORCHESTRY_HOST}:{ORCHESTRY_PORT}...")
+    if check_service_running(f"http://{ORCHESTRY_HOST}:{ORCHESTRY_PORT}") == True:
+        save_config(ORCHESTRY_HOST, ORCHESTRY_PORT)
         typer.echo(f"Configuration saved to {CONFIG_FILE}")
     else:
-        typer.echo("Failed to connect to the specified host and port. Please ensure the Autoserve controller is running.", err=True)
+        typer.echo("Failed to connect to the specified host and port. Please ensure the orchestry controller is running.", err=True)
         raise typer.Exit(1)
 
 @app.command()
 def register(config: str):
     """Register an app from YAML/JSON spec."""
-    if check_service_running(AUTOSERVE_URL) == False:
-        typer.echo(" AutoServe controller is not running, run 'autoserve config' to configure", err=True)
+    if check_service_running(ORCHESTRY_URL) == False:
+        typer.echo(" orchestry controller is not running, run 'orchestry config' to configure", err=True)
         raise typer.Exit(1)
     if not os.path.exists(config):
         typer.echo(f" Config file '{config}' not found", err=True)
@@ -94,7 +94,7 @@ def register(config: str):
                 spec = json.load(f)
 
         response = requests.post(
-            f"{AUTOSERVE_URL}/apps/register", 
+            f"{ORCHESTRY_URL}/apps/register", 
             json=spec,
             headers={"Content-Type": "application/json"}
         )
@@ -114,41 +114,41 @@ def register(config: str):
 @app.command()
 def up(name: str):
     """Start the app."""
-    if check_service_running(AUTOSERVE_URL) == False:
-        typer.echo(" AutoServe controller is not running, run 'autoserve config' to configure", err=True)
+    if check_service_running(ORCHESTRY_URL) == False:
+        typer.echo(" orchestry controller is not running, run 'orchestry config' to configure", err=True)
         raise typer.Exit(1)
 
-    response = requests.post(f"{AUTOSERVE_URL}/apps/{name}/up")
+    response = requests.post(f"{ORCHESTRY_URL}/apps/{name}/up")
     typer.echo(response.json())
 
 @app.command()
 def down(name: str):
     """Stop the app."""
-    if check_service_running(AUTOSERVE_URL) == False:
-        typer.echo(" AutoServe controller is not running, run 'autoserve config' to configure", err=True)
+    if check_service_running(ORCHESTRY_URL) == False:
+        typer.echo(" orchestry controller is not running, run 'orchestry config' to configure", err=True)
         raise typer.Exit(1)
-    response = requests.post(f"{AUTOSERVE_URL}/apps/{name}/down")
+    response = requests.post(f"{ORCHESTRY_URL}/apps/{name}/down")
     typer.echo(response.json())
 
 @app.command()
 def status(name: str):
     """Check app status."""
-    if check_service_running(AUTOSERVE_URL) == False:
-        typer.echo(" AutoServe controller is not running, run 'autoserve config' to configure", err=True)
+    if check_service_running(ORCHESTRY_URL) == False:
+        typer.echo(" orchestry controller is not running, run 'orchestry config' to configure", err=True)
         raise typer.Exit(1)
 
-    response = requests.get(f"{AUTOSERVE_URL}/apps/{name}/status")
+    response = requests.get(f"{ORCHESTRY_URL}/apps/{name}/status")
     typer.echo(response.json())
 
 @app.command()
 def scale(name: str, replicas: int):
     """Scale app to specific replica count."""
-    if check_service_running(AUTOSERVE_URL) == False:
-        typer.echo(" AutoServe controller is not running, run 'autoserve config' to configure", err=True)
+    if check_service_running(ORCHESTRY_URL) == False:
+        typer.echo(" orchestry controller is not running, run 'orchestry config' to configure", err=True)
         raise typer.Exit(1)
 
     try:
-        info_response = requests.get(f"{AUTOSERVE_URL}/apps/{name}/status")
+        info_response = requests.get(f"{ORCHESTRY_URL}/apps/{name}/status")
         if info_response.status_code == 404:
             typer.echo(f" App '{name}' not found", err=True)
             raise typer.Exit(1)
@@ -165,7 +165,7 @@ def scale(name: str, replicas: int):
             typer.echo(f"  Scaling '{name}' to {replicas} replicas (auto mode - may be overridden by autoscaler)")
 
         response = requests.post(
-            f"{AUTOSERVE_URL}/apps/{name}/scale",
+            f"{ORCHESTRY_URL}/apps/{name}/scale",
             json={"replicas": replicas}
         )
 
@@ -189,37 +189,37 @@ def scale(name: str, replicas: int):
 @app.command()
 def list():
     """List all applications.""" 
-    if check_service_running(AUTOSERVE_URL) == False:
-        typer.echo(" AutoServe controller is not running, run 'autoserve config' to configure", err=True)
+    if check_service_running(ORCHESTRY_URL) == False:
+        typer.echo(" orchestry controller is not running, run 'orchestry config' to configure", err=True)
         raise typer.Exit(1)
 
-    response = requests.get(f"{AUTOSERVE_URL}/apps")
+    response = requests.get(f"{ORCHESTRY_URL}/apps")
     typer.echo(response.json())
 
 @app.command()
 def metrics(name: Optional[str] = None):
     """Get system or app metrics."""
-    if check_service_running(AUTOSERVE_URL) == False:
-        typer.echo(" AutoServe controller is not running, run 'autoserve config' to configure", err=True)
+    if check_service_running(ORCHESTRY_URL) == False:
+        typer.echo(" orchestry controller is not running, run 'orchestry config' to configure", err=True)
         raise typer.Exit(1)
 
     if name:
-        response = requests.get(f"{AUTOSERVE_URL}/apps/{name}/metrics")
+        response = requests.get(f"{ORCHESTRY_URL}/apps/{name}/metrics")
     else:
-        response = requests.get(f"{AUTOSERVE_URL}/metrics")
+        response = requests.get(f"{ORCHESTRY_URL}/metrics")
 
     typer.echo(response.json())
 
 @app.command()
 def info():
-    """Show AutoServe system information and status."""
+    """Show orchestry system information and status."""
     try:
-        response = requests.get(f"{AUTOSERVE_URL}/health", timeout=5)
+        response = requests.get(f"{ORCHESTRY_URL}/health", timeout=5)
         if response.status_code == 200:
-            typer.echo(" AutoServe Controller: Running")
-            typer.echo(f"   API: {AUTOSERVE_URL}")
+            typer.echo(" orchestry Controller: Running")
+            typer.echo(f"   API: {ORCHESTRY_URL}")
 
-            apps_response = requests.get(f"{AUTOSERVE_URL}/apps")
+            apps_response = requests.get(f"{ORCHESTRY_URL}/apps")
             if apps_response.status_code == 200:
                 apps = apps_response.json()
                 typer.echo(f"   Apps: {len(apps)} registered")
@@ -236,9 +236,9 @@ def info():
                 typer.echo("   Unable to check Docker services")
 
         else:
-            typer.echo(" AutoServe Controller: Not healthy")
+            typer.echo(" orchestry Controller: Not healthy")
     except requests.exceptions.ConnectionError:
-        typer.echo(" AutoServe Controller: Not running")
+        typer.echo(" orchestry Controller: Not running")
         typer.echo("")
         typer.echo(" To start: docker-compose up -d")
     except Exception as e:
@@ -247,12 +247,12 @@ def info():
 @app.command()
 def spec(name: str, raw: bool = False):
     """Get app specification. Use --raw to see the original submitted spec."""
-    if check_service_running(AUTOSERVE_URL) == False:
-        typer.echo(" AutoServe controller is not running, run 'autoserve config' to configure", err=True)
+    if check_service_running(ORCHESTRY_URL) == False:
+        typer.echo(" orchestry controller is not running, run 'orchestry config' to configure", err=True)
         raise typer.Exit(1)
 
     try:
-        response = requests.get(f"{AUTOSERVE_URL}/apps/{name}/raw")
+        response = requests.get(f"{ORCHESTRY_URL}/apps/{name}/raw")
         if response.status_code == 404:
             typer.echo(f" App '{name}' not found", err=True)
             raise typer.Exit(1)
@@ -278,8 +278,8 @@ def spec(name: str, raw: bool = False):
         raise typer.Exit(1)
 
 if __name__ == "__main__":
-    if not AUTOSERVE_URL:
-        typer.echo("AutoServe is not configured. Please run 'autoserve config' to set it up.", err=True)
+    if not ORCHESTRY_URL:
+        typer.echo("orchestry is not configured. Please run 'orchestry config' to set it up.", err=True)
         raise typer.Exit(1)
     app()
 

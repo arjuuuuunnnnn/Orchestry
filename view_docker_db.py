@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Docker Database Viewer for AutoServe
-View the PostgreSQL databases (primary and replica) in AutoServe.
+Docker Database Viewer for Orchestry
+View the PostgreSQL databases (primary and replica) in Orchestry.
 
 Usage:
     python view_docker_db.py apps          # View all apps
@@ -43,16 +43,16 @@ except ImportError:
     sys.exit(1)
 
 class PostgreSQLDBViewer:
-    """Viewer for AutoServe PostgreSQL databases (primary and replica)."""
+    """Viewer for Orchestry PostgreSQL databases (primary and replica)."""
     
     def __init__(self, 
                  primary_host: str = "localhost", 
                  primary_port: int = 5432,
                  replica_host: str = "localhost", 
                  replica_port: int = 5433,
-                 database: str = "autoserve",
-                 username: str = "autoserve",
-                 password: str = "autoserve_password",
+                 database: str = "orchestry",
+                 username: str = "orchestry",
+                 password: str = "orchestry_password",
                  target_db: str = "primary"):
         
         self.primary_dsn = f"host={primary_host} port={primary_port} dbname={database} user={username} password={password}"
@@ -477,7 +477,7 @@ class PostgreSQLDBViewer:
 def main():
     """Main entry point."""
     parser = argparse.ArgumentParser(
-        description='View AutoServe PostgreSQL databases (primary and replica)',
+        description='View Orchestry PostgreSQL databases (primary and replica)',
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog='''
 Examples:
@@ -523,16 +523,16 @@ Examples:
                        help='Replica database port (default: 5433)')
                        
     parser.add_argument('--dbname', 
-                       default='autoserve',
-                       help='Database name (default: autoserve)')
+                       default='orchestry',
+                       help='Database name (default: orchestry)')
                        
     parser.add_argument('--username', 
-                       default='autoserve',
-                       help='Database username (default: autoserve)')
+                       default='orchestry',
+                       help='Database username (default: orchestry)')
                        
     parser.add_argument('--password', 
-                       default='autoserve_password',
-                       help='Database password (default: autoserve_password)')
+                       default='orchestry_password',
+                       help='Database password (default: orchestry_password)')
                        
     parser.add_argument('--app', 
                        help='Filter by application name')

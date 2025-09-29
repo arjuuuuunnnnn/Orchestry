@@ -3,9 +3,9 @@ requires = ["setuptools>=64", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "autoserve"
+name = "orchestry"
 version = "1.0.0"
-description = "AutoServe - Automatic scaling and load balancing for containerized applications"
+description = "Orchestry - Automatic orchestration, scaling and load balancing for containerized applications"
 authors = [{name = "Hemanth S Banur", email = "arjunbanur27@gmail.com"}]
 readme = "README.md"
 requires-python = ">=3.8"
@@ -33,8 +33,8 @@ packages = [
 ]
 
 [project.scripts]
-autoserve = "cli.main:app"
+orchestry = "cli.main:app"
 
 [project.urls]
-Homepage = "https://arjuuuuunnnnn.github.io/AutoServe/"
-Repository = "https://github.com/arjuuuuunnnnn/AutoServe"
+Homepage = "https://arjuuuuunnnnn.github.io/Orchestry/"
+Repository = "https://github.com/arjuuuuunnnnn/Orchestry"

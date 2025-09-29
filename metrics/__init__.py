@@ -1,5 +1,5 @@
 """
-Metrics collection and export for AutoServe.
+Metrics collection and export for Orchestry.
 """
 
 try:

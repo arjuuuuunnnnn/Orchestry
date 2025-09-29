@@ -1,6 +1,6 @@
-# AutoServe Documentation
+# Orchestry Documentation
 
-Welcome to AutoServe - A lightweight container orchestration and auto-scaling platform designed for web applications.
+Welcome to Orchestry - A lightweight container orchestration and auto-scaling platform designed for web applications.
 
 ## Documentation Structure
 
@@ -20,15 +20,15 @@ Welcome to AutoServe - A lightweight container orchestration and auto-scaling pl
 - [Scaling Algorithm](developer-guide/scaling.md) - Auto-scaling logic and policies
 - [Health Monitoring](developer-guide/health.md) - Health check system
 - [Load Balancing](developer-guide/load-balancing.md) - Nginx integration and routing
-- [Development Setup](developer-guide/development.md) - Contributing to AutoServe
+- [Development Setup](developer-guide/development.md) - Contributing to Orchestry
 - [Extension Guide](developer-guide/extensions.md) - Adding new features
 
 ### Examples
 - [Sample Applications](examples/applications.md) - Real-world application examples
 
-## What is AutoServe?
+## What is Orchestry?
 
-AutoServe is a container orchestration platform that provides:
+Orchestry is a container orchestration platform that provides:
 
 - **Intelligent Auto-Scaling**: Automatically scales your applications based on CPU, memory, RPS, latency, and connection metrics
 - **Load Balancing**: Dynamic Nginx configuration with health-aware routing
@@ -61,4 +61,4 @@ AutoServe is a container orchestration platform that provides:
 
 ---
 
-*AutoServe v1.0.0 - Built for simplicity, designed for scale*
+*Orchestry v1.0.0 - Built for simplicity, designed for scale*

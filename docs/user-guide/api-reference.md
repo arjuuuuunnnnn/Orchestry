@@ -1,6 +1,6 @@
 # REST API Reference
 
-Complete reference for the AutoServe REST API endpoints.
+Complete reference for the Orchestry REST API endpoints.
 
 ## Base URL
 
@@ -10,7 +10,7 @@ http://localhost:8000
 
 ## Authentication
 
-Currently, AutoServe does not require authentication. This will be added in future versions.
+Currently, Orchestry does not require authentication. This will be added in future versions.
 
 ## Content Types
 
@@ -681,7 +681,7 @@ GET /api/v1/metrics
 
 ### Get Configuration
 
-Get current AutoServe configuration.
+Get current Orchestry configuration.
 
 ```http
 GET /api/v1/config
@@ -697,9 +697,9 @@ GET /api/v1/config
     "workers": 4
   },
   "database": {
-    "host": "autoserve-postgres-primary",
+    "host": "orchestry-postgres-primary",
     "port": 5432,
-    "name": "autoserve",
+    "name": "orchestry",
     "pool_size": 10
   },
   "scaling": {
@@ -717,7 +717,7 @@ GET /api/v1/config
 
 ### Update Configuration
 
-Update AutoServe configuration (requires restart).
+Update Orchestry configuration (requires restart).
 
 ```http
 PUT /api/v1/config
@@ -809,7 +809,7 @@ X-RateLimit-Reset: 1642248000
 
 ## Cluster Management
 
-These endpoints are available when AutoServe is running in distributed cluster mode.
+These endpoints are available when Orchestry is running in distributed cluster mode.
 
 ### Get Cluster Status
 
@@ -978,9 +978,9 @@ HTTP/1.1 503 Service Unavailable
 ### Python SDK
 
 ```python
-import autoserve
+import orchestry
 
-client = autoserve.Client("http://localhost:8000")
+client = orchestry.Client("http://localhost:8000")
 
 # Register application
 with open('app.yml') as f:
@@ -998,9 +998,9 @@ print(f"App is {status['status']} with {status['replicas']['current']} replicas"
 ### Node.js SDK
 
 ```javascript
-const AutoServe = require('autoserve-client');
+const Orchestry = require('orchestry-client');
 
-const client = new AutoServe('http://localhost:8000');
+const client = new Orchestry('http://localhost:8000');
 
 // Register application
 const spec = require('./app.json');

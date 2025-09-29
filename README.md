@@ -1,10 +1,10 @@
-# <img src="docs/images/l0g0.png" alt="AutoServe logo" height="28" style="height:1em; vertical-align:-0.2em; margin-right:0.25em;"> AutoServe
+# <img src="docs/images/l0g0.png" alt="Orchestry logo" height="28" style="height:1em; vertical-align:-0.2em; margin-right:0.25em;"> Orchestry
 
 Lightweight container orchestration and auto-scaling platform for web applications.
 
-### What is AutoServe?
+### What is Orchestry?
 
-AutoServe is a container orchestration platform that provides:
+Orchestry is a container orchestration platform that provides:
 
 **Intelligent Auto-Scaling**: Automatically scales your applications based on CPU, memory, RPS, latency, and connection metrics
 
@@ -44,14 +44,14 @@ AutoServe is a container orchestration platform that provides:
 
 ## Documentation
 
-- AutoServe Docs: https://arjuuuuunnnnn.github.io/AutoServe/
+- Orchestry Docs: https://arjuuuuunnnnn.github.io/Orchestry/
 
 Quick links on the site:
 
-- Quick Start: https://arjuuuuunnnnn.github.io/AutoServe/user-guide/quick-start/
-- CLI Reference: https://arjuuuuunnnnn.github.io/AutoServe/user-guide/cli-reference/
-- API Reference: https://arjuuuuunnnnn.github.io/AutoServe/user-guide/api-reference/
-- Architecture Overview: https://arjuuuuunnnnn.github.io/AutoServe/developer-guide/architecture/
+- Quick Start: https://arjuuuuunnnnn.github.io/Orchestry/user-guide/quick-start/
+- CLI Reference: https://arjuuuuunnnnn.github.io/Orchestry/user-guide/cli-reference/
+- API Reference: https://arjuuuuunnnnn.github.io/Orchestry/user-guide/api-reference/
+- Architecture Overview: https://arjuuuuunnnnn.github.io/Orchestry/developer-guide/architecture/
 
 ---
 
@@ -60,4 +60,4 @@ Quick links on the site:
 This project is licensed under the [GNU GPLv3](LICENSE).
 
 
-AutoServe — built for simplicity, designed for scale.
+Orchestry — built for simplicity, designed for scale.

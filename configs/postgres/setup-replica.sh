@@ -8,7 +8,7 @@ run_as_postgres() {
 
 # Wait for primary to be ready
 echo "Waiting for primary database to be ready..."
-until pg_isready -h postgres-primary -p 5432 -U autoserve; do
+until pg_isready -h postgres-primary -p 5432 -U orchestry; do
     echo "Primary database is not ready yet. Sleeping..."
     sleep 2
 done

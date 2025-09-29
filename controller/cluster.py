@@ -2,7 +2,7 @@
 Distributed Controller Clustering with Leader Election
 
 This module implements a 3-node controller cluster with leader election
-to eliminate single point of failure in the AutoServe system.
+to eliminate single point of failure in the Orchestry system.
 
 Features:
 - PostgreSQL-based leader election with lease system

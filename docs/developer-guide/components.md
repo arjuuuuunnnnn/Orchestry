@@ -1,10 +1,10 @@
 # Core Components
 
-Detailed documentation of AutoServe's core components, their implementation, and interactions.
+Detailed documentation of Orchestry's core components, their implementation, and interactions.
 
 ## Application Manager
 
-The Application Manager is the heart of AutoServe, responsible for managing the complete lifecycle of containerized applications.
+The Application Manager is the heart of Orchestry, responsible for managing the complete lifecycle of containerized applications.
 
 ### Class Structure
 
@@ -63,11 +63,11 @@ def _create_container(self, app_name: str, spec: dict, replica_index: int) -> st
         'image': spec['spec']['image'],
         'name': f"{app_name}-{replica_index}",
         'labels': {
-            'autoserve.app': app_name,
-            'autoserve.replica': str(replica_index),
-            'autoserve.managed': 'true'
+            'orchestry.app': app_name,
+            'orchestry.replica': str(replica_index),
+            'orchestry.managed': 'true'
         },
-        'network': 'autoserve',
+        'network': 'orchestry',
         'detach': True,
         'restart_policy': {'Name': 'unless-stopped'}
     }
@@ -732,7 +732,7 @@ async def get_events(self, app_name: str = None, event_type: str = None,
 ### Startup Sequence
 
 ```python
-class AutoServeController:
+class OrchestryController:
     async def start(self):
         """Start all components in correct order."""
         # 1. Initialize database

@@ -1,10 +1,10 @@
 # Health Monitoring System
 
-Complete documentation of AutoServe's health monitoring system, including health checks, failure detection, and recovery mechanisms.
+Complete documentation of Orchestry's health monitoring system, including health checks, failure detection, and recovery mechanisms.
 
 ## Overview
 
-AutoServe's health monitoring system ensures application reliability through:
+Orchestry's health monitoring system ensures application reliability through:
 
 - **Proactive Health Checks**: Regular HTTP/TCP health probes
 - **Failure Detection**: Multi-level failure tracking and classification
@@ -102,7 +102,7 @@ class HTTPHealthChecker:
             connector=connector,
             timeout=self.timeout,
             headers={
-                'User-Agent': 'AutoServe-HealthChecker/1.0',
+                'User-Agent': 'Orchestry-HealthChecker/1.0',
                 'Accept': 'application/json, text/plain, */*'
             }
         )

@@ -1,10 +1,10 @@
 # Database Schema
 
-Complete documentation of AutoServe's database schema, data models, and persistence layer.
+Complete documentation of Orchestry's database schema, data models, and persistence layer.
 
 ## Overview
 
-AutoServe uses PostgreSQL as its primary datastore with an optional read replica for scalability. The database schema is designed for:
+Orchestry uses PostgreSQL as its primary datastore with an optional read replica for scalability. The database schema is designed for:
 
 - **High Performance**: Optimized queries with proper indexing
 - **Scalability**: Support for large numbers of applications and metrics
@@ -565,7 +565,7 @@ class DatabasePool:
                     max_size=self.config.get('pool_max_size', 20),
                     command_timeout=self.config.get('command_timeout', 30),
                     server_settings={
-                        'application_name': 'autoserve_controller',
+                        'application_name': 'orchestry_controller',
                         'jit': 'off'  # Disable JIT for better predictability
                     }
                 )
@@ -588,7 +588,7 @@ class DatabasePool:
                         max_size=self.config.get('pool_max_size', 10),
                         command_timeout=self.config.get('command_timeout', 30),
                         server_settings={
-                            'application_name': 'autoserve_controller_read',
+                            'application_name': 'orchestry_controller_read',
                             'default_transaction_isolation': 'repeatable_read'
                         }
                     )

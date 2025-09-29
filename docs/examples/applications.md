@@ -1,6 +1,6 @@
 # Sample Applications
 
-Real-world examples of applications deployed with AutoServe, showing different patterns and configurations.
+Real-world examples of applications deployed with Orchestry, showing different patterns and configurations.
 
 ## Web Applications
 
@@ -95,7 +95,7 @@ spec:
     periodSeconds: 15
     headers:
       - name: "User-Agent"
-        value: "AutoServe-HealthCheck/1.0"
+        value: "Orchestry-HealthCheck/1.0"
 scaling:
   mode: auto
   minReplicas: 2

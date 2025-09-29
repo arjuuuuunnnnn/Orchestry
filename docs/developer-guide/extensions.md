@@ -1,10 +1,10 @@
 # Extensions and Plugins
 
-Guide for extending AutoServe functionality through plugins, custom components, and integration points.
+Guide for extending ORCHESTRY functionality through plugins, custom components, and integration points.
 
 ## Overview
 
-AutoServe is designed with extensibility in mind, providing multiple extension points:
+ORCHESTRY is designed with extensibility in mind, providing multiple extension points:
 
 - **Custom Scalers**: Implement domain-specific scaling algorithms
 - **Health Check Providers**: Add custom health check protocols
@@ -24,7 +24,7 @@ from typing import Any, Dict, List, Optional
 import logging
 
 class Plugin(ABC):
-    """Base class for all AutoServe plugins."""
+    """Base class for all ORCHESTRY plugins."""
     
     def __init__(self, config: Dict[str, Any]):
         self.config = config
@@ -511,8 +511,8 @@ class PrometheusExporterPlugin(MetricsExporter):
     def __init__(self, config: Dict[str, Any]):
         super().__init__(config)
         self.gateway_url = config.get('gateway_url', 'http://localhost:9091')
-        self.job_name = config.get('job_name', 'autoserve')
-        self.instance_id = config.get('instance_id', 'autoserve-controller')
+        self.job_name = config.get('job_name', 'orchestry')
+        self.instance_id = config.get('instance_id', 'orchestry-controller')
     
     async def initialize(self) -> bool:
         """Initialize Prometheus client."""
@@ -523,13 +523,13 @@ class PrometheusExporterPlugin(MetricsExporter):
             
             # Create metric objects
             self.metrics = {
-                'app_replicas': Gauge('autoserve_app_replicas', 'Number of replicas', ['app_name'], registry=self.registry),
-                'app_healthy_instances': Gauge('autoserve_app_healthy_instances', 'Healthy instances', ['app_name'], registry=self.registry),
-                'app_cpu_percent': Gauge('autoserve_app_cpu_percent', 'CPU usage percentage', ['app_name'], registry=self.registry),
-                'app_memory_percent': Gauge('autoserve_app_memory_percent', 'Memory usage percentage', ['app_name'], registry=self.registry),
-                'app_rps': Gauge('autoserve_app_rps', 'Requests per second', ['app_name'], registry=self.registry),
-                'scaling_events': Counter('autoserve_scaling_events_total', 'Scaling events', ['app_name', 'direction'], registry=self.registry),
-                'health_check_failures': Counter('autoserve_health_check_failures_total', 'Health check failures', ['app_name'], registry=self.registry)
+                'app_replicas': Gauge('orchestry_app_replicas', 'Number of replicas', ['app_name'], registry=self.registry),
+                'app_healthy_instances': Gauge('orchestry_app_healthy_instances', 'Healthy instances', ['app_name'], registry=self.registry),
+                'app_cpu_percent': Gauge('orchestry_app_cpu_percent', 'CPU usage percentage', ['app_name'], registry=self.registry),
+                'app_memory_percent': Gauge('orchestry_app_memory_percent', 'Memory usage percentage', ['app_name'], registry=self.registry),
+                'app_rps': Gauge('orchestry_app_rps', 'Requests per second', ['app_name'], registry=self.registry),
+                'scaling_events': Counter('orchestry_scaling_events_total', 'Scaling events', ['app_name', 'direction'], registry=self.registry),
+                'health_check_failures': Counter('orchestry_health_check_failures_total', 'Health check failures', ['app_name'], registry=self.registry)
             }
             
             return True
@@ -597,7 +597,7 @@ class InfluxDBExporterPlugin(MetricsExporter):
         self.url = config.get('url', 'http://localhost:8086')
         self.token = config.get('token')
         self.org = config.get('org')
-        self.bucket = config.get('bucket', 'autoserve')
+        self.bucket = config.get('bucket', 'orchestry')
         self.client = None
     
     async def initialize(self) -> bool:
@@ -635,7 +635,7 @@ class InfluxDBExporterPlugin(MetricsExporter):
                     'measurement': metric['metric_type'],
                     'tags': {
                         'app_name': metric.get('app_name', ''),
-                        'source': 'autoserve'
+                        'source': 'orchestry'
                     },
                     'fields': {
                         'value': float(metric['value'])
@@ -761,7 +761,7 @@ class SlackNotificationPlugin(EventHandler):
         payload = {
             'channel': self.channel,
             'text': message,
-            'username': 'AutoServe',
+            'username': 'Orchestry',
             'icon_emoji': ':robot_face:'
         }
         
@@ -883,25 +883,25 @@ class HAProxyPlugin(LoadBalancer):
 ### Configuration Management
 
 ```python
-# Plugin configuration in main AutoServe config
+# Plugin configuration in main Orchestry config
 PLUGIN_CONFIG = {
     'plugins': {
         'ml_scaler': {
             'enabled': True,
-            'model_path': '/opt/autoserve/models/scaling_model.pkl',
+            'model_path': '/opt/orchestry/models/scaling_model.pkl',
             'prediction_window': 300,
             'confidence_threshold': 0.7
         },
         'prometheus_exporter': {
             'enabled': True,
             'gateway_url': 'http://localhost:9091',
-            'job_name': 'autoserve',
+            'job_name': 'orchestry',
             'export_interval': 30
         },
         'slack_notifications': {
             'enabled': True,
             'webhook_url': 'https://hooks.slack.com/services/...',
-            'channel': '#autoserve-alerts',
+            'channel': '#orchestry-alerts',
             'severity_levels': ['error', 'warning']
         },
         'grpc_health_check': {
@@ -966,7 +966,7 @@ class ExtensibleController:
 
 ---
 
-This completes the comprehensive AutoServe documentation! The documentation now covers:
+This completes the comprehensive Orchestry documentation! The documentation now covers:
 
 ## Summary of Documentation Created
 
@@ -994,4 +994,4 @@ This completes the comprehensive AutoServe documentation! The documentation now 
 ### Main Documentation (`docs/`)
 1. **README.md** - Documentation overview and navigation
 
-This documentation provides comprehensive coverage for both users wanting to deploy applications and developers wanting to understand or extend AutoServe's functionality. It includes practical examples, troubleshooting guides, and detailed technical implementation information suitable for deployment and ongoing maintenance.
+This documentation provides comprehensive coverage for both users wanting to deploy applications and developers wanting to understand or extend Orchestry's functionality. It includes practical examples, troubleshooting guides, and detailed technical implementation information suitable for deployment and ongoing maintenance.

@@ -1,10 +1,10 @@
 # Scaling Algorithm
 
-Deep dive into AutoServe's multi-metric auto-scaling algorithm, policies, and decision-making process.
+Deep dive into Orchestry's multi-metric auto-scaling algorithm, policies, and decision-making process.
 
 ## Overview
 
-AutoServe uses a sophisticated multi-metric scaling algorithm that considers CPU utilization, memory usage, request rate, response latency, and active connections to make intelligent scaling decisions. The algorithm is designed to be predictive, stable, and configurable.
+Orchestry uses a sophisticated multi-metric scaling algorithm that considers CPU utilization, memory usage, request rate, response latency, and active connections to make intelligent scaling decisions. The algorithm is designed to be predictive, stable, and configurable.
 
 ## Core Algorithm
 

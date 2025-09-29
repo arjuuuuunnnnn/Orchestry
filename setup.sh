@@ -2,7 +2,7 @@
 
 set -e
 
-echo "=== AutoServe Installer ==="
+echo "=== Orchestry Installer ==="
 
 # Detect package manager
 if command -v apt-get >/dev/null 2>&1; then

@@ -1,5 +1,5 @@
 """
-Pydantic dataclasses for AutoServe application specifications.
+Pydantic dataclasses for Orchestry application specifications.
 Defines the schema for YAML/JSON app registration format.
 """
 
@@ -26,7 +26,7 @@ class Protocol(str, Enum):
 class EnvVarSource(str, Enum):
     """Environment variable sources."""
     VALUE = "value"
-    SDK = "sdk"  # Provided by AutoServe
+    SDK = "sdk"  # Provided by Orchestry
     SECRET = "secret"  # Future: secret management
 
 class ScalingMetric(str, Enum):
@@ -244,7 +244,7 @@ def get_default_spec(app_name: str, image: str) -> Dict[str, Any]:
             "name": app_name,
             "labels": {
                 "app": app_name,
-                "managed-by": "autoserve"
+                "managed-by": "orchestry"
             }
         },
         "spec": {

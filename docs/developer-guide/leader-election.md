@@ -1,6 +1,6 @@
 # Leader Election and Distributed Controller
 
-AutoServe implements a distributed controller architecture with leader election to eliminate single points of failure and provide high availability for the control plane.
+Orchestry implements a distributed controller architecture with leader election to eliminate single points of failure and provide high availability for the control plane.
 
 ## Overview
 
@@ -48,7 +48,7 @@ The distributed controller system uses a 3-node cluster architecture with Postgr
 
 ## Leader Election Algorithm
 
-AutoServe implements a simplified Raft-like consensus algorithm using PostgreSQL as the coordination backend. This approach leverages the database's ACID properties to ensure consistent leader election.
+Orchestry implements a simplified Raft-like consensus algorithm using PostgreSQL as the coordination backend. This approach leverages the database's ACID properties to ensure consistent leader election.
 
 ### Core Concepts
 
@@ -533,7 +533,7 @@ The system prevents split-brain scenarios through:
 # Controller cluster configuration
 CLUSTER_NODE_ID=controller-1              # Unique node identifier
 CLUSTER_HOSTNAME=controller-1.local       # Node hostname
-AUTOSERVE_PORT=8001                       # API port for this node
+ORCHESTRY_PORT=8001                       # API port for this node
 
 # Timing configuration  
 CLUSTER_LEASE_TTL=30                      # Leadership lease duration (seconds)
@@ -543,8 +543,8 @@ CLUSTER_ELECTION_TIMEOUT=15               # Election timeout (seconds)
 # Database configuration
 DATABASE_PRIMARY_HOST=postgres-primary
 DATABASE_REPLICA_HOST=postgres-replica
-DATABASE_NAME=autoserve
-DATABASE_USER=autoserve
+DATABASE_NAME=orchestry
+DATABASE_USER=orchestry
 DATABASE_PASSWORD=secure_password
 ```
 
@@ -554,12 +554,12 @@ DATABASE_PASSWORD=secure_password
 # Start controller with clustering enabled
 docker run -d \
   --name controller-1 \
-  --network autoserve \
+  --network orchestry \
   -e CLUSTER_NODE_ID=controller-1 \
   -e CLUSTER_HOSTNAME=controller-1 \
-  -e AUTOSERVE_PORT=8001 \
+  -e ORCHESTRY_PORT=8001 \
   -p 8001:8001 \
-  autoserve-controller
+  orchestry-controller
 ```
 
 ## Monitoring and Observability
@@ -676,15 +676,15 @@ curl http://localhost:8000/cluster/leader
 curl http://localhost:8000/cluster/health
 
 # Check database cluster events
-psql -h postgres-primary -U autoserve -d autoserve \
+psql -h postgres-primary -U orchestry -d orchestry \
   -c "SELECT * FROM cluster_events ORDER BY timestamp DESC LIMIT 10;"
 
 # Check current lease
-psql -h postgres-primary -U autoserve -d autoserve \
+psql -h postgres-primary -U orchestry -d orchestry \
   -c "SELECT * FROM leader_lease;"
 
 # Check node status
-psql -h postgres-primary -U autoserve -d autoserve \
+psql -h postgres-primary -U orchestry -d orchestry \
   -c "SELECT * FROM cluster_nodes ORDER BY last_heartbeat DESC;"
 ```
 

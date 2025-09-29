@@ -1,10 +1,10 @@
 # Configuration Guide
 
-Complete guide to configuring AutoServe for different environments and use cases.
+Complete guide to configuring Orchestry for different environments and use cases.
 
 ## Configuration Overview
 
-AutoServe can be configured through multiple methods:
+Orchestry can be configured through multiple methods:
 
 1. **Environment Variables** - Runtime configuration
 2. **Configuration Files** - Structured configuration
@@ -15,14 +15,14 @@ AutoServe can be configured through multiple methods:
 
 ### Controller Settings
 
-Configure the main AutoServe controller:
+Configure the main Orchestry controller:
 
 ```bash
 # API Server Configuration
-AUTOSERVE_HOST=0.0.0.0              # Bind address (default: 0.0.0.0)
-AUTOSERVE_PORT=8000                 # API port (default: 8000)
-AUTOSERVE_WORKERS=4                 # Number of worker processes
-AUTOSERVE_LOG_LEVEL=INFO            # Logging level (DEBUG, INFO, WARN, ERROR)
+ORCHESTRY_HOST=0.0.0.0              # Bind address (default: 0.0.0.0)
+ORCHESTRY_PORT=8000                 # API port (default: 8000)
+ORCHESTRY_WORKERS=4                 # Number of worker processes
+ORCHESTRY_LOG_LEVEL=INFO            # Logging level (DEBUG, INFO, WARN, ERROR)
 
 # Controller Settings
 CONTROLLER_NODE_ID=controller-1     # Unique node identifier
@@ -38,9 +38,9 @@ Configure PostgreSQL connection and behavior:
 # Primary Database
 POSTGRES_HOST=localhost             # Database host
 POSTGRES_PORT=5432                  # Database port
-POSTGRES_DB=autoserve              # Database name
-POSTGRES_USER=autoserve            # Database username
-POSTGRES_PASSWORD=autoserve_password # Database password
+POSTGRES_DB=orchestry              # Database name
+POSTGRES_USER=orchestry            # Database username
+POSTGRES_PASSWORD=orchestry_password # Database password
 
 # Connection Pool
 POSTGRES_POOL_SIZE=10              # Maximum connections
@@ -65,7 +65,7 @@ DOCKER_API_VERSION=auto            # Docker API version
 DOCKER_TIMEOUT=60                  # Operation timeout (seconds)
 
 # Container Network
-DOCKER_NETWORK=autoserve           # Container network name
+DOCKER_NETWORK=orchestry           # Container network name
 DOCKER_SUBNET=172.20.0.0/16       # Network subnet
 CONTAINER_CPU_LIMIT=2.0            # Default CPU limit per container
 CONTAINER_MEMORY_LIMIT=2Gi         # Default memory limit per container
@@ -147,10 +147,10 @@ ALERT_MANAGER_URL=http://localhost:9093 # AlertManager URL
 
 ### Main Configuration File
 
-Create `/etc/autoserve/config.yaml`:
+Create `/etc/orchestry/config.yaml`:
 
 ```yaml
-# AutoServe Configuration
+# Orchestry Configuration
 version: "1.0"
 
 # Controller Configuration
@@ -168,9 +168,9 @@ database:
   primary:
     host: "localhost"
     port: 5432
-    name: "autoserve"
-    user: "autoserve"
-    password: "autoserve_password"
+    name: "orchestry"
+    user: "orchestry"
+    password: "orchestry_password"
     pool_size: 10
     timeout: 30
   replica:
@@ -184,7 +184,7 @@ docker:
   host: "unix:///var/run/docker.sock"
   api_version: "auto"
   timeout: 60
-  network: "autoserve"
+  network: "orchestry"
   subnet: "172.20.0.0/16"
   
 # Default Resource Limits
@@ -251,7 +251,7 @@ metrics:
 logging:
   level: "INFO"
   format: "json"
-  file: "/var/log/autoserve/controller.log"
+  file: "/var/log/orchestry/controller.log"
   max_size_mb: 100
   max_files: 10
   compress: true
@@ -266,7 +266,7 @@ Create `.env.development`:
 ```bash
 # Development Environment
 NODE_ENV=development
-AUTOSERVE_LOG_LEVEL=DEBUG
+ORCHESTRY_LOG_LEVEL=DEBUG
 
 # Relaxed Settings
 SCALE_CHECK_INTERVAL=60
@@ -276,7 +276,7 @@ DEFAULT_MAX_REPLICAS=3
 
 # Local Database
 POSTGRES_HOST=localhost
-POSTGRES_DB=autoserve_dev
+POSTGRES_DB=orchestry_dev
 
 # Development Features
 METRICS_ENABLED=false
@@ -290,7 +290,7 @@ Create `.env.production`:
 ```bash
 # Production Environment
 NODE_ENV=production
-AUTOSERVE_LOG_LEVEL=INFO
+ORCHESTRY_LOG_LEVEL=INFO
 
 # Optimized Settings
 SCALE_CHECK_INTERVAL=15
@@ -300,7 +300,7 @@ DEFAULT_MAX_REPLICAS=20
 
 # Production Database
 POSTGRES_HOST=postgres-cluster.example.com
-POSTGRES_DB=autoserve_prod
+POSTGRES_DB=orchestry_prod
 POSTGRES_POOL_SIZE=20
 
 # High Availability
@@ -316,7 +316,7 @@ Create `.env.staging`:
 ```bash
 # Staging Environment
 NODE_ENV=staging
-AUTOSERVE_LOG_LEVEL=INFO
+ORCHESTRY_LOG_LEVEL=INFO
 
 # Moderate Settings
 SCALE_CHECK_INTERVAL=30
@@ -326,7 +326,7 @@ DEFAULT_MAX_REPLICAS=10
 
 # Staging Database
 POSTGRES_HOST=postgres-staging.example.com
-POSTGRES_DB=autoserve_staging
+POSTGRES_DB=orchestry_staging
 
 # Testing Features
 METRICS_ENABLED=true
@@ -342,15 +342,15 @@ CLUSTER_MODE=false
 version: '3.8'
 
 services:
-  autoserve-controller:
+  orchestry-controller:
     build: .
-    container_name: autoserve-controller
+    container_name: orchestry-controller
     environment:
-      - AUTOSERVE_HOST=0.0.0.0
-      - AUTOSERVE_PORT=8000
+      - ORCHESTRY_HOST=0.0.0.0
+      - ORCHESTRY_PORT=8000
       - POSTGRES_HOST=postgres-primary
-      - POSTGRES_DB=autoserve
-      - POSTGRES_USER=autoserve
+      - POSTGRES_DB=orchestry
+      - POSTGRES_USER=orchestry
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
     ports:
       - "8000:8000"
@@ -360,27 +360,27 @@ services:
     depends_on:
       - postgres-primary
     networks:
-      - autoserve
+      - orchestry
     restart: unless-stopped
 
   postgres-primary:
     image: postgres:15-alpine
-    container_name: autoserve-postgres-primary
+    container_name: orchestry-postgres-primary
     environment:
-      POSTGRES_DB: autoserve
-      POSTGRES_USER: autoserve
+      POSTGRES_DB: orchestry
+      POSTGRES_USER: orchestry
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
     networks:
-      - autoserve
+      - orchestry
     restart: unless-stopped
 
   nginx:
     image: nginx:alpine
-    container_name: autoserve-nginx
+    container_name: orchestry-nginx
     ports:
       - "80:80"
       - "443:443"
@@ -389,14 +389,14 @@ services:
       - ./configs/nginx/conf.d:/etc/nginx/conf.d
       - ./ssl:/etc/nginx/ssl
     networks:
-      - autoserve
+      - orchestry
     restart: unless-stopped
 
 volumes:
   postgres_data:
 
 networks:
-  autoserve:
+  orchestry:
     driver: bridge
     ipam:
       config:
@@ -410,8 +410,8 @@ networks:
 version: '3.8'
 
 services:
-  autoserve-controller:
-    image: autoserve:latest
+  orchestry-controller:
+    image: orchestry:latest
     deploy:
       replicas: 3
       resources:
@@ -427,13 +427,13 @@ services:
       - POSTGRES_POOL_SIZE=20
       - SCALE_CHECK_INTERVAL=15
     configs:
-      - source: autoserve_config
-        target: /etc/autoserve/config.yaml
+      - source: orchestry_config
+        target: /etc/orchestry/config.yaml
     secrets:
       - postgres_password
       - api_secret_key
     networks:
-      - autoserve
+      - orchestry
       - monitoring
 
   postgres-primary:
@@ -451,7 +451,7 @@ services:
     secrets:
       - postgres_password
     networks:
-      - autoserve
+      - orchestry
 
   postgres-replica:
     image: postgres:15-alpine
@@ -464,7 +464,7 @@ services:
     secrets:
       - postgres_password
     networks:
-      - autoserve
+      - orchestry
 
   nginx:
     image: nginx:alpine
@@ -477,7 +477,7 @@ services:
       - source: nginx_config
         target: /etc/nginx/nginx.conf
     networks:
-      - autoserve
+      - orchestry
       - external
 
   prometheus:
@@ -502,8 +502,8 @@ services:
       - monitoring
 
 configs:
-  autoserve_config:
-    file: ./configs/autoserve/config.yaml
+  orchestry_config:
+    file: ./configs/orchestry/config.yaml
   nginx_config:
     file: ./configs/nginx/nginx.conf
   prometheus_config:
@@ -522,7 +522,7 @@ volumes:
   postgres_replica_data:
 
 networks:
-  autoserve:
+  orchestry:
     driver: overlay
     attachable: true
   monitoring:
@@ -619,8 +619,8 @@ ALLOWED_CIDR_BLOCKS=10.0.0.0/8,172.16.0.0/12,192.168.0.0/16
 
 # TLS Configuration
 TLS_ENABLED=true                  # Enable TLS
-TLS_CERT_PATH=/etc/ssl/certs/autoserve.crt
-TLS_KEY_PATH=/etc/ssl/private/autoserve.key
+TLS_CERT_PATH=/etc/ssl/certs/orchestry.crt
+TLS_KEY_PATH=/etc/ssl/private/orchestry.key
 TLS_CA_PATH=/etc/ssl/certs/ca.crt
 ```
 
@@ -649,7 +649,7 @@ subjects:
 roleRef:
   kind: Role
   name: admin
-  apiGroup: rbac.autoserve.io
+  apiGroup: rbac.orchestry.io
 
 ---
 apiVersion: v1
@@ -683,7 +683,7 @@ POSTGRES_CHECKPOINT_SEGMENTS=32   # Checkpoint segments
 
 ```bash
 # Controller Optimization
-AUTOSERVE_WORKERS=8               # Number of worker processes
+ORCHESTRY_WORKERS=8               # Number of worker processes
 UVICORN_WORKER_CLASS=uvicorn.workers.UvicornWorker
 UVICORN_WORKER_CONNECTIONS=1000   # Connections per worker
 UVICORN_BACKLOG=2048             # Listen backlog
@@ -715,15 +715,15 @@ global:
   evaluation_interval: 15s
 
 scrape_configs:
-  - job_name: 'autoserve'
+  - job_name: 'orchestry'
     static_configs:
-      - targets: ['autoserve-controller:9090']
+      - targets: ['orchestry-controller:9090']
     scrape_interval: 10s
     metrics_path: /metrics
 
   - job_name: 'applications'
     http_sd_configs:
-      - url: http://autoserve-controller:8000/api/v1/metrics/targets
+      - url: http://orchestry-controller:8000/api/v1/metrics/targets
     scrape_interval: 30s
 ```
 
@@ -732,14 +732,14 @@ scrape_configs:
 ```json
 {
   "dashboard": {
-    "title": "AutoServe Overview",
+    "title": "Orchestry Overview",
     "panels": [
       {
         "title": "Application Count",
         "type": "stat",
         "targets": [
           {
-            "expr": "autoserve_applications_total"
+            "expr": "orchestry_applications_total"
           }
         ]
       },
@@ -748,7 +748,7 @@ scrape_configs:
         "type": "graph",
         "targets": [
           {
-            "expr": "rate(autoserve_scaling_events_total[5m])"
+            "expr": "rate(orchestry_scaling_events_total[5m])"
           }
         ]
       }
@@ -763,8 +763,8 @@ scrape_configs:
 
 ```bash
 # Enable debug mode
-AUTOSERVE_LOG_LEVEL=DEBUG
-AUTOSERVE_DEBUG=true
+ORCHESTRY_LOG_LEVEL=DEBUG
+ORCHESTRY_DEBUG=true
 DEBUG_METRICS=true
 DEBUG_SCALING=true
 DEBUG_HEALTH_CHECKS=true
@@ -784,8 +784,8 @@ POSTGRES_POOL_TIMEOUT=60
 ```bash
 # Docker socket permissions
 DOCKER_HOST=unix:///var/run/docker.sock
-# Ensure autoserve user has docker group membership
-sudo usermod -aG docker autoserve
+# Ensure orchestry user has docker group membership
+sudo usermod -aG docker orchestry
 ```
 
 **Nginx Configuration Issues:**

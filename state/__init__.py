@@ -1,5 +1,5 @@
 """
-State management for AutoServe.
+State management for Orchestry.
 """
 
 from .db import DatabaseManager, AppRecord, InstanceRecord, EventRecord

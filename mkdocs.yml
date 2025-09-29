@@ -1,9 +1,9 @@
-site_name: AutoServe Documentation
-site_url: https://arjuuuuunnnnn.github.io/AutoServe/
-site_description: AutoServe - Container Orchestration and Auto-Scaling Platform
+site_name: Orchestry Documentation
+site_url: https://arjuuuuunnnnn.github.io/Orchestry/
+site_description: Orchestry - Container Orchestration and Auto-Scaling Platform
 use_directory_urls: true
-repo_url: https://github.com/arjuuuuunnnnn/AutoServe
-repo_name: arjuuuuunnnnn/AutoServe
+repo_url: https://github.com/arjuuuuunnnnn/Orchestry
+repo_name: arjuuuuunnnnn/Orchestry
 
 nav:
   - Home: index.md
@@ -80,7 +80,7 @@ markdown_extensions:
 extra:
   social:
     - icon: fontawesome/brands/github
-      link: https://github.com/arjuuuuunnnnn/AutoServe
+      link: https://github.com/arjuuuuunnnnn/Orchestry
   version:
     provider: mike
   generator: false

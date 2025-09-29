@@ -1,6 +1,6 @@
 # Development Environment Setup
 
-Complete guide for setting up a development environment for AutoServe, including local development, testing, and contribution workflows.
+Complete guide for setting up a development environment for Orchestry, including local development, testing, and contribution workflows.
 
 ## Prerequisites
 
@@ -43,9 +43,9 @@ sudo usermod -a -G docker $USER
 ### 1. Clone the Repository
 
 ```bash
-# Clone the AutoServe repository
-git clone https://github.com/your-org/autoserve.git
-cd autoserve
+# Clone the ORCHESTRY repository
+git clone https://github.com/arjuuuuunnnnn/Orchestry.git
+cd Orchestry
 
 # Create development branch
 git checkout -b feature/your-feature-name
@@ -104,9 +104,9 @@ dev = [
 ```bash
 # Start PostgreSQL with Docker
 docker run -d \
-    --name autoserve-postgres \
-    -e POSTGRES_DB=autoserve_dev \
-    -e POSTGRES_USER=autoserve \
+    --name orchestry-postgres \
+    -e POSTGRES_DB=orchestry_dev \
+    -e POSTGRES_USER=orchestry \
     -e POSTGRES_PASSWORD=development_password \
     -p 5432:5432 \
     postgres:15
@@ -115,7 +115,7 @@ docker run -d \
 sleep 10
 
 # Initialize database schema
-python -m cli.main db init --connection-string "postgresql://autoserve:development_password@localhost:5432/autoserve_dev"
+python -m cli.main db init --connection-string "postgresql://orchestry:development_password@localhost:5432/orchestry_dev"
 ```
 
 ### 5. Configuration
@@ -124,26 +124,26 @@ Create development configuration file:
 
 ```bash
 # Create config directory
-mkdir -p ~/.config/autoserve
+mkdir -p ~/.config/orchestry
 
 # Development configuration
-cat > ~/.config/autoserve/development.yml << EOF
-# AutoServe Development Configuration
+cat > ~/.config/orchestry/development.yml << EOF
+# Orchestry Development Configuration
 
 database:
   primary:
     host: localhost
     port: 5432
-    user: autoserve
+    user: orchestry
     password: development_password
-    database: autoserve_dev
+    database: orchestry_dev
   
   replica:
     enabled: false
 
 docker:
   socket: "unix://var/run/docker.sock"
-  network: "autoserve-dev"
+  network: "orchestry-dev"
 
 controller:
   port: 8000
@@ -152,7 +152,7 @@ controller:
   debug: true
   
 nginx:
-  config_dir: "/tmp/autoserve-nginx"
+  config_dir: "/tmp/orchestry-nginx"
   reload_command: "echo 'Nginx reload simulated'"
 
 logging:
@@ -179,7 +179,7 @@ EOF
 ### Directory Structure
 
 ```
-autoserve/
+orchestry/
 ├── app_spec/          # Application specification models
 ├── cli/               # Command-line interface
 ├── controller/        # Main controller components
@@ -229,8 +229,8 @@ from state.db import DatabaseManager
 source venv/bin/activate
 
 # Set development environment
-export AUTOSERVE_ENV=development
-export AUTOSERVE_CONFIG=~/.config/autoserve/development.yml
+export ORCHESTRY_ENV=development
+export ORCHESTRY_CONFIG=~/.config/orchestry/development.yml
 
 # Start the controller in development mode
 python -m controller.main --reload --debug
@@ -254,12 +254,12 @@ set -e
 source venv/bin/activate
 
 # Set development environment variables
-export AUTOSERVE_ENV=development
-export AUTOSERVE_CONFIG=~/.config/autoserve/development.yml
+export ORCHESTRY_ENV=development
+export ORCHESTRY_CONFIG=~/.config/orchestry/development.yml
 export PYTHONPATH=$PWD:$PYTHONPATH
 
 # Start development server
-echo "Starting AutoServe development server..."
+echo "Starting Orchestry development server..."
 uvicorn controller.api:app \
     --reload \
     --host 0.0.0.0 \
@@ -405,7 +405,7 @@ def test_client():
 def sample_app_spec():
     """Sample application specification."""
     return {
-        "apiVersion": "autoserve.dev/v1",
+        "apiVersion": "orchestry.dev/v1",
         "kind": "Application",
         "metadata": {
             "name": "test-app",
@@ -600,7 +600,7 @@ from unittest.mock import patch
 async def test_full_deployment_workflow():
     """Test complete deployment workflow."""
     app_spec = {
-        "apiVersion": "autoserve.dev/v1",
+        "apiVersion": "orchestry.dev/v1",
         "kind": "Application",
         "metadata": {"name": "e2e-test-app"},
         "spec": {
@@ -670,15 +670,15 @@ Create `.vscode/launch.json`:
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "AutoServe Controller",
+            "name": "Orchestry Controller",
             "type": "python",
             "request": "launch",
             "module": "controller.main",
             "args": ["--debug"],
             "console": "integratedTerminal",
             "env": {
-                "AUTOSERVE_ENV": "development",
-                "AUTOSERVE_CONFIG": "${env:HOME}/.config/autoserve/development.yml",
+                "ORCHESTRY_ENV": "development",
+                "ORCHESTRY_CONFIG": "${env:HOME}/.config/orchestry/development.yml",
                 "PYTHONPATH": "${workspaceFolder}"
             },
             "cwd": "${workspaceFolder}",
@@ -692,8 +692,8 @@ Create `.vscode/launch.json`:
             "args": ["--help"],
             "console": "integratedTerminal",
             "env": {
-                "AUTOSERVE_ENV": "development",
-                "AUTOSERVE_CONFIG": "${env:HOME}/.config/autoserve/development.yml"
+                "ORCHESTRY_ENV": "development",
+                "ORCHESTRY_CONFIG": "${env:HOME}/.config/orchestry/development.yml"
             },
             "cwd": "${workspaceFolder}"
         },
@@ -731,7 +731,7 @@ def setup_development_logging():
     console_handler.setFormatter(formatter)
     
     # File handler
-    file_handler = logging.FileHandler('autoserve-dev.log')
+    file_handler = logging.FileHandler('orchestry-dev.log')
     file_handler.setLevel(logging.DEBUG)
     file_handler.setFormatter(formatter)
     
@@ -765,7 +765,7 @@ print("Debugger attached!")
 
 ### Code Style
 
-AutoServe follows these code style guidelines:
+Orchestry follows these code style guidelines:
 
 1. **PEP 8** compliance with line length of 100 characters
 2. **Black** for code formatting
@@ -884,4 +884,4 @@ py-spy record -o profile.svg --pid <process_id>
 
 ---
 
-**Next**: Learn about [Extensions and Plugins](extensions.md) for extending AutoServe functionality.
+**Next**: Learn about [Extensions and Plugins](extensions.md) for extending ORCHESTRY functionality.

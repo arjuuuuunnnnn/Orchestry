@@ -1,10 +1,10 @@
 # Architecture Overview
 
-Understanding AutoServe's system design, components, and architectural decisions.
+Understanding Orchestry's system design, components, and architectural decisions.
 
 ## System Architecture
 
-AutoServe follows a microservices architecture with clear separation of concerns. The system is designed to be scalable, resilient, and easy to maintain.
+Orchestry follows a microservices architecture with clear separation of concerns. The system is designed to be scalable, resilient, and easy to maintain.
 
 <img src="../../images/arch.png" alt="System Architecture Diagram" style="width:100%; max-width:800px;">
 
@@ -313,7 +313,7 @@ The system is designed to handle failures gracefully:
 
 ### 5. Horizontal Scalability
 
-AutoServe itself can run in cluster mode:
+Orchestry itself can run in cluster mode:
 - Multiple controller instances
 - Leader election for coordination
 - Distributed state management
