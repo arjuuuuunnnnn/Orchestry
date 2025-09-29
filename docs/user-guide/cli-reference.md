@@ -7,13 +7,13 @@ Complete reference for the AutoServe command-line interface.
 The CLI is automatically installed when you install AutoServe:
 
 ```bash
-pip install -e .
+pip install autoserve
 ```
 
-Or install from the repository:
+Or install from source
 
 ```bash
-pip install git+https://github.com/arjuuuuunnnnn/AutoServe.git
+pip install -e .
 ```
 
 ## Global Options
@@ -36,6 +36,7 @@ export AUTOSERVE_TIMEOUT=30         # Request timeout (seconds)
 
 | Command | Description |
 |---------|-------------|
+| `config` | Configure the controller endpoint (interactive) |
 | `register` | Register an application from YAML/JSON spec |
 | `up` | Start an application |
 | `down` | Stop an application |
@@ -50,6 +51,41 @@ export AUTOSERVE_TIMEOUT=30         # Request timeout (seconds)
 | `cluster` | Cluster management commands |
 
 ## Application Management
+
+### config
+
+Interactively configure the controller endpoint used by all commands.
+
+```bash
+autoserve config
+```
+
+This command:
+- Prompts you for Host and Port
+- Verifies the controller is reachable at http://HOST:PORT/health
+- Saves the configuration to your OS config directory
+
+On Linux the file is typically saved to:
+- ~/.config/autoserve/config.yaml
+
+On macOS:
+- ~/Library/Application Support/autoserve/config.yaml
+
+On Windows:
+- %AppData%\autoserve\config.yaml
+
+Saved file format:
+
+```yaml
+host: localhost
+port: 8000
+```
+
+Examples:
+```bash
+# Run interactive setup
+autoserve config
+```
 
 ### register
 
