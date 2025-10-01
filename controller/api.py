@@ -33,10 +33,12 @@ def leader_required(f):
         if cluster_controller and not cluster_controller.is_leader:
             leader_info = cluster_controller.get_leader_info()
             if leader_info:
+                # Instead of redirecting, return 503 to let load balancer try next controller
+                # This prevents redirect loops and ensures proper failover
                 raise HTTPException(
-                    status_code=307, 
-                    detail=f"Request must be sent to leader node: {leader_info['api_url']}",
-                    headers={"Location": leader_info['api_url']}
+                    status_code=503, 
+                    detail=f"Not the leader. Leader is: {leader_info.get('leader_id', 'unknown')}",
+                    headers={"X-Current-Leader": leader_info.get('leader_id', 'unknown')}
                 )
             else:
                 raise HTTPException(
@@ -101,8 +103,53 @@ monitoring_active = False
 def on_become_leader():
     """Called when this node becomes the cluster leader"""
     logger.info("👑 This node has become the cluster leader - taking control of operations")
-    # Leader should handle all scaling operations, background tasks, etc.
-    if app_manager:
+
+    if app_manager and auto_scaler:
+        try:
+            adopted_summary = app_manager.reconcile_all()
+            logger.info(f"✅ Leader reconciled existing containers: {adopted_summary}")
+        except Exception as e:
+            logger.error(f"❌ Leader failed to reconcile existing containers: {e}")
+        
+        try:
+            apps = state_store.list_apps()
+            logger.info(f"🔄 Restoring scaling policies for {len(apps)} apps from database")
+            
+            for app in apps:
+                app_name = app["name"]
+                try:
+                    # Get full app record to access the spec with scaling config
+                    app_record = state_store.get_app(app_name)
+                    if app_record and app_record.spec:
+                        scaling_config = app_record.spec.get("scaling", {})
+                        
+                        if scaling_config:  # Only restore if scaling config exists
+                            from .scaler import ScalingPolicy
+                            policy = ScalingPolicy(
+                                min_replicas=scaling_config["minReplicas"],
+                                max_replicas=scaling_config["maxReplicas"],
+                                target_rps_per_replica=scaling_config["targetRPSPerReplica"],
+                                max_p95_latency_ms=scaling_config["maxP95LatencyMs"],
+                                scale_out_threshold_pct=scaling_config["scaleOutThresholdPct"],
+                                scale_in_threshold_pct=scaling_config["scaleInThresholdPct"],
+                                window_seconds=scaling_config.get("windowSeconds", 60),  # Optional field
+                                cooldown_seconds=scaling_config.get("cooldownSeconds", 300)  # Optional field
+                            )
+                            
+                            auto_scaler.set_policy(app_name, policy)
+                            logger.info(f"✅ Restored scaling policy for {app_name}: targetRPS={scaling_config['targetRPSPerReplica']}, thresholds={scaling_config['scaleOutThresholdPct']}%/{scaling_config['scaleInThresholdPct']}%")
+                        else:
+                            logger.debug(f"No scaling config found in spec for {app_name}")
+                    else:
+                        logger.warning(f"Could not get app record for {app_name}")
+                        
+                except Exception as e:
+                    logger.error(f"❌ Failed to restore scaling policy for {app_name}: {e}")
+                    
+            logger.info("✅ Leader completed scaling policy restoration from database")
+        except Exception as e:
+            logger.error(f"❌ Leader failed to restore scaling policies: {e}")
+        
         # Start container monitoring for automatic restarts and minReplicas enforcement
         app_manager.start_container_monitoring()
         
@@ -183,42 +230,42 @@ async def startup_event():
             adopted_summary = app_manager.reconcile_all()
             logger.info(f"Reconciliation summary on startup: {adopted_summary}")
             
-            # Re-register scaling policies for all existing apps
-            logger.info("About to query for apps to restore scaling policies")
+            # Re-register scaling policies for all existing apps from database
+            logger.info("Restoring scaling policies from database on startup")
             apps = state_store.list_apps()
-            logger.info(f"Found {len(apps)} apps to restore scaling policies for: {[app['name'] for app in apps]}")
+            logger.info(f"Found {len(apps)} apps to restore scaling policies for")
+            
             for app in apps:
                 app_name = app["name"]
                 logger.info(f"Attempting to restore scaling policy for {app_name}")
-                # Parse the raw_spec to get scaling configuration
-                import json
                 try:
-                    # Try to get raw_spec first, fallback to parsed spec
-                    if "raw_spec" in app and app["raw_spec"]:
-                        raw_spec = json.loads(app["raw_spec"])
-                        scaling_config = raw_spec.get("scaling", {})
+                    # Get full app record to access the spec with scaling config
+                    app_record = state_store.get_app(app_name)
+                    if app_record and app_record.spec:
+                        scaling_config = app_record.spec.get("scaling", {})
+                        
+                        if scaling_config:  # Only restore if scaling config exists
+                            logger.info(f"Scaling config for {app_name}: {scaling_config}")
+                            
+                            from .scaler import ScalingPolicy
+                            policy = ScalingPolicy(
+                                min_replicas=scaling_config["minReplicas"],
+                                max_replicas=scaling_config["maxReplicas"],
+                                target_rps_per_replica=scaling_config["targetRPSPerReplica"],
+                                max_p95_latency_ms=scaling_config["maxP95LatencyMs"],
+                                scale_out_threshold_pct=scaling_config["scaleOutThresholdPct"],
+                                scale_in_threshold_pct=scaling_config["scaleInThresholdPct"],
+                                window_seconds=scaling_config.get("windowSeconds", 60),  # Optional field
+                                cooldown_seconds=scaling_config.get("cooldownSeconds", 300)  # Optional field
+                            )
+                            
+                            auto_scaler.set_policy(app_name, policy)
+                            logger.info(f"Successfully restored scaling policy for {app_name}: targetRPS={scaling_config['targetRPSPerReplica']}, thresholds={scaling_config['scaleOutThresholdPct']}%/{scaling_config['scaleInThresholdPct']}%")
+                        else:
+                            logger.debug(f"No scaling config found in spec for {app_name}")
                     else:
-                        # Use the parsed spec if raw_spec is not available
-                        # The spec is already a dict in the modern database
-                        parsed_spec = app.get("spec", {})
-                        scaling_config = parsed_spec.get("scaling", {})
-                    
-                    logger.info(f"Scaling config for {app_name}: {scaling_config}")
-                    
-                    from .scaler import ScalingPolicy
-                    policy = ScalingPolicy(
-                        min_replicas=scaling_config.get("minReplicas", 1),
-                        max_replicas=scaling_config.get("maxReplicas", 5),
-                        target_rps_per_replica=scaling_config.get("targetRPSPerReplica", 50),
-                        max_p95_latency_ms=scaling_config.get("maxP95LatencyMs", 250),
-                        scale_out_threshold_pct=scaling_config.get("scaleOutThresholdPct", 80),
-                        scale_in_threshold_pct=scaling_config.get("scaleInThresholdPct", 30),
-                        window_seconds=scaling_config.get("windowSeconds", 60),
-                        cooldown_seconds=scaling_config.get("cooldownSeconds", 300)
-                    )
-                    
-                    auto_scaler.set_policy(app_name, policy)
-                    logger.info(f"Successfully restored scaling policy for {app_name}")
+                        logger.warning(f"Could not get app record for {app_name}")
+                        
                 except Exception as e:
                     logger.error(f"Failed to restore scaling policy for {app_name}: {e}")
                     import traceback
@@ -280,8 +327,9 @@ def background_monitoring():
                 time.sleep(5)
                 continue
             
-            # Get list of all apps
-            apps = state_store.list_apps()
+            # Get list of running apps only - don't scale stopped apps
+            all_apps = state_store.list_apps()
+            apps = [app for app in all_apps if app.get("status") == "running"]
 
             # Fetch nginx status once per loop for reuse
             try:

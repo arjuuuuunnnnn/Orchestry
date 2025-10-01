@@ -4,28 +4,28 @@ Docker Database Viewer for Orchestry
 View the PostgreSQL databases (primary and replica) in Orchestry.
 
 Usage:
-    python view_docker_db.py apps          # View all apps
-    python view_docker_db.py apps --status running --mode auto  # Filter apps
-    python view_docker_db.py summary       # View database summary
-    python view_docker_db.py instances     # View instances
-    python view_docker_db.py events        # View system events
-    python view_docker_db.py scaling       # View scaling history
-    python view_docker_db.py --help        # Show help
+    python view_db.py apps          # View all apps
+    python view_db.py apps --status running --mode auto  # Filter apps
+    python view_db.py summary       # View database summary
+    python view_db.py instances     # View instances
+    python view_db.py events        # View system events
+    python view_db.py scaling       # View scaling history
+    python view_db.py --help        # Show help
 
 Examples:
-    python view_docker_db.py summary              # Show database overview
-    python view_docker_db.py apps                 # List all applications
-    python view_docker_db.py apps --status running # Filter apps by status
-    python view_docker_db.py apps --mode manual   # Filter apps by scaling mode
-    python view_docker_db.py apps --status running --mode auto # Multiple filters
-    python view_docker_db.py instances            # Show all instances  
-    python view_docker_db.py instances --app myapp # Filter by app name
-    python view_docker_db.py events               # Show recent events
-    python view_docker_db.py events --type scaling # Filter by event type
-    python view_docker_db.py scaling              # Show scaling history
-    python view_docker_db.py scaling --app myapp  # App-specific scaling
-    python view_docker_db.py --database replica   # View replica database
-    python view_docker_db.py --database primary   # View primary database (default)
+    python view_db.py summary              # Show database overview
+    python view_db.py apps                 # List all applications
+    python view_db.py apps --status running # Filter apps by status
+    python view_db.py apps --mode manual   # Filter apps by scaling mode
+    python view_db.py apps --status running --mode auto # Multiple filters
+    python view_db.py instances            # Show all instances  
+    python view_db.py instances --app myapp # Filter by app name
+    python view_db.py events               # Show recent events
+    python view_db.py events --type scaling # Filter by event type
+    python view_db.py scaling              # Show scaling history
+    python view_db.py scaling --app myapp  # App-specific scaling
+    python view_db.py --database replica   # View replica database
+    python view_db.py --database primary   # View primary database (default)
 """
 
 import sys
@@ -481,17 +481,17 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog='''
 Examples:
-  python view_docker_db.py summary              # Show database overview
-  python view_docker_db.py apps                 # List all applications
-  python view_docker_db.py apps --status running # Filter apps by status
-  python view_docker_db.py instances            # Show all instances  
-  python view_docker_db.py instances --app myapp # Filter by app name
-  python view_docker_db.py events               # Show recent events
-  python view_docker_db.py events --type scaling # Filter by event type
-  python view_docker_db.py scaling              # Show scaling history
-  python view_docker_db.py scaling --app myapp  # App-specific scaling
-  python view_docker_db.py --database replica   # View replica database
-  python view_docker_db.py --database primary   # View primary database (default)
+  python view_db.py summary              # Show database overview
+  python view_db.py apps                 # List all applications
+  python view_db.py apps --status running # Filter apps by status
+  python view_db.py instances            # Show all instances  
+  python view_db.py instances --app myapp # Filter by app name
+  python view_db.py events               # Show recent events
+  python view_db.py events --type scaling # Filter by event type
+  python view_db.py scaling              # Show scaling history
+  python view_db.py scaling --app myapp  # App-specific scaling
+  python view_db.py --database replica   # View replica database
+  python view_db.py --database primary   # View primary database (default)
         '''
     )
     

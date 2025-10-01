@@ -796,6 +796,251 @@ orchestry up my-app
 orchestry logs my-app --follow
 ```
 
+## Cluster and Leader Election Issues
+
+### Requests Not Reaching Current Leader
+
+**Symptoms:**
+- Write operations (POST, PUT, DELETE) return 503 Service Unavailable
+- API returns "Not the leader" errors after leader failover
+- Applications not updating despite API calls
+
+**Diagnostic Steps:**
+
+```bash
+# Check cluster status
+curl http://localhost:8000/cluster/status
+
+# Check current leader
+curl http://localhost:8000/cluster/leader
+
+# Check individual controller health  
+curl http://localhost:8001/health  # Controller 1
+curl http://localhost:8002/health  # Controller 2
+curl http://localhost:8003/health  # Controller 3
+
+# Check controller load balancer logs
+docker logs orchestry-controller-lb
+
+# Check if load balancer is routing correctly
+curl -H "X-Debug: true" http://localhost:8000/cluster/leader
+```
+
+**Common Causes and Solutions:**
+
+#### 1. Load Balancer Not Routing to Current Leader
+
+The load balancer should automatically route write operations to the current leader. If this isn't working:
+
+```bash
+# Check nginx upstream configuration
+docker exec orchestry-controller-lb cat /etc/nginx/conf.d/default.conf
+
+# Verify all controllers are reachable
+docker exec orchestry-controller-lb nslookup controller-1
+docker exec orchestry-controller-lb nslookup controller-2  
+docker exec orchestry-controller-lb nslookup controller-3
+
+# Check nginx error logs for upstream failures
+docker logs orchestry-controller-lb | grep -i error
+```
+
+**Solution:** The system now uses nginx failover. When a non-leader controller receives a write request, it returns 503, causing nginx to try the next controller until it finds the leader.
+
+#### 2. Leader Election Split-Brain
+
+**Symptoms:**
+- Multiple controllers claim to be leader
+- Inconsistent cluster status from different controllers
+
+```bash
+# Check each controller's view of leadership
+for port in 8001 8002 8003; do
+  echo "Controller $port leadership status:"
+  curl -s http://localhost:$port/cluster/status | jq '.is_leader'
+done
+
+# Check database lease table
+docker exec -it orchestry-postgres-primary psql -U orchestry -d orchestry -c "SELECT * FROM leader_lease ORDER BY term DESC LIMIT 5;"
+```
+
+**Solution:**
+```bash
+# Force leadership release (from current leader)
+curl -X DELETE http://localhost:8000/api/v1/cluster/leadership
+
+# Restart all controllers to re-trigger election
+docker-compose restart controller-1 controller-2 controller-3
+```
+
+#### 3. Stale Leader Information
+
+**Symptoms:**
+- Clients redirected to dead leader
+- API calls timeout or return connection errors
+
+```bash
+# Check if leader info is stale
+LEADER_URL=$(curl -s http://localhost:8000/cluster/leader | jq -r '.api_url')
+curl -f $LEADER_URL/health || echo "Leader not reachable"
+
+# Check leader lease expiration
+curl -s http://localhost:8000/cluster/leader | jq '.lease_expires_at'
+date +%s  # Compare with current timestamp
+```
+
+**Solution:** The new implementation always redirects clients to the load balancer, not individual controllers, preventing stale leader issues.
+
+#### 4. Network Partitioning
+
+**Symptoms:**
+- Some controllers can't reach database
+- Controllers in different network states
+
+```bash
+# Test database connectivity from each controller
+for service in controller-1 controller-2 controller-3; do
+  echo "Testing $service database connectivity:"
+  docker exec $service nc -zv postgres-primary 5432
+done
+
+# Check network partitions
+docker network inspect orchestry
+```
+
+### Leader Election Taking Too Long
+
+**Symptoms:**
+- No leader elected for extended periods
+- Cluster shows "No leader elected" status
+- Write operations return 503 for long periods
+
+**Diagnostic Steps:**
+
+```bash
+# Check election process
+docker logs orchestry-controller-1 | grep -i "election\|leader"
+docker logs orchestry-controller-2 | grep -i "election\|leader"  
+docker logs orchestry-controller-3 | grep -i "election\|leader"
+
+# Check database lease attempts
+docker exec -it orchestry-postgres-primary psql -U orchestry -d orchestry -c "SELECT * FROM leader_lease ORDER BY acquired_at DESC LIMIT 10;"
+
+# Monitor election attempts
+curl -s http://localhost:8000/cluster/status | jq '.election_status'
+```
+
+**Common Causes:**
+
+#### 1. Database Connectivity Issues
+
+```bash
+# Test database connectivity
+for port in 8001 8002 8003; do
+  echo "Controller $port database test:"
+  curl -s http://localhost:$port/health | jq '.database'
+done
+```
+
+#### 2. Clock Synchronization Issues
+
+```bash
+# Check system clocks on containers
+docker exec controller-1 date
+docker exec controller-2 date
+docker exec controller-3 date
+
+# Large time differences can cause lease issues
+```
+
+#### 3. Resource Constraints
+
+```bash
+# Check controller resource usage
+docker stats controller-1 controller-2 controller-3 --no-stream
+
+# High CPU/memory usage can delay election processing
+```
+
+### Frequent Leader Changes
+
+**Symptoms:**
+- Leader changes every few minutes
+- Applications experience interruptions
+- Scaling decisions inconsistent
+
+**Diagnostic Steps:**
+
+```bash
+# Monitor leader changes
+watch -n 5 'curl -s http://localhost:8000/cluster/leader | jq .leader_id'
+
+# Check lease renewal logs
+docker logs orchestry-controller-1 | grep -i "lease\|renew"
+
+# Check for resource issues
+docker stats --no-stream | grep controller
+```
+
+**Solutions:**
+
+#### 1. Increase Lease Duration
+
+```yaml
+# In controller configuration
+environment:
+  - name: LEADER_LEASE_TTL
+    value: "45"  # Increased from 30 seconds
+```
+
+#### 2. Improve Network Stability
+
+```bash
+# Check for network issues
+docker network inspect orchestry | jq '.Containers'
+
+# Monitor network latency between controllers
+```
+
+### Controller Startup Issues
+
+**Symptoms:**
+- Controllers fail to join cluster
+- Startup errors in logs
+- Services not reaching healthy state
+
+**Solutions:**
+
+#### 1. Database Migration Issues
+
+```bash
+# Check database schema
+docker exec -it orchestry-postgres-primary psql -U orchestry -d orchestry -c "\dt"
+
+# Manually run migrations if needed
+docker exec orchestry-controller-1 python -m alembic upgrade head
+```
+
+#### 2. Port Conflicts
+
+```bash
+# Check port availability
+netstat -tulpn | grep -E ":(8001|8002|8003|8000)"
+
+# Ensure ports in .env file match docker-compose.yml
+grep -E "CONTROLLER.*PORT" .env.docker
+```
+
+#### 3. Environment Configuration
+
+```bash
+# Verify required environment variables
+docker exec controller-1 env | grep -E "CLUSTER|CONTROLLER|POSTGRES"
+
+# Check for missing variables
+docker-compose config | grep -A 10 -B 5 controller-1
+```
+
 ## Getting Help
 
 ### Collecting Diagnostic Information

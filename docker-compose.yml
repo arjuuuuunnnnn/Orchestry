@@ -2,6 +2,8 @@ services:
   postgres-primary:
     image: postgres:15-alpine
     container_name: orchestry-postgres-primary
+    env_file:
+      - .env.docker
     environment:
       POSTGRES_DB: orchestry
       POSTGRES_USER: orchestry
@@ -32,6 +34,8 @@ services:
   postgres-replica:
     image: postgres:15-alpine
     container_name: orchestry-postgres-replica
+    env_file:
+      - .env.docker
     environment:
       POSTGRES_DB: orchestry
       POSTGRES_USER: orchestry
@@ -84,6 +88,8 @@ services:
       dockerfile: configs/Dockerfile.controller
     container_name: orchestry-controller-1
     hostname: controller-1
+    env_file:
+      - .env.docker
     ports:
       - "${CONTROLLER_1_PORT}:${CONTROLLER_1_PORT}"
     volumes:
@@ -103,6 +109,8 @@ services:
       - ORCHESTRY_HOST=${ORCHESTRY_HOST}
       - ORCHESTRY_PORT=${CONTROLLER_1_PORT}
       - ORCHESTRY_NGINX_CONTAINER=${ORCHESTRY_NGINX_CONTAINER}
+      - CONTROLLER_LB_HOST=controller-lb
+      - CONTROLLER_LB_PORT=${CONTROLLER_LB_PORT}
       - CLUSTER_NODE_ID=controller-1
       - CLUSTER_HOSTNAME=controller-1
     networks:
@@ -127,6 +135,8 @@ services:
       dockerfile: configs/Dockerfile.controller
     container_name: orchestry-controller-2
     hostname: controller-2
+    env_file:
+      - .env.docker
     ports:
       - "${CONTROLLER_2_PORT}:${CONTROLLER_2_PORT}"
     volumes:
@@ -146,6 +156,8 @@ services:
       - ORCHESTRY_HOST=${ORCHESTRY_HOST}
       - ORCHESTRY_PORT=${CONTROLLER_2_PORT}
       - ORCHESTRY_NGINX_CONTAINER=${ORCHESTRY_NGINX_CONTAINER}
+      - CONTROLLER_LB_HOST=controller-lb
+      - CONTROLLER_LB_PORT=${CONTROLLER_LB_PORT}
       - CLUSTER_NODE_ID=controller-2
       - CLUSTER_HOSTNAME=controller-2
     networks:
@@ -172,6 +184,8 @@ services:
       dockerfile: configs/Dockerfile.controller
     container_name: orchestry-controller-3
     hostname: controller-3
+    env_file:
+      - .env.docker
     ports:
       - "${CONTROLLER_3_PORT}:${CONTROLLER_3_PORT}"
     volumes:
@@ -191,6 +205,8 @@ services:
       - ORCHESTRY_HOST=${ORCHESTRY_HOST}
       - ORCHESTRY_PORT=${CONTROLLER_3_PORT}
       - ORCHESTRY_NGINX_CONTAINER=${ORCHESTRY_NGINX_CONTAINER}
+      - CONTROLLER_LB_HOST=controller-lb
+      - CONTROLLER_LB_PORT=${CONTROLLER_LB_PORT}
       - CLUSTER_NODE_ID=controller-3
       - CLUSTER_HOSTNAME=controller-3
     networks:
@@ -216,6 +232,8 @@ services:
   controller-lb:
     image: nginx:alpine
     container_name: orchestry-controller-lb
+    env_file:
+      - .env.docker
     ports:
       - "${CONTROLLER_LB_PORT}:80"
     volumes:

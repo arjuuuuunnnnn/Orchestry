@@ -14,6 +14,7 @@ Features:
 
 import asyncio
 import logging
+import os
 import time
 import threading
 import uuid
@@ -79,7 +80,14 @@ class DistributedController:
         self.node_id = node_id or str(uuid.uuid4())
         self.hostname = hostname or socket.gethostname()
         self.port = port
+        
+        # Internal API URL for cluster communication and status reporting
         self.api_url = f"http://{self.hostname}:{port}"
+        
+        # External API URL for client redirects (always goes through load balancer)
+        controller_lb_host = os.getenv("CONTROLLER_LB_HOST", "localhost")
+        controller_lb_port = os.getenv("CONTROLLER_LB_PORT", "8000")  
+        self.external_api_url = f"http://{controller_lb_host}:{controller_lb_port}"
         
         # Cluster state
         self.state = NodeState.FOLLOWER
@@ -748,8 +756,9 @@ class DistributedController:
         if current_lease and current_lease.expires_at > time.time():
             return {
                 "leader_id": current_lease.leader_id,
-                "hostname": current_lease.hostname,
-                "api_url": current_lease.api_url,
+                "hostname": current_lease.hostname, 
+                "api_url": current_lease.api_url,  # Internal API URL for status
+                "external_api_url": self.external_api_url,  # Load balancer URL for client redirects
                 "term": current_lease.term,
                 "lease_expires_at": current_lease.expires_at
             }

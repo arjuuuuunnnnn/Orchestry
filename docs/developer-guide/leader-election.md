@@ -516,7 +516,41 @@ server {
 - New leader elected within one election cycle
 - Full functionality restored
 
-### 4. Split-Brain Prevention
+### 4. Load Balancer Failover Mechanism
+
+**Problem Solved**: Ensures requests reach the current leader even during leadership transitions.
+
+**How It Works**:
+1. **Non-Leader Response**: When a non-leader controller receives a write request, it returns HTTP 503 (Service Unavailable) instead of redirecting
+2. **Nginx Failover**: The load balancer automatically tries the next controller in the upstream pool when it receives a 503 response
+3. **Leader Discovery**: Nginx continues trying controllers until it reaches the current leader
+4. **Consistent Routing**: All client requests go through the load balancer, preventing direct access to individual controllers
+
+**Key Benefits**:
+- **No Redirect Loops**: Clients always interact with the load balancer, never individual controllers
+- **Automatic Failover**: No manual intervention needed during leader changes  
+- **Fast Recovery**: Typically 1-3 seconds to route to new leader after election
+- **Transparent to Clients**: Client applications don't need to know about leadership changes
+
+**Implementation Details**:
+```nginx
+# Nginx upstream configuration tries all controllers
+upstream controller_cluster_write {
+    server controller-1:8001 max_fails=1 fail_timeout=5s;
+    server controller-2:8002 max_fails=1 fail_timeout=5s; 
+    server controller-3:8003 max_fails=1 fail_timeout=5s;
+}
+
+# Automatic failover on 503 responses
+proxy_next_upstream error timeout invalid_header http_503;
+```
+
+**Controller Response Strategy**:
+- **Leader**: Processes the request normally
+- **Non-Leader**: Returns `503 Service Unavailable` with leader information in headers
+- **No Leader**: All controllers return `503` until election completes
+
+### 5. Split-Brain Prevention
 
 The system prevents split-brain scenarios through:
 

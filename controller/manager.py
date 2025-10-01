@@ -182,9 +182,13 @@ class AppManager:
             if "labels" in spec.get("metadata", {}):
                 app_spec["labels"].update(spec["metadata"]["labels"])
                 
-            # Extract scaling mode
+            # Extract and merge scaling configuration into app_spec
             scaling_config = spec.get("scaling", {})
             scaling_mode = scaling_config.get("mode", "auto")
+            
+            # Store complete scaling configuration in the app spec
+            if scaling_config:
+                app_spec["scaling"] = scaling_config
             
             # Create AppRecord with status='stopped' (no auto-start)
             now = time.time()
@@ -805,7 +809,8 @@ class AppManager:
                 return
             
             # Extract container port from app spec
-            container_port = app_spec_record.get("ports", [{}])[0].get("containerPort", 8080)
+            ports = app_spec_record.spec.get("ports", [{}])
+            container_port = ports[0].get("containerPort", 8080) if ports else 8080
             
             # Find next available replica index
             existing_indices = set()
@@ -967,11 +972,27 @@ class AppManager:
     def _ensure_min_replicas(self):
         """Ensure all RUNNING apps maintain their minimum replica count."""
         with self._restart_lock:
-            for app_name in list(self.instances.keys()):
+            # Get all running apps from state store, not just from instances
+            # This ensures we check all running apps, even if instances wasn't initialized yet
+            try:
+                apps = self.state_store.list_apps()
+                running_apps = [app for app in apps if app.get("status") == "running"]
+            except Exception as e:
+                logger.error(f"Failed to get running apps from state store: {e}")
+                running_apps = []
+            
+            for app_data in running_apps:
+                app_name = app_data["name"]
                 try:
                     app_spec_record = self.state_store.get_app(app_name)
                     if not app_spec_record:
                         continue
+                    
+                    # Ensure app is initialized in instances tracking - reconcile if needed
+                    if app_name not in self.instances:
+                        logger.info(f"App {app_name} not in instances tracking, reconciling...")
+                        adopted = self.reconcile_app(app_name)
+                        logger.info(f"Reconciled {adopted} containers for {app_name}")
                     
                     # Only maintain replicas for running apps
                     if app_spec_record.status != 'running':
