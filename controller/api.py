@@ -11,6 +11,7 @@ from typing import Dict, List, Optional, Any
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
+from functools import wraps
 from dotenv import load_dotenv
 
 # Load environment variables from .env file
@@ -21,8 +22,7 @@ from state.db import get_database_manager
 from .nginx import DockerNginxManager
 from .scaler import AutoScaler, ScalingPolicy, ScalingMetrics
 from .health import HealthChecker
-from .cluster import DistributedController, NodeState
-from functools import wraps
+from .cluster import DistributedController
 
 logger = logging.getLogger(__name__)
 

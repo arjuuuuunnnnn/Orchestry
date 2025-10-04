@@ -635,20 +635,27 @@ class AppManager:
     
     def _update_nginx_config(self, app_name: str):
         """Update nginx configuration with current healthy instances."""
+        logger.info(f"Updating nginx config for {app_name}")
+        
         if app_name not in self.instances:
             # No instances, remove config
+            logger.info(f"No instances found for {app_name}, removing nginx config")
             try:
                 self.nginx.remove_app_config(app_name)
-            except:
-                pass
+            except Exception as e:
+                logger.error(f"Failed to remove nginx config for {app_name}: {e}")
             return
         
         # Filter for healthy instances
         healthy_servers = []
+        logger.info(f"Checking {len(self.instances[app_name])} instances for {app_name}")
+        
         for instance in self.instances[app_name]:
             # Check both container state and health check status
             container_ready = instance.state == "ready"
             health_check_passed = self.health_checker.is_healthy(instance.container_id)
+            
+            logger.debug(f"Instance {instance.container_id[:12]} - IP: {instance.ip}, Port: {instance.port}, Ready: {container_ready}, Health: {health_check_passed}")
             
             # If health checking is configured, require both conditions
             # If no health checking, just use container state
@@ -657,12 +664,27 @@ class AppManager:
                                app_spec_record.spec.get("health") is not None)
             
             if has_health_config:
-                # Health checking is configured, require both ready state and health check pass
-                if container_ready and health_check_passed:
+                # Health checking is configured
+                health_status = self.health_checker.get_health_status(instance.container_id)
+                
+                # Allow ready containers if:
+                # 1. Health check passed, OR
+                # 2. Container is ready but health check hasn't started yet (within initial delay)
+                if health_check_passed:
                     healthy_servers.append({
                         "ip": instance.ip,
                         "port": instance.port
                     })
+                    logger.info(f"Added healthy server {instance.ip}:{instance.port} for {app_name} (health check passed)")
+                elif container_ready and (health_status is None or not hasattr(health_status, 'last_check') or health_status.last_check == 0):
+                    # Container is ready and health check hasn't started yet - allow it during initial delay
+                    healthy_servers.append({
+                        "ip": instance.ip,
+                        "port": instance.port
+                    })
+                    logger.info(f"Added ready server {instance.ip}:{instance.port} for {app_name} (health check pending)")
+                else:
+                    logger.debug(f"Skipping server {instance.ip}:{instance.port} for {app_name} - not healthy (ready: {container_ready}, health: {health_check_passed})")
             else:
                 # No health checking configured, just use ready state
                 if container_ready:
@@ -670,12 +692,24 @@ class AppManager:
                         "ip": instance.ip,
                         "port": instance.port
                     })
+                    logger.info(f"Added ready server {instance.ip}:{instance.port} for {app_name}")
         
         if healthy_servers:
+            logger.info(f"Updating nginx config for {app_name} with {len(healthy_servers)} healthy servers")
             try:
-                self.nginx.update_upstreams(app_name, healthy_servers)
+                result = self.nginx.update_upstreams(app_name, healthy_servers)
+                if result:
+                    logger.info(f"Successfully updated nginx config for {app_name}")
+                else:
+                    logger.error(f"Failed to update nginx config for {app_name} - update_upstreams returned False")
             except Exception as e:
-                logger.error(f"Failed to update nginx config for {app_name}: {e}")
+                logger.error(f"Exception updating nginx config for {app_name}: {e}")
+        else:
+            logger.warning(f"No healthy servers found for {app_name}, removing nginx config")
+            try:
+                self.nginx.remove_app_config(app_name)
+            except Exception as e:
+                logger.error(f"Failed to remove nginx config for {app_name}: {e}")
     
     def cleanup_orphaned_containers(self):
         """Clean up containers that are not tracked in our state."""
