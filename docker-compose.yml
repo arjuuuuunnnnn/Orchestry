@@ -2,8 +2,6 @@ services:
   postgres-primary:
     image: postgres:15-alpine
     container_name: orchestry-postgres-primary
-    env_file:
-      - .env.docker
     environment:
       POSTGRES_DB: orchestry
       POSTGRES_USER: orchestry
@@ -34,8 +32,6 @@ services:
   postgres-replica:
     image: postgres:15-alpine
     container_name: orchestry-postgres-replica
-    env_file:
-      - .env.docker
     environment:
       POSTGRES_DB: orchestry
       POSTGRES_USER: orchestry
@@ -88,8 +84,6 @@ services:
       dockerfile: configs/Dockerfile.controller
     container_name: orchestry-controller-1
     hostname: controller-1
-    env_file:
-      - .env.docker
     ports:
       - "${CONTROLLER_1_PORT}:${CONTROLLER_1_PORT}"
     volumes:
@@ -135,8 +129,6 @@ services:
       dockerfile: configs/Dockerfile.controller
     container_name: orchestry-controller-2
     hostname: controller-2
-    env_file:
-      - .env.docker
     ports:
       - "${CONTROLLER_2_PORT}:${CONTROLLER_2_PORT}"
     volumes:
@@ -184,8 +176,6 @@ services:
       dockerfile: configs/Dockerfile.controller
     container_name: orchestry-controller-3
     hostname: controller-3
-    env_file:
-      - .env.docker
     ports:
       - "${CONTROLLER_3_PORT}:${CONTROLLER_3_PORT}"
     volumes:
@@ -232,8 +222,6 @@ services:
   controller-lb:
     image: nginx:alpine
     container_name: orchestry-controller-lb
-    env_file:
-      - .env.docker
     ports:
       - "${CONTROLLER_LB_PORT}:80"
     volumes:
