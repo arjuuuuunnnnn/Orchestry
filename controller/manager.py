@@ -42,27 +42,26 @@ class AppManager:
         self.monitoring_active = False
         self.monitoring_thread = None
         self._ensure_network()
-        
+
     def _on_health_status_change(self, container_id: str, is_healthy: bool):
         """Callback called when container health status changes."""
         try:
-            # Find which app this container belongs to
-            for app_name, instances in self.instances.items():
-                for instance in instances:
-                    if instance.container_id == container_id:
-                        logger.info(f"Health status changed for {app_name} container {container_id[:12]}: {'healthy' if is_healthy else 'unhealthy'}")
-                        # Update nginx configuration to reflect health change
-                        self._update_nginx_config(app_name)
-                        return
+            with self._lock:
+                for app_name, instances in self.instances.items():
+                    for instance in instances:
+                        if instance.container_id == container_id:
+                            logger.info(f"Health status changed for {app_name} container {container_id[:12]}: {'healthy' if is_healthy else 'unhealthy'}")
+                            # Update nginx configuration to reflect health change
+                            self._update_nginx_config(app_name)
+                            return
         except Exception as e:
             logger.error(f"Error handling health status change for container {container_id}: {e}")
-        
+
     @property
     def docker_client(self):
         """Compatibility property for existing code."""
         return self.client
 
-    # ------------------------- Reconciliation Logic -------------------------
     def reconcile_app(self, app_name: str) -> int:
         """Adopt existing Docker containers for a registered app.
         Returns number of adopted (ready) instances."""
@@ -72,58 +71,55 @@ class AppManager:
                 logger.warning(f"reconcile_app: app {app_name} not found in state store")
                 return 0
 
-            # Ensure list initialized
-            if app_name not in self.instances:
-                self.instances[app_name] = []
+            with self._lock:
+                if app_name not in self.instances:
+                    self.instances[app_name] = []
 
-            # List containers with label
-            containers = self.docker_client.containers.list(all=True, filters={"label": f"orchestry.app={app_name}"})
-            adopted = 0
-            for c in containers:
-                try:
-                    # Start if not running
-                    if c.status != "running":
-                        logger.info(f"Adopting container {c.name} (was {c.status}), starting...")
-                        c.start()
-                        c.reload()
-                    # Extract replica index
-                    replica_label = c.labels.get("orchestry.replica")
-                    if replica_label is not None and replica_label.isdigit():
-                        replica_index = int(replica_label)
-                    else:
-                        # Fallback: parse trailing dash number
-                        parts = c.name.split('-')
-                        replica_index = int(parts[-1]) if parts[-1].isdigit() else 0
-                    network_settings = c.attrs.get("NetworkSettings", {})
-                    ip = network_settings.get("Networks", {}).get("orchestry", {}).get("IPAddress", "")
-                    port = app_spec_record.spec.get("ports", [{}])[0].get("containerPort", 0)
-                    # Skip if already tracked
-                    if any(inst.container_id == c.id for inst in self.instances[app_name]):
-                        continue
-                    instance = ContainerInstance(
-                        container_id=c.id,
-                        ip=ip,
-                        port=port,
-                        state="ready",
-                        last_seen=time.time()
-                    )
-                    self.instances[app_name].append(instance)
-                    
-                    # Register with health checker if health config is specified
-                    if "health" in app_spec_record.spec:
-                        from .health import HealthChecker
-                        health_config = HealthChecker.create_config_from_spec(app_spec_record.spec["health"])
-                        self.health_checker.add_target(c.id, ip, port, health_config)
-                        logger.info(f"Registered reconciled container {c.id[:12]} for health checking")
-                    
-                    adopted += 1
-                except Exception as e:
-                    logger.warning(f"Failed to adopt container {c.id} for {app_name}: {e}")
-            if adopted:
-                self._update_nginx_config(app_name)
-            if adopted:
-                logger.info(f"Reconciled {adopted} container(s) for {app_name}")
-            return adopted
+                # List containers with label
+                containers = self.docker_client.containers.list(all=True, filters={"label": f"orchestry.app={app_name}"})
+                adopted = 0
+                for c in containers:
+                    try:
+                        if c.status != "running":
+                            logger.info(f"Adopting container {c.name} (was {c.status}), starting...")
+                            c.start()
+                            c.reload()
+                        # Extract replica index
+                        replica_label = c.labels.get("orchestry.replica")
+                        if replica_label is not None and replica_label.isdigit():
+                            replica_index = int(replica_label)
+                        else:
+                            # Fallback: parse trailing dash number
+                            parts = c.name.split('-')
+                            replica_index = int(parts[-1]) if parts[-1].isdigit() else 0
+                        network_settings = c.attrs.get("NetworkSettings", {})
+                        ip = network_settings.get("Networks", {}).get("orchestry", {}).get("IPAddress", "")
+                        port = app_spec_record.spec.get("ports", [{}])[0].get("containerPort", 0)
+                        # Skip if already tracked
+                        if any(inst.container_id == c.id for inst in self.instances[app_name]):
+                            continue
+                        instance = ContainerInstance(
+                            container_id=c.id,
+                            ip=ip,
+                            port=port,
+                            state="ready",
+                            last_seen=time.time()
+                        )
+                        self.instances[app_name].append(instance)
+
+                        # Register with health checker if health config is specified
+                        if "health" in app_spec_record.spec:
+                            health_config = HealthChecker.create_config_from_spec(app_spec_record.spec["health"])
+                            self.health_checker.add_target(c.id, ip, port, health_config)
+                            logger.info(f"Registered reconciled container {c.id[:12]} for health checking")
+
+                        adopted += 1
+                    except Exception as e:
+                        logger.warning(f"Failed to adopt container {c.id} for {app_name}: {e}")
+                if adopted:
+                    self._update_nginx_config(app_name)
+                    logger.info(f"Reconciled {adopted} container(s) for {app_name}")
+                return adopted
         except Exception as e:
             logger.error(f"reconcile_app failed for {app_name}: {e}")
             return 0
@@ -140,7 +136,7 @@ class AppManager:
         except Exception as e:
             logger.error(f"reconcile_all failed: {e}")
             return results
-        
+
     def _ensure_network(self):
         """Ensure Orchestry network exists for container communication."""
         try:
@@ -151,45 +147,45 @@ class AppManager:
                 driver="bridge",
                 labels={"managed_by": "orchestry"}
             )
-            
+
     def register(self, spec: dict) -> dict:
         """Register a new application with the given spec."""
         try:
             app_name = spec["metadata"]["name"]
             app_spec = spec["spec"].copy()  # Make a copy to avoid modifying original
-            
+
             # Include scaling config from root level
             if "scaling" in spec:
                 app_spec["scaling"] = spec["scaling"]
-            
+
             #rn only for http servers
             if app_spec["type"] != "http":
                 return {"error": "Only HTTP type is currently supported"}
-                
+
             if "ports" not in app_spec or not app_spec["ports"]:
                 return {"error": "HTTP apps must specify at least one port"}
-            
+
             # Map healthCheck -> health for backward compatibility
             if "healthCheck" in app_spec:
                 app_spec["health"] = app_spec.pop("healthCheck")
             # Also check for healthCheck at the root spec level
             if "healthCheck" in spec:
                 app_spec["health"] = spec["healthCheck"]
-            
+
             # Merge metadata.labels into spec.labels
             if "labels" not in app_spec:
                 app_spec["labels"] = {}
             if "labels" in spec.get("metadata", {}):
                 app_spec["labels"].update(spec["metadata"]["labels"])
-                
+
             # Extract and merge scaling configuration into app_spec
             scaling_config = spec.get("scaling", {})
             scaling_mode = scaling_config.get("mode", "auto")
-            
+
             # Store complete scaling configuration in the app spec
             if scaling_config:
                 app_spec["scaling"] = scaling_config
-            
+
             # Create AppRecord with status='stopped' (no auto-start)
             now = time.time()
             app_record = AppRecord(
@@ -202,17 +198,17 @@ class AppManager:
                 mode=scaling_mode
             )
             self.state_store.save_app(app_record)
-            
+
             # Initialize empty instance list
             self.instances[app_name] = []
-            
+
             logger.info(f"Registered app {app_name} with status='stopped'")
             return {"status": "registered", "app": app_name}
-            
+
         except Exception as e:
             logger.error(f"Failed to register app: {e}")
             return {"error": str(e)}
-    
+
     def start(self, app_name: str) -> dict:
         """Start the application containers."""
         try:
@@ -220,66 +216,66 @@ class AppManager:
             app_record = self.state_store.get_app(app_name)
             if not app_record:
                 return {"error": f"App {app_name} not found"}
-            
+
             logger.info(f"Got app record for {app_name}: {app_record}")
-            
+
             # Extract app spec from AppRecord
             app_spec = app_record.spec
-            
+
             logger.info(f"Parsed app spec for {app_name}: {app_spec}")
-            
+
             # Set status to running first
             app_record.status = 'running'
             app_record.updated_at = time.time()
             self.state_store.save_app(app_record)
-            
+
             # Adopt existing containers first
             adopted = self.reconcile_app(app_name)
 
-            # Determine existing replica indices
-            existing_indices = set()
-            for inst in self.instances.get(app_name, []):
-                try:
-                    c = self.docker_client.containers.get(inst.container_id)
-                    idx_label = c.labels.get("orchestry.replica")
-                    if idx_label and idx_label.isdigit():
-                        existing_indices.add(int(idx_label))
-                except Exception:
-                    pass
+            with self._lock():
+                existing_indices = set()
+                for inst in self.instances.get(app_name, []):
+                    try:
+                        c = self.docker_client.containers.get(inst.container_id)
+                        idx_label = c.labels.get("orchestry.replica")
+                        if idx_label and idx_label.isdigit():
+                            existing_indices.add(int(idx_label))
+                    except Exception:
+                        pass
 
-            # Start additional replicas if below min
-            scaling_config = app_spec.get("scaling", {})
-            min_replicas = scaling_config.get("minReplicas", 1)
-            logger.info(f"Ensuring minimum {min_replicas} replicas for {app_name} (adopted {adopted})")
-            next_index = 0
-            started = 0
-            while len(self.instances.get(app_name, [])) < min_replicas:
-                # Find next unused index
-                while next_index in existing_indices:
+                # Start additional replicas if below min
+                scaling_config = app_spec.get("scaling", {})
+                min_replicas = scaling_config.get("minReplicas", 1)
+                logger.info(f"Ensuring minimum {min_replicas} replicas for {app_name} (adopted {adopted})")
+                next_index = 0
+                started = 0
+                while len(self.instances.get(app_name, [])) < min_replicas:
+                    # Find next unused index
+                    while next_index in existing_indices:
+                        next_index += 1
+                    logger.info(f"Creating new container replica index {next_index} for {app_name}")
+                    result = self._start_container(app_name, app_spec, next_index)
+                    if result:
+                        existing_indices.add(next_index)
+                        started += 1
                     next_index += 1
-                logger.info(f"Creating new container replica index {next_index} for {app_name}")
-                result = self._start_container(app_name, app_spec, next_index)
-                if result:
-                    existing_indices.add(next_index)
-                    started += 1
-                next_index += 1
-            total = len(self.instances.get(app_name, []))
-            
+                total = len(self.instances.get(app_name, []))
+
             # Update nginx configuration
             self._update_nginx_config(app_name)
-            
+
             logger.info(f"App {app_name} now running with {total} replicas (adopted={adopted}, started={started})")
             return {"status": "started", "app": app_name, "replicas": total, "adopted": adopted, "started": started}
-            
+
         except Exception as e:
             logger.error(f"Failed to start app {app_name}: {e}")
             return {"error": str(e)}
-    
+
     def _start_container(self, app_name: str, app_spec: dict, replica_index: int) -> Optional[ContainerInstance]:
         """Start a single container instance."""
         try:
             container_port = app_spec["ports"][0]["containerPort"]
-            
+
             # Container configuration
             container_config = {
                 "image": app_spec["image"],
@@ -294,7 +290,7 @@ class AppManager:
                 "ports": {},
                 "publish_all_ports": False,
             }
-            
+
             #add resource limits if specified
             if "resources" in app_spec:
                 resources = app_spec["resources"]
@@ -314,7 +310,10 @@ class AppManager:
                     if memory_str.endswith("Mi"):
                         memory_bytes = int(memory_str[:-2]) * 1024 * 1024
                         container_config["mem_limit"] = memory_bytes
-            
+                    elif memory_str.endswith("Gi"):
+                        memory_bytes = int(memory_str[:-2]) * 1024 * 1024 * 1024
+                        container_config["mem_limit"] = memory_bytes
+
             # Add environment variables if specified
             if "env" in app_spec:
                 env_vars = {}
@@ -325,21 +324,21 @@ class AppManager:
                     else:
                         env_vars[env["name"]] = env.get("value", "")
                 container_config["environment"] = env_vars
-            
+
             # Create container without port publishing
             container_config.pop("detach", None)  # Remove detach for create
             container = self.docker_client.containers.create(**container_config)
             container.start()
-            
+
             # Wait for container to be running and get network info
             container.reload()
             if container.status != "running":
                 raise Exception(f"Container failed to start: {container.status}")
-            
+
             # Get container IP and port
             network_settings = container.attrs["NetworkSettings"]
             container_ip = network_settings["Networks"]["orchestry"]["IPAddress"]
-            
+
             # Create instance record
             instance = ContainerInstance(
                 container_id=container.id,
@@ -348,124 +347,131 @@ class AppManager:
                 state="ready",
                 last_seen=time.time()
             )
-            
+
             # Add to instances list
             if app_name not in self.instances:
                 self.instances[app_name] = []
             self.instances[app_name].append(instance)
-            
+
+            if "health" in app_spec:
+                health_config = HealthChecker.create_config_from_spec(app_spec["health"])
+                self.health_checker.add_target(container.id, container_ip, container_port, health_config)
+                logger.info(f"Registered container {container.id[:12]} for health checking")
+
             logger.info(f"Started container {app_name}-{replica_index} at {container_ip}:{container_port}")
             return instance
-            
+
         except Exception as e:
             logger.error(f"Failed to start container for {app_name}: {e}")
             logger.error(f"Container config was: {container_config}")
             import traceback
             logger.error(f"Full traceback: {traceback.format_exc()}")
             return None
-    
+
     def _get_sdk_env_value(self, env_name: str) -> str:
         """Get SDK-provided environment variable values."""
         # Get values from environment or use defaults for containerized services
         return ""
-    
+
     def stop(self, app_name: str) -> dict:
         """Stop all containers for an application."""
         try:
-            if app_name not in self.instances:
-                return {"error": f"App {app_name} not found or not running"}
-            
-            # Set status to stopped first
-            app_record = self.state_store.get_app(app_name)
-            if app_record:
-                app_record.status = 'stopped'
-                app_record.updated_at = time.time()
-                app_record.replicas = 0
-                self.state_store.save_app(app_record)
-            
-            stopped_count = 0
-            for instance in self.instances[app_name]:
-                try:
-                    container = self.client.containers.get(instance.container_id)
-                    container.stop(timeout=30)
-                    container.remove()
-                    stopped_count += 1
-                    
-                    # Remove from health checker
-                    self.health_checker.remove_target(instance.container_id)
-                    
-                except Exception as e:
-                    logger.warning(f"Failed to stop container {instance.container_id}: {e}")
-            
-            # Clear instances
-            self.instances[app_name] = []
-            
+            with self._lock:
+                if app_name not in self.instances:
+                    return {"error": f"App {app_name} not found or not running"}
+
+                # Set status to stopped first
+                app_record = self.state_store.get_app(app_name)
+                if app_record:
+                    app_record.status = 'stopped'
+                    app_record.updated_at = time.time()
+                    app_record.replicas = 0
+                    self.state_store.save_app(app_record)
+
+                stopped_count = 0
+                for instance in self.instances[app_name]:
+                    try:
+                        container = self.client.containers.get(instance.container_id)
+                        container.stop(timeout=30)
+                        container.remove()
+                        stopped_count += 1
+
+                        # Remove from health checker
+                        self.health_checker.remove_target(instance.container_id)
+
+                    except Exception as e:
+                        logger.warning(f"Failed to stop container {instance.container_id}: {e}")
+
+                # Clear instances
+                self.instances[app_name] = []
+
             # Remove nginx config
             self._update_nginx_config(app_name)
-            
+
             logger.info(f"Stopped {stopped_count} containers for app {app_name}")
             return {"status": "stopped", "app": app_name, "containers_stopped": stopped_count}
-            
+
         except Exception as e:
             logger.error(f"Failed to stop app {app_name}: {e}")
             return {"error": str(e)}
-    
+
     def status(self, app_name: str) -> dict:
         """Get the status of an application."""
         try:
             app_data = self.state_store.get_app(app_name)
             if not app_data:
                 return {"error": f"App {app_name} not found"}
-            
-            if app_name not in self.instances:
-                return {
-                    "app": app_name,
-                    "status": "stopped",
-                    "replicas": 0,
-                    "ready_replicas": 0,
-                    "instances": []
-                }
-            
-            # Update container stats
-            self._update_container_stats(app_name)
-            
-            # Clean up down containers
-            self._cleanup_down_containers(app_name)
-            
-            # Check again if app was removed during cleanup
-            if app_name not in self.instances:
-                return {
-                    "app": app_name,
-                    "status": "stopped",
-                    "replicas": 0,
-                    "ready_replicas": 0,
-                    "instances": []
-                }
-            
-            instances_info = []
-            ready_count = 0
-            running_count = 0
-            
-            for instance in self.instances[app_name]:
-                # Skip down containers in the instances list
-                if instance.state == "down":
-                    continue
-                    
-                instance_info = {
-                    "container_id": instance.container_id[:12],  # Short ID
-                    "ip": instance.ip,
-                    "port": instance.port,
-                    "state": instance.state,
-                    "cpu_percent": instance.cpu_percent,
-                    "memory_percent": instance.memory_percent,
-                    "failures": instance.failures
-                }
-                instances_info.append(instance_info)
-                running_count += 1
-                
-                if instance.state == "ready":
-                    ready_count += 1
-            
+
+            with self._lock:
+                if app_name not in self.instances:
+                    return {
+                        "app": app_name,
+                        "status": "stopped",
+                        "replicas": 0,
+                        "ready_replicas": 0,
+                        "instances": []
+                    }
+
+                # Update container stats
+                self._update_container_stats(app_name)
+
+                # Clean up down containers
+                self._cleanup_down_containers(app_name)
+
+                # Check again if app was removed during cleanup
+                if app_name not in self.instances:
+                    return {
+                        "app": app_name,
+                        "status": "stopped",
+                        "replicas": 0,
+                        "ready_replicas": 0,
+                        "instances": []
+                    }
+
+                instances_info = []
+                ready_count = 0
+                running_count = 0
+
+                for instance in self.instances[app_name]:
+                    # Skip down containers in the instances list
+                    if instance.state == "down":
+                        continue
+
+                    instance_info = {
+                        "container_id": instance.container_id[:12],  # Short ID
+                        "ip": instance.ip,
+                        "port": instance.port,
+                        "state": instance.state,
+                        "cpu_percent": instance.cpu_percent,
+                        "memory_percent": instance.memory_percent,
+                        "failures": instance.failures
+                    }
+                    instances_info.append(instance_info)
+                    running_count += 1
+
+                    if instance.state == "ready":
+                        ready_count += 1
+
             return {
                 "app": app_name,
                 "status": "running" if ready_count > 0 else ("degraded" if running_count > 0 else "stopped"),
@@ -473,72 +479,73 @@ class AppManager:
                 "ready_replicas": ready_count,
                 "instances": instances_info
             }
-            
+
         except Exception as e:
             logger.error(f"Failed to get status for app {app_name}: {e}")
             return {"error": str(e)}
-    
+
     def scale(self, app_name: str, replicas: int) -> dict:
         """Manually scale an application to the specified number of replicas."""
         try:
-            if app_name not in self.instances:
-                return {"error": f"App {app_name} not found or not running"}
-            
-            current_replicas = len(self.instances[app_name])
-            
-            if replicas == current_replicas:
-                return {"status": "no_change", "app": app_name, "replicas": replicas}
-            
-            app_data = self.state_store.get_app(app_name)
-            if not app_data:
-                return {"error": f"App {app_name} specification not found"}
-                
-            # app_data is an AppRecord object
-            app_spec = app_data.spec.copy()
-            
-            if replicas > current_replicas:
-                # Scale up
-                for i in range(current_replicas, replicas):
-                    self._start_container(app_name, app_spec, i)
-            else:
-                # Scale down
-                containers_to_remove = self.instances[app_name][replicas:]
-                for instance in containers_to_remove:
-                    self._stop_container(instance)
-                self.instances[app_name] = self.instances[app_name][:replicas]
-            
+            with self._lock:
+                if app_name not in self.instances:
+                    return {"error": f"App {app_name} not found or not running"}
+
+                current_replicas = len(self.instances[app_name])
+
+                if replicas == current_replicas:
+                    return {"status": "no_change", "app": app_name, "replicas": replicas}
+
+                app_data = self.state_store.get_app(app_name)
+                if not app_data:
+                    return {"error": f"App {app_name} specification not found"}
+
+                # app_data is an AppRecord object
+                app_spec = app_data.spec.copy()
+
+                if replicas > current_replicas:
+                    # Scale up
+                    for i in range(current_replicas, replicas):
+                        self._start_container(app_name, app_spec, i)
+                else:
+                    # Scale down
+                    containers_to_remove = self.instances[app_name][replicas:]
+                    for instance in containers_to_remove:
+                        self._stop_container(instance)
+                    self.instances[app_name] = self.instances[app_name][:replicas]
+
             # Update nginx configuration
             self._update_nginx_config(app_name)
-            
+
             logger.info(f"Scaled app {app_name} from {current_replicas} to {replicas} replicas")
             return {"status": "scaled", "app": app_name, "replicas": replicas}
-            
+
         except Exception as e:
             logger.error(f"Failed to scale app {app_name}: {e}")
             return {"error": str(e)}
-    
+
     def _stop_container(self, instance: ContainerInstance):
         """Stop and remove a single container."""
         try:
             container = self.docker_client.containers.get(instance.container_id)
             container.stop(timeout=30)
             container.remove()
-            
+
             # Remove from health checker
             self.health_checker.remove_target(instance.container_id)
-            
+
         except Exception as e:
             logger.warning(f"Failed to stop container {instance.container_id}: {e}")
-    
+
     def _update_container_stats(self, app_name: str):
         """Update CPU and memory statistics for all containers of an app."""
         if app_name not in self.instances:
             return
-        
+
         for instance in self.instances[app_name]:
             try:
                 container = self.docker_client.containers.get(instance.container_id)
-                
+
                 # Check if container is still running
                 container.reload()  # Refresh container state
                 if container.status != "running":
@@ -547,22 +554,22 @@ class AppManager:
                     instance.cpu_percent = 0.0
                     instance.memory_percent = 0.0
                     continue
-                
+
                 stats = container.stats(stream=False)
-                
+
                 # Calculate CPU percentage
                 cpu_stats = stats.get("cpu_stats", {})
                 precpu_stats = stats.get("precpu_stats", {})
-                
+
                 cpu_usage = cpu_stats.get("cpu_usage", {})
                 precpu_usage = precpu_stats.get("cpu_usage", {})
-                
+
                 total_usage = cpu_usage.get("total_usage", 0)
                 prev_total_usage = precpu_usage.get("total_usage", 0)
-                
+
                 system_cpu_usage = cpu_stats.get("system_cpu_usage", 0)
                 prev_system_cpu_usage = precpu_stats.get("system_cpu_usage", 0)
-                
+
                 # Get number of CPUs with fallback methods
                 num_cpus = 1  # Default fallback
                 if "percpu_usage" in cpu_usage:
@@ -576,27 +583,27 @@ class AppManager:
                         num_cpus = os.cpu_count() or 1
                     except:
                         num_cpus = 1
-                
+
                 cpu_delta = total_usage - prev_total_usage
                 system_delta = system_cpu_usage - prev_system_cpu_usage
-                
+
                 if system_delta > 0 and cpu_delta >= 0:
                     instance.cpu_percent = (cpu_delta / system_delta) * num_cpus * 100.0
                 else:
                     instance.cpu_percent = 0.0
-                
+
                 # Calculate memory percentage with error handling
                 memory_stats = stats.get("memory_stats", {})
                 memory_usage = memory_stats.get("usage", 0)
                 memory_limit = memory_stats.get("limit", 1)  # Avoid division by zero
-                
+
                 if memory_limit > 0:
                     instance.memory_percent = (memory_usage / memory_limit) * 100.0
                 else:
                     instance.memory_percent = 0.0
-                
+
                 instance.last_seen = time.time()
-                
+
             except Exception as e:
                 # Container is likely stopped or removed
                 logger.info(f"Container {instance.container_id[:12]} is no longer accessible: {e}")
@@ -609,11 +616,11 @@ class AppManager:
         """Remove down containers from tracking after a grace period."""
         if app_name not in self.instances:
             return
-            
+
         # Remove containers that have been down for more than 30 seconds
         current_time = time.time()
         containers_to_remove = []
-        
+
         for i, instance in enumerate(self.instances[app_name]):
             if instance.state == "down":
                 # If it's been down for more than 30 seconds, remove it from tracking
@@ -622,78 +629,79 @@ class AppManager:
                 elif not hasattr(instance, 'last_seen'):
                     # If no last_seen timestamp, remove immediately
                     containers_to_remove.append(i)
-        
+
         # Remove from list in reverse order to maintain indices
         for i in reversed(containers_to_remove):
             removed_instance = self.instances[app_name].pop(i)
             logger.info(f"Removed down container {removed_instance.container_id[:12]} from tracking for {app_name}")
-            
+
         # If no instances left, remove the app key
         if not self.instances[app_name]:
             del self.instances[app_name]
             logger.info(f"No running instances left for {app_name}")
-    
+
     def _update_nginx_config(self, app_name: str):
         """Update nginx configuration with current healthy instances."""
         logger.info(f"Updating nginx config for {app_name}")
-        
-        if app_name not in self.instances:
-            # No instances, remove config
-            logger.info(f"No instances found for {app_name}, removing nginx config")
-            try:
-                self.nginx.remove_app_config(app_name)
-            except Exception as e:
-                logger.error(f"Failed to remove nginx config for {app_name}: {e}")
-            return
-        
-        # Filter for healthy instances
-        healthy_servers = []
-        logger.info(f"Checking {len(self.instances[app_name])} instances for {app_name}")
-        
-        for instance in self.instances[app_name]:
-            # Check both container state and health check status
-            container_ready = instance.state == "ready"
-            health_check_passed = self.health_checker.is_healthy(instance.container_id)
-            
-            logger.debug(f"Instance {instance.container_id[:12]} - IP: {instance.ip}, Port: {instance.port}, Ready: {container_ready}, Health: {health_check_passed}")
-            
-            # If health checking is configured, require both conditions
-            # If no health checking, just use container state
-            app_spec_record = self.state_store.get_app(app_name)
-            has_health_config = (app_spec_record and 
+
+        with self._lock:
+            if app_name not in self.instances:
+                # No instances, remove config
+                logger.info(f"No instances found for {app_name}, removing nginx config")
+                try:
+                    self.nginx.remove_app_config(app_name)
+                except Exception as e:
+                    logger.error(f"Failed to remove nginx config for {app_name}: {e}")
+                return
+
+            # Filter for healthy instances
+            healthy_servers = []
+            logger.info(f"Checking {len(self.instances[app_name])} instances for {app_name}")
+
+            for instance in self.instances[app_name]:
+                # Check both container state and health check status
+                container_ready = instance.state == "ready"
+                health_check_passed = self.health_checker.is_healthy(instance.container_id)
+
+                logger.debug(f"Instance {instance.container_id[:12]} - IP: {instance.ip}, Port: {instance.port}, Ready: {container_ready}, Health: {health_check_passed}")
+
+                # If health checking is configured, require both conditions
+                # If no health checking, just use container state
+                app_spec_record = self.state_store.get_app(app_name)
+                has_health_config = (app_spec_record and 
                                app_spec_record.spec.get("health") is not None)
-            
-            if has_health_config:
-                # Health checking is configured
-                health_status = self.health_checker.get_health_status(instance.container_id)
-                
-                # Allow ready containers if:
-                # 1. Health check passed, OR
-                # 2. Container is ready but health check hasn't started yet (within initial delay)
-                if health_check_passed:
-                    healthy_servers.append({
-                        "ip": instance.ip,
-                        "port": instance.port
-                    })
-                    logger.info(f"Added healthy server {instance.ip}:{instance.port} for {app_name} (health check passed)")
-                elif container_ready and (health_status is None or not hasattr(health_status, 'last_check') or health_status.last_check == 0):
-                    # Container is ready and health check hasn't started yet - allow it during initial delay
-                    healthy_servers.append({
-                        "ip": instance.ip,
-                        "port": instance.port
-                    })
-                    logger.info(f"Added ready server {instance.ip}:{instance.port} for {app_name} (health check pending)")
+
+                if has_health_config:
+                    # Health checking is configured
+                    health_status = self.health_checker.get_health_status(instance.container_id)
+
+                    # Allow ready containers if:
+                    # 1. Health check passed, OR
+                    # 2. Container is ready but health check hasn't started yet (within initial delay)
+                    if health_check_passed:
+                        healthy_servers.append({
+                            "ip": instance.ip,
+                            "port": instance.port
+                        })
+                        logger.info(f"Added healthy server {instance.ip}:{instance.port} for {app_name} (health check passed)")
+                    elif container_ready and (health_status is None or not hasattr(health_status, 'last_check') or health_status.last_check == 0):
+                        # Container is ready and health check hasn't started yet - allow it during initial delay
+                        healthy_servers.append({
+                            "ip": instance.ip,
+                            "port": instance.port
+                        })
+                        logger.info(f"Added ready server {instance.ip}:{instance.port} for {app_name} (health check pending)")
+                    else:
+                        logger.debug(f"Skipping server {instance.ip}:{instance.port} for {app_name} - not healthy (ready: {container_ready}, health: {health_check_passed})")
                 else:
-                    logger.debug(f"Skipping server {instance.ip}:{instance.port} for {app_name} - not healthy (ready: {container_ready}, health: {health_check_passed})")
-            else:
-                # No health checking configured, just use ready state
-                if container_ready:
-                    healthy_servers.append({
-                        "ip": instance.ip,
-                        "port": instance.port
-                    })
-                    logger.info(f"Added ready server {instance.ip}:{instance.port} for {app_name}")
-        
+                    # No health checking configured, just use ready state
+                    if container_ready:
+                        healthy_servers.append({
+                            "ip": instance.ip,
+                            "port": instance.port
+                        })
+                        logger.info(f"Added ready server {instance.ip}:{instance.port} for {app_name}")
+
         if healthy_servers:
             logger.info(f"Updating nginx config for {app_name} with {len(healthy_servers)} healthy servers")
             try:
@@ -710,7 +718,7 @@ class AppManager:
                 self.nginx.remove_app_config(app_name)
             except Exception as e:
                 logger.error(f"Failed to remove nginx config for {app_name}: {e}")
-    
+
     def cleanup_orphaned_containers(self):
         """Clean up containers that are not tracked in our state."""
         try:
@@ -718,14 +726,14 @@ class AppManager:
             containers = self.docker_client.containers.list(
                 filters={"label": "orchestry.app"}
             )
-            
+
             for container in containers:
                 app_name = container.labels.get("orchestry.app")
                 container_id = container.id
                 # Skip cleanup if app exists in state store (will be or was reconciled)
                 if self.state_store.get_app(app_name):
                     continue
-                
+
                 # Check if this container is tracked
                 is_tracked = False
                 if app_name in self.instances:
@@ -733,12 +741,12 @@ class AppManager:
                         if instance.container_id == container_id:
                             is_tracked = True
                             break
-                
+
                 if not is_tracked:
                     logger.info(f"Cleaning up orphaned container {container_id}")
                     container.stop(timeout=10)
                     container.remove()
-                    
+
         except Exception as e:
             logger.error(f"Failed to cleanup orphaned containers: {e}")
 
@@ -747,7 +755,7 @@ class AppManager:
         if self.monitoring_active:
             logger.warning("Container monitoring is already active")
             return
-        
+
         self.monitoring_active = True
         self.monitoring_thread = threading.Thread(target=self._container_monitoring_loop, daemon=True)
         self.monitoring_thread.start()
@@ -763,7 +771,7 @@ class AppManager:
     def _container_monitoring_loop(self):
         """Main loop for monitoring container health and ensuring minReplicas."""
         logger.info("Container monitoring loop started")
-        
+
         while self.monitoring_active:
             try:
                 self._check_and_restart_containers()
@@ -780,54 +788,59 @@ class AppManager:
                 app_spec_record = self.state_store.get_app(app_name)
                 if not app_spec_record:
                     continue
-                    
+
                 instances_to_remove = []
                 instances_to_restart = []
-                
-                for i, instance in enumerate(self.instances[app_name]):
-                    try:
-                        # Get container object
-                        container = self.docker_client.containers.get(instance.container_id)
-                        container.reload()
-                        
-                        # Check if container is not running
-                        if container.status != "running":
-                            logger.warning(f"Container {container.name} ({container.id[:12]}) for app {app_name} is {container.status}")
-                            
-                            # Try to restart the existing container first
-                            if container.status in ["stopped", "exited"]:
-                                try:
-                                    logger.info(f"Attempting to restart existing container {container.name}")
-                                    container.start()
-                                    container.reload()
-                                    
-                                    if container.status == "running":
-                                        logger.info(f"Successfully restarted container {container.name}")
-                                        instance.state = "ready"
-                                        instance.last_seen = time.time()
-                                        continue
-                                except Exception as restart_e:
-                                    logger.warning(f"Failed to restart existing container {container.name}: {restart_e}")
-                            
-                            # If restart failed or container is in bad state, mark for recreation
+
+                with self._lock:
+                    if app_name not in self.instances:
+                        continue
+
+                    for i, instance in enumerate(self.instances[app_name]):
+                        try:
+                            # Get container object
+                            container = self.docker_client.containers.get(instance.container_id)
+                            container.reload()
+
+                            # Check if container is not running
+                            if container.status != "running":
+                                logger.warning(f"Container {container.name} ({container.id[:12]}) for app {app_name} is {container.status}")
+
+                                # Try to restart the existing container first
+                                if container.status in ["stopped", "exited"]:
+                                    try:
+                                        logger.info(f"Attempting to restart existing container {container.name}")
+                                        container.start()
+                                        container.reload()
+
+                                        if container.status == "running":
+                                            logger.info(f"Successfully restarted container {container.name}")
+                                            instance.state = "ready"
+                                            instance.last_seen = time.time()
+                                            continue
+                                    except Exception as restart_e:
+                                        logger.warning(f"Failed to restart existing container {container.name}: {restart_e}")
+
+                                # If restart failed or container is in bad state, mark for recreation
+                                instances_to_remove.append(i)
+                                instances_to_restart.append(instance)
+
+                        except docker.errors.NotFound:
+                            # Container no longer exists, mark for recreation
+                            logger.warning(f"Container {instance.container_id[:12]} for app {app_name} no longer exists")
                             instances_to_remove.append(i)
                             instances_to_restart.append(instance)
-                            
-                    except docker.errors.NotFound:
-                        # Container no longer exists, mark for recreation
-                        logger.warning(f"Container {instance.container_id[:12]} for app {app_name} no longer exists")
-                        instances_to_remove.append(i)
-                        instances_to_restart.append(instance)
-                    except Exception as e:
-                        logger.error(f"Error checking container {instance.container_id[:12]} for app {app_name}: {e}")
-                
-                # Remove failed instances and recreate them
-                for idx in reversed(instances_to_remove):
-                    failed_instance = self.instances[app_name][idx]
-                    # Remove from health checker
-                    self.health_checker.remove_target(failed_instance.container_id)
-                    self.instances[app_name].pop(idx)
-                
+                        except Exception as e:
+                            logger.error(f"Error checking container {instance.container_id[:12]} for app {app_name}: {e}")
+
+                    # Remove failed instances and recreate them
+                    for idx in reversed(instances_to_remove):
+                        if idx < len(self.instances[app_name]):
+                            failed_instance = self.instances[app_name][idx]
+                            # Remove from health checker
+                            self.health_checker.remove_target(failed_instance.container_id)
+                            self.instances[app_name].pop(idx)
+
                 # Recreate containers for failed instances
                 for failed_instance in instances_to_restart:
                     self._recreate_container(app_name, failed_instance)
@@ -836,34 +849,35 @@ class AppManager:
         """Recreate a failed container."""
         try:
             logger.info(f"Recreating container for app {app_name}")
-            
+
             app_spec_record = self.state_store.get_app(app_name)
             if not app_spec_record:
                 logger.error(f"App spec not found for {app_name}")
                 return
-            
+
             # Extract container port from app spec
             ports = app_spec_record.spec.get("ports", [{}])
             container_port = ports[0].get("containerPort", 8080) if ports else 8080
-            
+
             # Find next available replica index
             existing_indices = set()
-            for inst in self.instances.get(app_name, []):
-                try:
-                    container = self.docker_client.containers.get(inst.container_id)
-                    idx_label = container.labels.get("orchestry.replica")
-                    if idx_label and idx_label.isdigit():
-                        existing_indices.add(int(idx_label))
-                except:
-                    pass
-            
+            with self._lock:
+                for inst in self.instances.get(app_name, []):
+                    try:
+                        container = self.docker_client.containers.get(inst.container_id)
+                        idx_label = container.labels.get("orchestry.replica")
+                        if idx_label and idx_label.isdigit():
+                            existing_indices.add(int(idx_label))
+                    except:
+                        pass
+
             next_index = 0
             while next_index in existing_indices:
                 next_index += 1
-            
+
             # Create new container with same configuration as before
             container_name = f"{app_name}-{next_index}"
-            
+
             # Check if a container with this name already exists
             try:
                 existing_container = self.docker_client.containers.get(container_name)
@@ -872,7 +886,7 @@ class AppManager:
                     # Adopt the existing running container
                     network_settings = existing_container.attrs.get("NetworkSettings", {})
                     container_ip = network_settings.get("Networks", {}).get("orchestry", {}).get("IPAddress", "")
-                    
+
                     instance = ContainerInstance(
                         container_id=existing_container.id,
                         ip=container_ip,
@@ -880,15 +894,18 @@ class AppManager:
                         state="ready",
                         last_seen=time.time()
                     )
-                    self.instances[app_name].append(instance)
-                    
+
+                    with self._lock:
+                        if app_name not in self.instances:
+                            self.instances[app_name] = []
+                        self.instances[app_name].append(instance)
+
                     # Register with health checker if health config is specified
                     if "health" in app_spec_record.spec:
-                        from .health import HealthChecker
                         health_config = HealthChecker.create_config_from_spec(app_spec_record.spec["health"])
                         self.health_checker.add_target(existing_container.id, container_ip, container_port, health_config)
                         logger.info(f"Registered adopted container {existing_container.id[:12]} for health checking")
-                    
+
                     self._update_nginx_config(app_name)
                     return
                 else:
@@ -896,11 +913,11 @@ class AppManager:
                     logger.info(f"Starting existing stopped container {container_name}")
                     existing_container.start()
                     existing_container.reload()
-                    
+
                     if existing_container.status == "running":
                         network_settings = existing_container.attrs.get("NetworkSettings", {})
                         container_ip = network_settings.get("Networks", {}).get("orchestry", {}).get("IPAddress", "")
-                        
+
                         instance = ContainerInstance(
                             container_id=existing_container.id,
                             ip=container_ip,
@@ -908,23 +925,26 @@ class AppManager:
                             state="ready",
                             last_seen=time.time()
                         )
-                        self.instances[app_name].append(instance)
-                        
+
+                        with self._lock:
+                            if app_name not in self.instances:
+                                self.instances[app_name] = []
+                            self.instances[app_name].append(instance)
+
                         # Register with health checker if health config is specified
                         if "health" in app_spec_record.spec:
-                            from .health import HealthChecker
                             health_config = HealthChecker.create_config_from_spec(app_spec_record.spec["health"])
                             self.health_checker.add_target(existing_container.id, container_ip, container_port, health_config)
                             logger.info(f"Registered restarted container {existing_container.id[:12]} for health checking")
-                        
+
                         self._update_nginx_config(app_name)
                         return
-                    
+
             except docker.errors.NotFound:
                 pass  # Container doesn't exist, we'll create it
             except Exception as e:
                 logger.warning(f"Error checking existing container {container_name}: {e}")
-            
+
             # Create completely new container
             container_config = {
                 "image": app_spec_record["image"],
@@ -938,7 +958,7 @@ class AppManager:
                 },
                 "restart_policy": {"Name": "unless-stopped"}
             }
-            
+
             # Add resource limits if specified
             if "resources" in app_spec_record:
                 resources = app_spec_record["resources"]
@@ -954,7 +974,7 @@ class AppManager:
                     if memory_str.endswith("Mi"):
                         memory_bytes = int(memory_str[:-2]) * 1024 * 1024
                         container_config["mem_limit"] = memory_bytes
-            
+
             # Add environment variables if specified
             if "env" in app_spec_record:
                 env_vars = {}
@@ -964,20 +984,20 @@ class AppManager:
                     else:
                         env_vars[env["name"]] = env.get("value", "")
                 container_config["environment"] = env_vars
-            
+
             # Create and start container
             container_config.pop("detach", None)
             container = self.docker_client.containers.create(**container_config)
             container.start()
             container.reload()
-            
+
             if container.status != "running":
                 raise Exception(f"Container failed to start: {container.status}")
-            
+
             # Get container IP
             network_settings = container.attrs["NetworkSettings"]
             container_ip = network_settings["Networks"]["orchestry"]["IPAddress"]
-            
+
             # Create new instance record
             instance = ContainerInstance(
                 container_id=container.id,
@@ -986,22 +1006,26 @@ class AppManager:
                 state="ready",
                 last_seen=time.time()
             )
-            
-            self.instances[app_name].append(instance)
-            
+
+            with self._lock:
+                if app_name not in self.instances:
+                    self.instances[app_name] = []
+                self.instances[app_name].append(instance)
+
             # Register with health checker if health config is specified
             if "health" in app_spec_record.spec:
-                from .health import HealthChecker
                 health_config = HealthChecker.create_config_from_spec(app_spec_record.spec["health"])
                 self.health_checker.add_target(container.id, container_ip, container_port, health_config)
                 logger.info(f"Registered recreated container {container.id[:12]} for health checking")
-            
+
             self._update_nginx_config(app_name)
-            
+
             logger.info(f"Successfully recreated container {container_name} for app {app_name}")
-            
+
         except Exception as e:
             logger.error(f"Failed to recreate container for app {app_name}: {e}")
+            import traceback
+            logger.error(f"Traceback: {traceback.format_exc()}")
 
     def _ensure_min_replicas(self):
         """Ensure all RUNNING apps maintain their minimum replica count."""
@@ -1014,51 +1038,53 @@ class AppManager:
             except Exception as e:
                 logger.error(f"Failed to get running apps from state store: {e}")
                 running_apps = []
-            
+
             for app_data in running_apps:
                 app_name = app_data["name"]
                 try:
                     app_spec_record = self.state_store.get_app(app_name)
                     if not app_spec_record:
                         continue
-                    
-                    # Ensure app is initialized in instances tracking - reconcile if needed
+
+                    with self._lock:
+                        if app_name not in self.instances:
+                            logger.info(f"App {app_name} not in instances tracking, reconciling...")
                     if app_name not in self.instances:
-                        logger.info(f"App {app_name} not in instances tracking, reconciling...")
                         adopted = self.reconcile_app(app_name)
                         logger.info(f"Reconciled {adopted} containers for {app_name}")
-                    
+
                     # Only maintain replicas for running apps
                     if app_spec_record.status != 'running':
                         logger.debug(f"Skipping app {app_name} with status '{app_spec_record.status}'")
                         continue
-                    
+
                     # Get minReplicas from scaling policy
                     scaling_policy = app_spec_record.spec.get("scaling", {})
                     min_replicas = scaling_policy.get("minReplicas", 1)
-                    
+
                     # Count healthy running instances
                     healthy_instances = []
-                    for instance in self.instances.get(app_name, []):
-                        try:
-                            container = self.client.containers.get(instance.container_id)
-                            container.reload()
-                            if container.status == "running" and instance.state == "ready":
-                                healthy_instances.append(instance)
-                        except docker.errors.NotFound:
-                            continue  # Container will be handled by _check_and_restart_containers
-                        except Exception:
-                            continue
-                    
+                    with self._lock:
+                        for instance in self.instances.get(app_name, []):
+                            try:
+                                container = self.client.containers.get(instance.container_id)
+                                container.reload()
+                                if container.status == "running" and instance.state == "ready":
+                                    healthy_instances.append(instance)
+                            except docker.errors.NotFound:
+                                continue  # Container will be handled by _check_and_restart_containers
+                            except Exception:
+                                continue
+
                     current_healthy = len(healthy_instances)
-                    
+
                     if current_healthy < min_replicas:
                         needed = min_replicas - current_healthy
                         logger.info(f"App {app_name} has {current_healthy}/{min_replicas} minimum replicas, creating {needed} more")
-                        
+
                         for _ in range(needed):
                             self._create_additional_replica(app_name)
-                            
+
                 except Exception as e:
                     logger.error(f"Error ensuring min replicas for app {app_name}: {e}")
 
@@ -1068,24 +1094,24 @@ class AppManager:
             app_spec_record = self.state_store.get_app(app_name)
             if not app_spec_record:
                 return
-            
+
             # Find next available replica index
             existing_indices = set()
             containers = self.client.containers.list(all=True, filters={"label": f"orchestry.app={app_name}"})
-            
+
             for container in containers:
                 idx_label = container.labels.get("orchestry.replica")
                 if idx_label and idx_label.isdigit():
                     existing_indices.add(int(idx_label))
-            
+
             next_index = 0
             while next_index in existing_indices:
                 next_index += 1
-            
+
             # Create new replica
             self._create_container_replica(app_name, app_spec_record.spec, next_index)
             logger.info(f"Created additional replica {next_index} for app {app_name}")
-            
+
         except Exception as e:
             logger.error(f"Failed to create additional replica for app {app_name}: {e}")
 
@@ -1093,7 +1119,7 @@ class AppManager:
         """Create a single container replica."""
         container_port = app_spec.get("ports", [{}])[0].get("containerPort", 8080)
         container_name = f"{app_name}-{replica_index}"
-        
+
         # Check if container already exists and handle appropriately
         try:
             existing_container = self.docker_client.containers.get(container_name)
@@ -1110,14 +1136,13 @@ class AppManager:
                         network_settings = existing_container.attrs["NetworkSettings"]
                         container_ip = network_settings["Networks"]["orchestry"]["IPAddress"]
                         container_port = app_spec.get("ports", [{}])[0].get("containerPort", 8080)
-                        from .health import HealthChecker
                         health_config = HealthChecker.create_config_from_spec(app_spec["health"])
                         self.health_checker.add_target(existing_container.id, container_ip, container_port, health_config)
                         logger.info(f"Registered restarted container {existing_container.id[:12]} for health checking")
                     return
         except docker.errors.NotFound:
             pass  # Container doesn't exist, create it
-        
+
         container_config = {
             "image": app_spec["image"],
             "name": container_name,
@@ -1130,7 +1155,7 @@ class AppManager:
             },
             "restart_policy": {"Name": "unless-stopped"}
         }
-        
+
         # Add resource limits if specified
         if "resources" in app_spec:
             resources = app_spec["resources"]
@@ -1146,7 +1171,10 @@ class AppManager:
                 if memory_str.endswith("Mi"):
                     memory_bytes = int(memory_str[:-2]) * 1024 * 1024
                     container_config["mem_limit"] = memory_bytes
-        
+                elif memory_str.endswith("Gi"):
+                    memory_bytes = int(memory_str[:-2]) * 1024 * 1024 * 1024
+                    container_config["mem_limit"] = memory_bytes
+
         # Add environment variables if specified
         if "env" in app_spec:
             env_vars = {}
@@ -1156,19 +1184,19 @@ class AppManager:
                 else:
                     env_vars[env["name"]] = env.get("value", "")
             container_config["environment"] = env_vars
-        
+
         # Create and start container
         container = self.docker_client.containers.create(**container_config)
         container.start()
         container.reload()
-        
+
         if container.status != "running":
             raise Exception(f"Container failed to start: {container.status}")
-        
+
         # Get container IP
         network_settings = container.attrs["NetworkSettings"]
         container_ip = network_settings["Networks"]["orchestry"]["IPAddress"]
-        
+
         # Create instance record
         instance = ContainerInstance(
             container_id=container.id,
@@ -1177,16 +1205,16 @@ class AppManager:
             state="ready",
             last_seen=time.time()
         )
-        
-        if app_name not in self.instances:
-            self.instances[app_name] = []
-        self.instances[app_name].append(instance)
-        
+
+        with self._lock:
+            if app_name not in self.instances:
+                self.instances[app_name] = []
+            self.instances[app_name].append(instance)
+
         # Register with health checker if health config is specified
         if "health" in app_spec:
-            from .health import HealthChecker
             health_config = HealthChecker.create_config_from_spec(app_spec["health"])
             self.health_checker.add_target(container.id, container_ip, container_port, health_config)
             logger.info(f"Registered container {container.id[:12]} for health checking")
-        
+
         self._update_nginx_config(app_name)
