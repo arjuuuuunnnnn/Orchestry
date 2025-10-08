@@ -65,7 +65,7 @@ services:
     image: nginx:alpine
     container_name: orchestry-nginx
     ports:
-      - "${API_ENDPOINT_PORT}:80"
+      - "80:80"
       - "443:443"
     volumes:
       - ./configs/nginx:/etc/nginx/conf.d
@@ -249,3 +249,6 @@ volumes:
     driver: local
   postgres_archive:
     driver: local
+
+
+

@@ -65,7 +65,7 @@ class DistributedController:
     as the coordination backend for leader election and cluster membership.
     """
 
-    def __init__(self, 
+    def __init__(self,
                  node_id: str,
                  hostname: str,
                  port: int = 8000,
@@ -84,7 +84,7 @@ class DistributedController:
 
         # External API URL for client redirects
         controller_lb_host = os.getenv("CONTROLLER_LB_HOST", "localhost")
-        controller_lb_port = os.getenv("CONTROLLER_LB_PORT", "8000")  
+        controller_lb_port = os.getenv("CONTROLLER_LB_PORT", "8000")
         self.external_api_url = f"http://{controller_lb_host}:{controller_lb_port}"
 
         # Cluster state
@@ -769,3 +769,6 @@ class DistributedController:
             self.leader_id is not None and
             self._get_current_lease() is not None
         )
+
+
+

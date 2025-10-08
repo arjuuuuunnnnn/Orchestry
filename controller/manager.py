@@ -232,7 +232,7 @@ class AppManager:
             # Adopt existing containers first
             adopted = self.reconcile_app(app_name)
 
-            with self._lock():
+            with self._lock:
                 existing_indices = set()
                 for inst in self.instances.get(app_name, []):
                     try:
@@ -1218,3 +1218,6 @@ class AppManager:
             logger.info(f"Registered container {container.id[:12]} for health checking")
 
         self._update_nginx_config(app_name)
+
+
+
