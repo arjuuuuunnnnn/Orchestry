@@ -172,37 +172,122 @@ def background_monitoring():
             apps = [app for app in all_apps if app.get("status") == "running"]
 
             # Fetch nginx status once per loop for reuse
-            nginx_status = nginx_manager.get_nginx_status() if nginx_manager else None
+            try:
+                nginx_status_snapshot = nginx_manager.get_nginx_status()
+            except Exception as e:
+                logger.warning(f"Unable to fetch nginx status: {e}")
+                nginx_status_snapshot = {}
+
+            # Compute global RPS from nginx stub status
+            global _prev_nginx_requests, _prev_nginx_time
+            rps_global = 0.0
+            now_time = time.time()
+            if isinstance(nginx_status_snapshot, dict) and 'requests' in nginx_status_snapshot:
+                current_requests = nginx_status_snapshot.get('requests')
+                if _prev_nginx_requests is not None and _prev_nginx_time is not None and current_requests is not None:
+                    delta_req = current_requests - _prev_nginx_requests
+                    delta_time = max(now_time - _prev_nginx_time, 1e-6)
+                    if delta_req >= 0:
+                        rps_global = delta_req / delta_time
+                _prev_nginx_requests = current_requests
+                _prev_nginx_time = now_time
+
+            active_connections_global = nginx_status_snapshot.get('active_connections', 0) if isinstance(nginx_status_snapshot, dict) else 0
+
+            # Pre-calculate total replicas across all apps for fair-share metrics
+            total_replicas_global = 0
+            for app_info in apps:
+                insts = app_manager.instances.get(app_info['name'], [])
+                total_replicas_global += len(insts)
             
             for app_info in apps:
                 app_name = app_info["name"]
                 
-                try:
-                    # Use the scaler to observe metrics and make scaling decisions
-                    auto_scaler.observe(app_name, nginx_status)
-                    
-                    decision = auto_scaler.decide(app_name)
-                    
-                    if decision and decision.action != "none":
-                        logger.info(f"Scaling decision for {app_name}: {decision.action} to {decision.target_replicas} replicas. Reason: {decision.reason}")
-                        
-                        try:
-                            if decision.action == "scale_out":
-                                app_manager.scale_app(app_name, decision.target_replicas)
-                            elif decision.action == "scale_in":
-                                app_manager.scale_app(app_name, decision.target_replicas)
-                        except Exception as e:
-                            logger.error(f"Failed to execute scaling action for {app_name}: {e}")
+                # Get current instances
+                if app_name not in app_manager.instances:
+                    continue
                 
-                except Exception as e:
-                    logger.error(f"Error during monitoring loop for {app_name}: {e}")
+                instances = app_manager.instances[app_name]
+                if not instances:
+                    continue
+                
+                # Update container stats
+                app_manager._update_container_stats(app_name)
+                
+                # Collect metrics for scaling
+                healthy_count = sum(1 for inst in instances if inst.state == "ready")
+                total_cpu = sum(inst.cpu_percent for inst in instances) / len(instances) if instances else 0
+                total_memory = sum(inst.memory_percent for inst in instances) / len(instances) if instances else 0
+
+                # Fair-share distribution of global RPS & connections by replica fraction
+                share = (len(instances) / total_replicas_global) if total_replicas_global > 0 else 0
+                app_rps = rps_global * share
+                app_active_conns = int(active_connections_global * share)
+
+                from controller.scaler import ScalingMetrics
+                metrics = ScalingMetrics(
+                    rps=app_rps,
+                    p95_latency_ms=0,  # latency collection not implemented yet
+                    active_connections=app_active_conns,
+                    cpu_percent=total_cpu,
+                    memory_percent=total_memory,
+                    healthy_replicas=healthy_count,
+                    total_replicas=len(instances)
+                )
+                
+                # Add metrics to scaler
+                auto_scaler.add_metrics(app_name, metrics)
+                
+                # Get app mode from database
+                app_record = state_store.get_app(app_name)
+                app_mode = app_record.mode if app_record else "auto"
+                
+                # Evaluate scaling decision
+                decision = auto_scaler.evaluate_scaling(app_name, len(instances), mode=app_mode)
+                
+                # Debug: Always log scaling decisions for debugging
+                policy = auto_scaler.get_policy(app_name)
+                logger.info(
+                    f"Scaling evaluation for {app_name}: RPS={metrics.rps:.2f}, Conns={metrics.active_connections}, "
+                    f"CPU={total_cpu:.1f}%, Mem={total_memory:.1f}%, Replicas={len(instances)}, "
+                    f"Decision={decision.should_scale}, Reason={decision.reason}, "
+                    f"Thresholds: out={policy.scale_out_threshold_pct if policy else 'N/A'}%, "
+                    f"in={policy.scale_in_threshold_pct if policy else 'N/A'}%"
+                )
+                
+                if decision.should_scale:
+                    logger.info(f"Scaling {app_name}: {decision.reason}")
+                    
+                    # Perform scaling
+                    result = app_manager.scale(app_name, decision.target_replicas)
+                    
+                    if result.get("status") == "scaled":
+                        # Record scaling action
+                        auto_scaler.record_scaling_action(app_name, decision.target_replicas)
+                        
+                        # Log to state store
+                        state_store.log_scaling_action(
+                            app_name,
+                            decision.current_replicas,
+                            decision.target_replicas,
+                            decision.reason,
+                            decision.triggered_by,
+                            decision.metrics.__dict__ if decision.metrics else None
+                        )
+                        
+                        # Log event
+                        state_store.log_event(app_name, "scaled", {
+                            "old_replicas": decision.current_replicas,
+                            "new_replicas": decision.target_replicas,
+                            "reason": decision.reason
+                        })
             
-            # Sleep between monitoring cycles
-            time.sleep(5)
+            # Sleep before next monitoring cycle
+            time.sleep(10)
             
         except Exception as e:
-            logger.error(f"Error in background monitoring thread: {e}")
-            time.sleep(5)
+            logger.error(f"Error in background monitoring: {e}")
+            time.sleep(30)  # Back off on errors
     
     logger.info("Background monitoring thread stopped")
 
