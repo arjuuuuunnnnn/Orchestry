@@ -1,6 +1,7 @@
 import logging
 import time
 from typing import Optional
+import docker
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from functools import wraps
@@ -46,7 +47,7 @@ def leader_required(f):
 # FastAPI app
 app = FastAPI(
     title="Orchestry Controller API",
-    description="Docker-based autoscaling controller API",
+    description="Autoscaling controller API",
     version="1.0.0"
 )
 
@@ -86,7 +87,6 @@ def get_health_checker():
 def get_cluster_controller():
     return lifecycle.get_cluster_controller()
 
-# API Endpoints
 
 @app.post("/apps/register", response_model=AppRegistrationResponse)
 @leader_required
@@ -301,13 +301,77 @@ async def get_app_logs(name: str, lines: int = 100):
         if name not in get_app_manager().instances:
             raise HTTPException(status_code=404, detail="App not found or not running")
         
-        # This would collect logs from all containers
-        # For now, return a placeholder
+        app_manager = get_app_manager()
+        instances = app_manager.instances[name]
+        
+        if not instances:
+            return {
+                "app": name,
+                "logs": []
+            }
+        
+        all_logs = []
+        
+        # Collect logs from all container instances
+        for instance in instances:
+            try:
+                # Get the Docker container object
+                container = app_manager.client.containers.get(instance.container_id)
+                
+                # Get logs with timestamps
+                log_output = container.logs(
+                    tail=lines,
+                    timestamps=True,
+                    stdout=True,
+                    stderr=True
+                )
+                
+                # Decode and parse logs
+                log_lines = log_output.decode('utf-8', errors='replace').strip().split('\n')
+                
+                for log_line in log_lines:
+                    if not log_line:
+                        continue
+                    
+                    # Parse timestamp and message
+                    # Docker log format: "2023-01-01T12:00:00.000000000Z message"
+                    parts = log_line.split(' ', 1)
+                    if len(parts) == 2:
+                        timestamp_str, message = parts
+                        # Parse ISO timestamp
+                        try:
+                            from datetime import datetime
+                            timestamp = datetime.fromisoformat(timestamp_str.replace('Z', '+00:00')).timestamp()
+                        except:
+                            timestamp = time.time()
+                    else:
+                        timestamp = time.time()
+                        message = log_line
+                    
+                    all_logs.append({
+                        "timestamp": timestamp,
+                        "container": instance.container_id[:12],  # Short container ID
+                        "container_full": instance.container_id,
+                        "message": message
+                    })
+                    
+            except docker.errors.NotFound:
+                logger.warning(f"Container {instance.container_id[:12]} not found for app {name}")
+                continue
+            except Exception as e:
+                logger.error(f"Failed to get logs from container {instance.container_id[:12]}: {e}")
+                continue
+        
+        # Sort logs by timestamp (most recent first)
+        all_logs.sort(key=lambda x: x["timestamp"], reverse=True)
+        
+        # Limit to requested number of lines
+        all_logs = all_logs[:lines]
+        
         return {
             "app": name,
-            "logs": [
-                {"timestamp": time.time(), "container": "placeholder", "message": "Log collection not implemented"}
-            ]
+            "total_containers": len(instances),
+            "logs": all_logs
         }
         
     except Exception as e:
@@ -532,7 +596,6 @@ async def health_check():
         "version": "1.0.0"
     }
 
-# Add this to run the server
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)

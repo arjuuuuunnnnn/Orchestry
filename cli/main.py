@@ -5,61 +5,14 @@ import os
 import json
 import yaml
 from typing import Optional
-from platformdirs import user_config_dir
+
+import cli.helpers as helpers
 
 load_dotenv()
 
 app = typer.Typer(name="orchestry", help="Orchestry SDK CLI")
 
-CONFIG_DIR = user_config_dir("orchestry", "orchestry")
-CONFIG_FILE = os.path.join(CONFIG_DIR, "config.yaml")
-
-def save_config(host, port):
-    os.makedirs(CONFIG_DIR, exist_ok=True)
-    data = {"host": host, "port": port}
-    with open(CONFIG_FILE, "w") as f:
-        yaml.dump(data, f)
-
-def load_config():
-    if os.path.exists(CONFIG_FILE):
-        with open(CONFIG_FILE) as f:
-            data = yaml.safe_load(f)
-            if data and "host" in data and "port" in data:
-                return f"http://{data['host']}:{data['port']}"
-    return None
-
-ORCHESTRY_URL = load_config()
-
-def check_service_running(API_URL):
-    """Check if orchestry controller is running and provide helpful error messages."""
-    try:
-        if API_URL is None:
-            typer.echo(" orchestry is not configured.", err=True)
-            typer.echo(" Please run 'orchestry config' to set it up.", err=True)
-            raise typer.Exit(1)
-        response = requests.get(f"{API_URL}/health", timeout=5)
-        if response.status_code == 200:
-            return True
-    except requests.exceptions.ConnectionError:
-        typer.echo(" orchestry controller is not running.", err=True)
-        typer.echo("", err=True)
-        typer.echo(" Please ensure you are running orchestry", err=True)
-        typer.echo(" To start orchestry:", err=True)
-        typer.echo(" docker-compose up -d", err=True)
-        typer.echo("", err=True)
-        typer.echo(" Or use the quick start script:", err=True)
-        typer.echo(" ./start.sh", err=True)
-        typer.echo("", err=True)
-        raise typer.Exit(1)
-    except requests.exceptions.Timeout:
-        typer.echo(" orchestry controller is not responding (timeout).", err=True)
-        typer.echo(" Check if the service is healthy: docker-compose ps", err=True)
-        raise typer.Exit(1)
-    except Exception as e:
-        typer.echo(f" Error connecting to orchestry: {e}", err=True)
-        raise typer.Exit(1)
-    return False
-
+ORCHESTRY_URL = helpers.load_config()
 
 @app.command()
 def config():
@@ -69,9 +22,9 @@ def config():
     ORCHESTRY_PORT = typer.prompt("Port (e.g., 8000)")
 
     typer.echo(f"Connecting to orchestry at http://{ORCHESTRY_HOST}:{ORCHESTRY_PORT}...")
-    if check_service_running(f"http://{ORCHESTRY_HOST}:{ORCHESTRY_PORT}") == True:
-        save_config(ORCHESTRY_HOST, ORCHESTRY_PORT)
-        typer.echo(f"Configuration saved to {CONFIG_FILE}")
+    if helpers.check_service_running(f"http://{ORCHESTRY_HOST}:{ORCHESTRY_PORT}") == True:
+        helpers.save_config(ORCHESTRY_HOST, ORCHESTRY_PORT)
+        typer.echo(f"Configuration saved to {helpers.CONFIG_FILE}")
     else:
         typer.echo("Failed to connect to the specified host and port. Please ensure the orchestry controller is running.", err=True)
         raise typer.Exit(1)
@@ -79,7 +32,7 @@ def config():
 @app.command()
 def register(config: str):
     """Register an app from YAML/JSON spec."""
-    if check_service_running(ORCHESTRY_URL) == False:
+    if helpers.check_service_running(ORCHESTRY_URL) == False:
         typer.echo(" orchestry controller is not running, run 'orchestry config' to configure", err=True)
         raise typer.Exit(1)
     if not os.path.exists(config):
@@ -114,7 +67,7 @@ def register(config: str):
 @app.command()
 def up(name: str):
     """Start the app."""
-    if check_service_running(ORCHESTRY_URL) == False:
+    if helpers.check_service_running(ORCHESTRY_URL) == False:
         typer.echo(" orchestry controller is not running, run 'orchestry config' to configure", err=True)
         raise typer.Exit(1)
 
@@ -124,7 +77,7 @@ def up(name: str):
 @app.command()
 def down(name: str):
     """Stop the app."""
-    if check_service_running(ORCHESTRY_URL) == False:
+    if helpers.check_service_running(ORCHESTRY_URL) == False:
         typer.echo(" orchestry controller is not running, run 'orchestry config' to configure", err=True)
         raise typer.Exit(1)
     response = requests.post(f"{ORCHESTRY_URL}/apps/{name}/down")
@@ -133,7 +86,7 @@ def down(name: str):
 @app.command()
 def status(name: str):
     """Check app status."""
-    if check_service_running(ORCHESTRY_URL) == False:
+    if helpers.check_service_running(ORCHESTRY_URL) == False:
         typer.echo(" orchestry controller is not running, run 'orchestry config' to configure", err=True)
         raise typer.Exit(1)
 
@@ -143,7 +96,7 @@ def status(name: str):
 @app.command()
 def scale(name: str, replicas: int):
     """Scale app to specific replica count."""
-    if check_service_running(ORCHESTRY_URL) == False:
+    if helpers.check_service_running(ORCHESTRY_URL) == False:
         typer.echo(" orchestry controller is not running, run 'orchestry config' to configure", err=True)
         raise typer.Exit(1)
 
@@ -189,7 +142,7 @@ def scale(name: str, replicas: int):
 @app.command()
 def list():
     """List all applications.""" 
-    if check_service_running(ORCHESTRY_URL) == False:
+    if helpers.check_service_running(ORCHESTRY_URL) == False:
         typer.echo(" orchestry controller is not running, run 'orchestry config' to configure", err=True)
         raise typer.Exit(1)
 
@@ -199,7 +152,7 @@ def list():
 @app.command()
 def metrics(name: Optional[str] = None):
     """Get system or app metrics."""
-    if check_service_running(ORCHESTRY_URL) == False:
+    if helpers.check_service_running(ORCHESTRY_URL) == False:
         typer.echo(" orchestry controller is not running, run 'orchestry config' to configure", err=True)
         raise typer.Exit(1)
 
@@ -247,7 +200,7 @@ def info():
 @app.command()
 def spec(name: str, raw: bool = False):
     """Get app specification. Use --raw to see the original submitted spec."""
-    if check_service_running(ORCHESTRY_URL) == False:
+    if helpers.check_service_running(ORCHESTRY_URL) == False:
         typer.echo(" orchestry controller is not running, run 'orchestry config' to configure", err=True)
         raise typer.Exit(1)
 
@@ -273,6 +226,62 @@ def spec(name: str, raw: bool = False):
                 parsed.pop(field, None)
             typer.echo(yaml.dump(parsed, default_flow_style=False))
 
+    except Exception as e:
+        typer.echo(f" Error: {e}", err=True)
+        raise typer.Exit(1)
+    
+@app.command()
+def logs(
+    name: str,
+    lines: int = typer.Option(100, "--lines", "-n", help="Number of log lines to retrieve"),
+    follow: bool = typer.Option(False, "--follow", "-f", help="Follow log output (not yet implemented)")
+):
+    """Get logs for an application."""
+    if helpers.check_service_running(ORCHESTRY_URL) == False:
+        typer.echo(" orchestry controller is not running, run 'orchestry config' to configure", err=True)
+        raise typer.Exit(1)
+
+    try:
+        response = requests.get(f"{ORCHESTRY_URL}/apps/{name}/logs", params={"lines": lines})
+        
+        if response.status_code == 404:
+            typer.echo(f" App '{name}' not found or not running", err=True)
+            raise typer.Exit(1)
+        elif response.status_code != 200:
+            typer.echo(f" Error: {response.json()}", err=True)
+            raise typer.Exit(1)
+
+        data = response.json()
+        logs_list = data.get("logs", [])
+        total_containers = data.get("total_containers", 0)
+
+        if not logs_list:
+            typer.echo(f" No logs available for app '{name}'")
+            return
+
+        typer.echo(f" Logs for '{name}' ({total_containers} container(s)):")
+        typer.echo("")
+
+        # Display logs sorted by timestamp
+        for log_entry in logs_list:
+            timestamp = log_entry.get("timestamp", 0)
+            container_id = log_entry.get("container", "unknown")
+            message = log_entry.get("message", "")
+            
+            # Format timestamp
+            from datetime import datetime
+            dt = datetime.fromtimestamp(timestamp)
+            time_str = dt.strftime("%Y-%m-%d %H:%M:%S")
+            
+            # Color-code by container (simple approach using container ID)
+            typer.echo(f"{time_str} [{container_id}] {message}")
+
+        if follow:
+            typer.echo("\n Note: Log following (--follow/-f) is not yet implemented")
+
+    except requests.exceptions.RequestException as e:
+        typer.echo(f" Error: Unable to connect to API - {e}", err=True)
+        raise typer.Exit(1)
     except Exception as e:
         typer.echo(f" Error: {e}", err=True)
         raise typer.Exit(1)
