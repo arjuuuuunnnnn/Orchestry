@@ -1,29 +1,76 @@
-FROM python:3.13-slim
+# Multi-stage build for Go controller
+# Stage 1: Build the Go binary
+FROM golang:1.23-alpine AS builder
 
-RUN apt-get update && apt-get install -y \
-    gcc \
-    libpq-dev \
-    python3-dev \
+# Install build dependencies
+RUN apk add --no-cache git ca-certificates
+
+WORKDIR /build
+
+# Copy go modules files first for better caching
+COPY controller_go/go.mod controller_go/go.sum ./controller_go/
+COPY state_go/go.mod state_go/go.sum ./state_go/
+
+# Download dependencies
+WORKDIR /build/controller_go
+RUN go mod download
+
+WORKDIR /build/state_go
+RUN go mod download
+
+# Copy source code
+WORKDIR /build
+COPY controller_go/ ./controller_go/
+COPY state_go/ ./state_go/
+COPY configs/ ./configs/
+
+# Build the binary
+WORKDIR /build/controller_go
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
+    -ldflags='-w -s -extldflags "-static"' \
+    -o /build/orchestry-controller \
+    ./cmd/main.go
+
+# Stage 2: Create minimal runtime image
+FROM alpine:latest
+
+# Install runtime dependencies
+RUN apk add --no-cache \
+    ca-certificates \
     curl \
-    && rm -rf /var/lib/apt/lists/*
+    tzdata
+
+# Create non-root user and docker group
+RUN addgroup -S orchestry && adduser -S orchestry -G orchestry && \
+    addgroup -g 966 docker && \
+    adduser orchestry docker
 
 WORKDIR /app
 
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# Copy binary from builder
+COPY --from=builder /build/orchestry-controller /app/orchestry-controller
 
-COPY . .
+# Copy configuration files
+COPY --from=builder /build/configs/ /app/configs/
 
-RUN mkdir -p /app/data /app/logs /nginx-config && \
-    chmod 755 /app/logs /app/data
+# Create necessary directories
+RUN mkdir -p /app/logs /nginx-config && \
+    chown -R orchestry:orchestry /app/logs /nginx-config && \
+    chmod 755 /app/logs /nginx-config
 
-ENV PYTHONPATH=/app
-ENV ORCHESTRY_DB_PATH=/app/data/autoscaler.db
+# Set environment variables
 ENV ORCHESTRY_NGINX_CONTAINER=orchestry-nginx
+ENV ORCHESTRY_PORT=8000
 
+# Expose ports for multi-node cluster
 EXPOSE 8000 8001 8002 8003
 
+# Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:${ORCHESTRY_PORT:-8000}/health || exit 1
 
-CMD ["python", "controller/main.py"]
+# Switch to non-root user
+USER orchestry
+
+# Run the controller
+CMD ["/app/orchestry-controller"]
