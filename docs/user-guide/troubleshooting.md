@@ -93,7 +93,7 @@ spec:
 ```bash
 # Error: "port already in use"
 # Check port usage
-netstat -tulpn | grep :8080
+netstat -tulpn | grep :8000
 docker ps --format "table {{.Names}}\t{{.Ports}}"
 
 # Solution: Use different ports or stop conflicting services

@@ -75,29 +75,6 @@ app_manager.stop_app(app_name)
 **Key Files**:
 - `controller/scaler.py` - Auto-scaling logic and policies
 
-**Scaling Algorithm**:
-```python
-def should_scale(metrics, policy):
-    # Multi-metric scaling decision
-    scale_factors = {
-        'cpu': metrics.cpu_percent / policy.max_cpu_percent,
-        'memory': metrics.memory_percent / policy.max_memory_percent,
-        'rps': metrics.rps / (policy.target_rps_per_replica * metrics.replicas),
-        'latency': metrics.p95_latency / policy.max_latency_ms,
-        'connections': metrics.connections / (policy.max_conn_per_replica * metrics.replicas)
-    }
-    
-    # Scale out if any metric exceeds threshold
-    max_factor = max(scale_factors.values())
-    if max_factor > policy.scale_out_threshold_pct / 100:
-        return ScaleDecision(should_scale=True, direction='out')
-        
-    # Scale in if all metrics below threshold
-    if max_factor < policy.scale_in_threshold_pct / 100:
-        return ScaleDecision(should_scale=True, direction='in')
-        
-    return ScaleDecision(should_scale=False)
-```
 
 ### 4. Health Checker
 
@@ -143,20 +120,6 @@ def should_scale(metrics, policy):
 - **Split-Brain Prevention**: Database-based coordination prevents conflicts
 - **Load Balancer Integration**: Nginx routes write operations to leader only
 - **Health Monitoring**: Continuous node health and lease management
-
-**Leader Election Process**:
-```python
-# Nodes compete for leadership using atomic database operations
-def _try_acquire_leadership(self) -> bool:
-    # Atomic lease acquisition using PostgreSQL
-    cursor.execute("""
-        INSERT INTO leader_lease (leader_id, term, expires_at)
-        VALUES (%s, %s, CURRENT_TIMESTAMP + INTERVAL '%s seconds')
-        ON CONFLICT (id) DO UPDATE SET ...
-        WHERE leader_lease.expires_at <= CURRENT_TIMESTAMP
-    """)
-    return cursor.rowcount > 0
-```
 
 **API Integration**:
 ```python
@@ -274,50 +237,6 @@ upstream {app_name} {{
 4. Metrics collected → Metrics Collector
 5. Health status updated → Health Checker
 ```
-
-## Design Principles
-
-### 1. Separation of Concerns
-
-Each component has a single, well-defined responsibility:
-- **API Server**: External interface
-- **App Manager**: Container lifecycle
-- **Auto Scaler**: Scaling decisions
-- **Health Checker**: Health monitoring
-- **Nginx Manager**: Load balancing
-- **State Manager**: Data persistence
-
-### 2. Asynchronous Processing
-
-Critical operations are handled asynchronously:
-- Health checks run in parallel
-- Scaling operations don't block API requests
-- Metrics collection is continuous
-- Configuration updates are non-blocking
-
-### 3. Event-Driven Architecture
-
-Components communicate through events:
-- Health status changes trigger config updates
-- Scaling events are logged for audit
-- Container state changes update load balancer
-- Metrics trigger scaling decisions
-
-### 4. Resilience and Recovery
-
-The system is designed to handle failures gracefully:
-- Database connection pooling and retries
-- Container health monitoring and replacement
-- Nginx configuration validation before reload
-- Graceful degradation during component failures
-
-### 5. Horizontal Scalability
-
-Orchestry itself can run in cluster mode:
-- Multiple controller instances
-- Leader election for coordination
-- Distributed state management
-- Load balancing across controllers
 
 ## Database Schema
 
@@ -490,7 +409,7 @@ class MetricsCollector:
 
 ### Observability Stack
 
-- **Metrics**: Prometheus + Grafana
+- **Metrics**: Prometheus + Grafana (future)
 - **Logs**: Structured JSON logging
 - **Tracing**: OpenTelemetry integration (future)
 - **Alerting**: AlertManager integration (future)

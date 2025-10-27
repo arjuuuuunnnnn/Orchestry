@@ -16,10 +16,10 @@ Or install from source
 pip install -e .
 ```
 
-## Global Options
+## Options
 
 ```bash
-orchestry [GLOBAL_OPTIONS] COMMAND [COMMAND_OPTIONS]
+orchestry --help
 ```
 
 ### Environment Variables

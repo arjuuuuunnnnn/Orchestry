@@ -21,7 +21,7 @@ Configure the main Orchestry controller:
 # API Server Configuration
 ORCHESTRY_HOST=0.0.0.0              # Bind address (default: 0.0.0.0)
 ORCHESTRY_PORT=8000                 # API port (default: 8000)
-ORCHESTRY_WORKERS=4                 # Number of worker processes
+# ORCHESTRY_WORKERS=4                 # Number of worker processes
 ORCHESTRY_LOG_LEVEL=INFO            # Logging level (DEBUG, INFO, WARN, ERROR)
 
 # Controller Settings
