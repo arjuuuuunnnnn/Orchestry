@@ -47,7 +47,7 @@ def register(config: str):
                 spec = json.load(f)
 
         response = requests.post(
-            f"{ORCHESTRY_URL}/apps/register", 
+            f"{ORCHESTRY_URL}/apps/register",
             json=spec,
             headers={"Content-Type": "application/json"}
         )
@@ -72,7 +72,8 @@ def up(name: str):
         raise typer.Exit(1)
 
     response = requests.post(f"{ORCHESTRY_URL}/apps/{name}/up")
-    typer.echo(response.json())
+    res = response.json()
+    typer.echo(json.dumps(res, indent=2))
 
 @app.command()
 def down(name: str):
@@ -81,7 +82,8 @@ def down(name: str):
         typer.echo(" orchestry controller is not running, run 'orchestry config' to configure", err=True)
         raise typer.Exit(1)
     response = requests.post(f"{ORCHESTRY_URL}/apps/{name}/down")
-    typer.echo(response.json())
+    res = response.json()
+    typer.echo(json.dumps(res, indent=2))
 
 @app.command()
 def status(name: str):
@@ -91,7 +93,8 @@ def status(name: str):
         raise typer.Exit(1)
 
     response = requests.get(f"{ORCHESTRY_URL}/apps/{name}/status")
-    typer.echo(response.json())
+    res = response.json()
+    typer.echo(json.dumps(res, indent=2))
 
 @app.command()
 def scale(name: str, replicas: int):
@@ -124,7 +127,7 @@ def scale(name: str, replicas: int):
 
         if response.status_code == 200:
             result = response.json()
-            typer.echo(" " + str(result))
+            typer.echo(" " + str(json.dumps(result, indent=2)))
 
             if app_mode == 'auto':
                 typer.echo("\n Tip: This app uses automatic scaling. To use manual scaling, set 'mode: manual' in the scaling section of your YAML spec.")
@@ -147,7 +150,8 @@ def list():
         raise typer.Exit(1)
 
     response = requests.get(f"{ORCHESTRY_URL}/apps")
-    typer.echo(response.json())
+    res = response.json()
+    typer.echo(json.dumps(res, indent=2))
 
 @app.command()
 def metrics(name: Optional[str] = None):
@@ -161,7 +165,8 @@ def metrics(name: Optional[str] = None):
     else:
         response = requests.get(f"{ORCHESTRY_URL}/metrics")
 
-    typer.echo(response.json())
+    res = response.json()
+    typer.echo(json.dumps(res, indent=2))
 
 @app.command()
 def info():
@@ -229,7 +234,7 @@ def spec(name: str, raw: bool = False):
     except Exception as e:
         typer.echo(f" Error: {e}", err=True)
         raise typer.Exit(1)
-    
+
 @app.command()
 def logs(
     name: str,
@@ -243,7 +248,7 @@ def logs(
 
     try:
         response = requests.get(f"{ORCHESTRY_URL}/apps/{name}/logs", params={"lines": lines})
-        
+
         if response.status_code == 404:
             typer.echo(f" App '{name}' not found or not running", err=True)
             raise typer.Exit(1)
@@ -267,12 +272,12 @@ def logs(
             timestamp = log_entry.get("timestamp", 0)
             container_id = log_entry.get("container", "unknown")
             message = log_entry.get("message", "")
-            
+
             # Format timestamp
             from datetime import datetime
             dt = datetime.fromtimestamp(timestamp)
             time_str = dt.strftime("%Y-%m-%d %H:%M:%S")
-            
+
             # Color-code by container (simple approach using container ID)
             typer.echo(f"{time_str} [{container_id}] {message}")
 
@@ -285,6 +290,52 @@ def logs(
     except Exception as e:
         typer.echo(f" Error: {e}", err=True)
         raise typer.Exit(1)
+
+@app.command()
+def cluster(opts: str):
+    """Get cluster information(status, leader, health)"""
+    if helpers.check_service_running(ORCHESTRY_URL) == False:
+        typer.echo(" orchestry controller is not running, run 'orchestry config' to configure", err=True)
+        raise typer.Exit(1)
+
+    try:
+        response = requests.get(f"{ORCHESTRY_URL}/cluster/{opts}")
+        if response.status_code == 404:
+            typer.echo(f"Cluster '{opts}' not found", err=True)
+            raise typer.Exit(1)
+        elif response.status_code != 200:
+            typer.echo(f"Error: {response.json()}", err=True)
+            raise typer.Exit(1)
+        res = response.json()
+        typer.echo(json.dumps(res, indent=2))
+    except requests.exceptions.RequestException as e:
+        typer.echo(f" Error: Unable to connect to API - {e}", err=True)
+        raise typer.Exit(1)
+    except Exception as e:
+        typer.echo(f" Error: {e}", err=True)
+        raise typer.Exit(1)
+
+@app.command()
+def events():
+    """Get recent events"""
+    if helpers.check_service_running(ORCHESTRY_URL) == False:
+        typer.echo(" orchestry controller is not running, run 'orchestry config' to configure", err=True)
+        raise typer.Exit(1)
+
+    try:
+        response = requests.get(f"{ORCHESTRY_URL}/events")
+        if response.status_code != 200:
+            typer.echo(f" Error: {response.json()}", err=True)
+            raise typer.Exit(1)
+        res = response.json()
+        typer.echo(json.dumps(res, indent=2))
+    except requests.exceptions.RequestException as e:
+        typer.echo(f" Error: Unable to connect to API - {e}", err=True)
+        raise typer.Exit(1)
+    except Exception as e:
+        typer.echo(f" Error: {e}", err=True)
+        raise typer.Exit(1)
+
 
 if __name__ == "__main__":
     if not ORCHESTRY_URL:
