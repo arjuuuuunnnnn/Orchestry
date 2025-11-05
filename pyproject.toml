@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "orchestry"
-version = "1.0.0"
+version = "1.0.1"
 description = "Orchestry - Automatic orchestration, scaling and load balancing for containerized applications"
 authors = [{name = "Hemanth S Banur", email = "arjunbanur27@gmail.com"}]
 readme = "README.md"
