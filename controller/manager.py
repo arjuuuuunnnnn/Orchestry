@@ -415,6 +415,59 @@ class AppManager:
             logger.error(f"Failed to stop app {app_name}: {e}")
             return {"error": str(e)}
 
+    def delete(self, app_name: str) -> dict:
+        """Delete an application completely - stops containers and removes from registry."""
+        try:
+            logger.info(f"Deleting app {app_name}")
+            
+            # Check if app exists
+            app_record = self.state_store.get_app(app_name)
+            if not app_record:
+                return {"error": f"App {app_name} not found"}
+            
+            # First, stop all containers if any are running
+            with self._lock:
+                if app_name in self.instances and len(self.instances[app_name]) > 0:
+                    stopped_count = 0
+                    for instance in self.instances[app_name]:
+                        try:
+                            container = self.client.containers.get(instance.container_id)
+                            container.stop(timeout=30)
+                            container.remove()
+                            stopped_count += 1
+                            
+                            # Remove from health checker
+                            self.health_checker.remove_target(instance.container_id)
+                            
+                        except Exception as e:
+                            logger.warning(f"Failed to stop/remove container {instance.container_id}: {e}")
+                    
+                    # Clear instances from memory
+                    self.instances[app_name] = []
+                    logger.info(f"Stopped and removed {stopped_count} containers for app {app_name}")
+            
+            # Remove nginx configuration
+            try:
+                self.nginx.remove_app_config(app_name)
+                logger.info(f"Removed nginx configuration for app {app_name}")
+            except Exception as e:
+                logger.warning(f"Failed to remove nginx config for {app_name}: {e}")
+            
+            # Delete app from state store (this also removes instances via cascade)
+            if self.state_store.delete_app(app_name):
+                logger.info(f"Successfully deleted app {app_name} from state store")
+                return {
+                    "status": "deleted",
+                    "app": app_name,
+                    "message": f"Application {app_name} deleted successfully"
+                }
+            else:
+                return {"error": f"Failed to delete app {app_name} from database"}
+                
+        except Exception as e:
+            logger.error(f"Failed to delete app {app_name}: {e}")
+            return {"error": str(e)}
+
     def status(self, app_name: str) -> dict:
         """Get the status of an application."""
         try:

@@ -172,6 +172,25 @@ async def stop_app(name: str):
         logger.error(f"Failed to stop app {name}: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.delete("/apps/{name}")
+@leader_required
+async def delete_app(name: str):
+    """Delete an application completely."""
+    try:
+        result = get_app_manager().delete(name)
+        
+        if "error" in result:
+            raise HTTPException(status_code=400, detail=result["error"])
+        
+        # Log event
+        get_state_store().log_event(name, "deleted", result)
+        
+        return result
+        
+    except Exception as e:
+        logger.error(f"Failed to delete app {name}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.get("/apps/{name}/status", response_model=AppStatusResponse)
 async def app_status(name: str):
     """Get the status of an application."""

@@ -86,6 +86,40 @@ def down(name: str):
     typer.echo(json.dumps(res, indent=2))
 
 @app.command()
+def delete(name: str, force: bool = typer.Option(False, "--force", "-f", help="Skip confirmation prompt")):
+    """Delete an application completely."""
+    if helpers.check_service_running(ORCHESTRY_URL) == False:
+        typer.echo(" orchestry controller is not running, run 'orchestry config' to configure", err=True)
+        raise typer.Exit(1)
+    
+    # Confirm deletion unless force flag is set
+    if not force:
+        confirm = typer.confirm(f"Are you sure you want to delete app '{name}'? This will stop all containers and remove the app registration.")
+        if not confirm:
+            typer.echo(" Deletion cancelled")
+            raise typer.Exit(0)
+    
+    try:
+        response = requests.delete(f"{ORCHESTRY_URL}/apps/{name}")
+        
+        if response.status_code == 200:
+            res = response.json()
+            typer.echo(" App deleted successfully!")
+            typer.echo(json.dumps(res, indent=2))
+        elif response.status_code == 404:
+            typer.echo(f" App '{name}' not found", err=True)
+            raise typer.Exit(1)
+        else:
+            typer.echo(f" Error: {response.json()}", err=True)
+            raise typer.Exit(1)
+    except requests.exceptions.RequestException as e:
+        typer.echo(f" Error: Unable to connect to API - {e}", err=True)
+        raise typer.Exit(1)
+    except Exception as e:
+        typer.echo(f" Error: {e}", err=True)
+        raise typer.Exit(1)
+
+@app.command()
 def status(name: str):
     """Check app status."""
     if helpers.check_service_running(ORCHESTRY_URL) == False:

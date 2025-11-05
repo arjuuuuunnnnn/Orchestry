@@ -30,6 +30,7 @@ orchestry --help
 | `register` | Register an application from YAML/JSON spec |
 | `up` | Start an application |
 | `down` | Stop an application |
+| `delete` | Delete an application completely (stops & removes) |
 | `status` | Show application status |
 | `scale` | Scale an application to specific replica count |
 | `list` | List all applications |
@@ -114,6 +115,39 @@ orchestry down APP_NAME
 # Stop application
 orchestry down my-app
 ```
+
+### delete
+
+Delete an application completely (stops containers and removes registration).
+
+```bash
+orchestry delete APP_NAME [--force]
+```
+
+**Arguments:**
+- `APP_NAME`: Name of the application to delete
+
+**Options:**
+- `--force, -f`: Skip confirmation prompt
+
+**Examples:**
+```bash
+# Delete application (with confirmation)
+orchestry delete my-app
+
+# Delete application (skip confirmation)
+orchestry delete my-app --force
+orchestry delete my-app -f
+```
+
+**What happens:**
+- All running containers are stopped and removed
+- Health checks are unregistered
+- Nginx configuration is removed
+- Application is removed from the database
+- Deletion event is logged for audit trail
+
+**Warning:** This action cannot be undone. You will need to re-register the application if you want to use it again.
 
 ### scale
 
