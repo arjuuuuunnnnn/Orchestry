@@ -108,24 +108,18 @@ spec:
 | Type | Description | Use Cases |
 |------|-------------|-----------|
 | `http` | HTTP web applications | Web servers, APIs, SPAs |
-| `tcp` | TCP applications | Databases, message queues |
-| `worker` | Background workers | Job processors, daemons |
 
 #### Ports Configuration
 
 ```yaml
 ports:
   - containerPort: 8080         # Port inside container
-    protocol: HTTP              # Protocol (HTTP, TCP)
+    protocol: HTTP              # Protocol (HTTP)
     name: "web"                 # Optional: Port name
-  - containerPort: 9090
-    protocol: TCP
-    name: "metrics"
 ```
 
 **Protocol Types:**
 - `HTTP`: For web applications (enables load balancing)
-- `TCP`: For TCP services (port forwarding only)
 
 #### Resources
 
@@ -291,15 +285,6 @@ healthCheck:
       value: "Orchestry-HealthCheck/1.0"
 ```
 
-**TCP Health Checks:**
-
-```yaml
-healthCheck:
-  port: 5432
-  protocol: TCP
-  timeoutSeconds: 3
-```
-
 **Custom Health Checks:**
 
 ```yaml
@@ -367,9 +352,6 @@ spec:
     - containerPort: 8080
       protocol: HTTP
       name: "api"
-    - containerPort: 9090
-      protocol: TCP
-      name: "metrics"
   resources:
     cpu: "1000m"
     memory: "2Gi"
@@ -415,91 +397,6 @@ healthCheck:
   expectedStatusCodes: [200]
 ```
 
-### Background Worker
-
-```yaml
-apiVersion: v1
-kind: App
-metadata:
-  name: email-worker
-  labels:
-    app: "email-worker"
-    version: "v1.0.0"
-    tier: "worker"
-spec:
-  type: worker
-  image: "myregistry/email-worker:v1.0.0"
-  resources:
-    cpu: "500m"
-    memory: "1Gi"
-  environment:
-    - name: QUEUE_URL
-      source: secret
-      key: "queue-credentials"
-    - name: WORKER_CONCURRENCY
-      value: "5"
-  command: ["/app/worker"]
-  args: ["--queue", "emails", "--concurrency", "5"]
-scaling:
-  mode: manual
-  minReplicas: 2
-  maxReplicas: 10
-healthCheck:
-  port: 8080
-  path: "/health"
-  protocol: HTTP
-  initialDelaySeconds: 30
-  periodSeconds: 30
-```
-
-### Database Service
-
-```yaml
-apiVersion: v1
-kind: App
-metadata:
-  name: postgres-db
-  labels:
-    app: "postgres-db"
-    version: "v13"
-    tier: "database"
-spec:
-  type: tcp
-  image: "postgres:13-alpine"
-  ports:
-    - containerPort: 5432
-      protocol: TCP
-  resources:
-    cpu: "2000m"
-    memory: "4Gi"
-  environment:
-    - name: POSTGRES_DB
-      value: "myapp"
-    - name: POSTGRES_USER
-      source: secret
-      key: "postgres-credentials"
-      field: "username"
-    - name: POSTGRES_PASSWORD
-      source: secret
-      key: "postgres-credentials"
-      field: "password"
-  volumes:
-    - name: "postgres-data"
-      mountPath: "/var/lib/postgresql/data"
-      size: "100Gi"
-scaling:
-  mode: manual
-  minReplicas: 1
-  maxReplicas: 1
-healthCheck:
-  port: 5432
-  protocol: TCP
-  initialDelaySeconds: 60
-  periodSeconds: 30
-  timeoutSeconds: 5
-  failureThreshold: 5
-```
-
 ## Validation Rules
 
 Orchestry validates specifications before deployment:
@@ -510,7 +407,7 @@ Orchestry validates specifications before deployment:
 - `kind`: Must be `App`
 - `metadata.name`: Must be DNS-compatible
 - `metadata.labels.app`: Must match `metadata.name`
-- `spec.type`: Must be `http`, `tcp`, or `worker`
+- `spec.type`: Must be `http`
 - `spec.image`: Must be a valid container image reference
 
 ### Naming Conventions
