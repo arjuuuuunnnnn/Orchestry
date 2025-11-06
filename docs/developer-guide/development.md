@@ -44,7 +44,7 @@ sudo usermod -a -G docker $USER
 
 ```bash
 # Clone the ORCHESTRY repository
-git clone https://github.com/arjuuuuunnnnn/Orchestry.git
+git clone https://github.com/admincodes7/Orchestry.git
 cd Orchestry
 
 # Create development branch

@@ -44,14 +44,14 @@ Orchestry is a container orchestration platform that provides:
 
 ## Documentation
 
-- Orchestry Docs: https://arjuuuuunnnnn.github.io/Orchestry/
+- Orchestry Docs: https://admincodes7.github.io/Orchestry/
 
 Quick links on the site:
 
-- Quick Start: https://arjuuuuunnnnn.github.io/Orchestry/user-guide/quick-start/
-- CLI Reference: https://arjuuuuunnnnn.github.io/Orchestry/user-guide/cli-reference/
-- API Reference: https://arjuuuuunnnnn.github.io/Orchestry/user-guide/api-reference/
-- Architecture Overview: https://arjuuuuunnnnn.github.io/Orchestry/developer-guide/architecture/
+- Quick Start: https://admincodes7.github.io/Orchestry/user-guide/quick-start/
+- CLI Reference: https://admincodes7.github.io/Orchestry/user-guide/cli-reference/
+- API Reference: https://admincodes7.github.io/Orchestry/user-guide/api-reference/
+- Architecture Overview: https://admincodes7.github.io/Orchestry/developer-guide/architecture/
 
 ---
 

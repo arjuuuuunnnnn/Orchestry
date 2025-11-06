@@ -36,5 +36,5 @@ packages = [
 orchestry = "cli.main:app"
 
 [project.urls]
-Homepage = "https://arjuuuuunnnnn.github.io/Orchestry/"
-Repository = "https://github.com/arjuuuuunnnnn/Orchestry"
+Homepage = "https://admincodes7.github.io/Orchestry/"
+Repository = "https://github.com/admincodes7/Orchestry"

@@ -15,7 +15,7 @@ Get Orchestry up and running in minutes and deploy your first application.
 
 ```bash
 # Clone the repository
-git clone https://github.com/arjuuuuunnnnn/Orchestry.git
+git clone https://github.com/admincodes7/Orchestry.git
 cd Orchestry
 
 # Run the quick start script
@@ -32,7 +32,7 @@ This script will:
 
 ```bash
 # Clone the repository
-git clone https://github.com/arjuuuuunnnnn/Orchestry.git
+git clone https://github.com/admincodes7/Orchestry.git
 cd Orchestry
 
 # Start the 3-node distributed cluster
@@ -52,7 +52,7 @@ This script will:
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/arjuuuuunnnnn/Orchestry.git
+git clone https://github.com/admincodes7/Orchestry.git
 cd Orchestry
 
 # 2. Start services with Docker Compose

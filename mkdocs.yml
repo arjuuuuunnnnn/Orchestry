@@ -1,9 +1,9 @@
 site_name: Orchestry Documentation
-site_url: https://arjuuuuunnnnn.github.io/Orchestry/
+site_url: https://admincodes7.github.io/Orchestry/
 site_description: Orchestry - Container Orchestration and Auto-Scaling Platform
 use_directory_urls: true
-repo_url: https://github.com/arjuuuuunnnnn/Orchestry
-repo_name: arjuuuuunnnnn/Orchestry
+repo_url: https://github.com/admincodes7/Orchestry
+repo_name: admincodes7/Orchestry
 
 nav:
   - Home: index.md
@@ -80,7 +80,7 @@ markdown_extensions:
 extra:
   social:
     - icon: fontawesome/brands/github
-      link: https://github.com/arjuuuuunnnnn/Orchestry
+      link: https://github.com/admincodes7/Orchestry
   version:
     provider: mike
   generator: false
