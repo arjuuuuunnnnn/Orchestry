@@ -1,0 +1,2239 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Orchestry - Container Orchestration and Auto-Scaling Platform">
+      
+      
+      
+        <link rel="canonical" href="https://admincodes7.github.io/Orchestry/developer-guide/scaling/">
+      
+      
+        <link rel="prev" href="../database/">
+      
+      
+        <link rel="next" href="../health/">
+      
+      
+      <link rel="icon" href="../../images/l0g0.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.23">
+    
+    
+      
+        <title>Scaling Algorithm - Orchestry Documentation</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.84d31ad4.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.06af60db.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=JetBrains+Mono:300,300i,400,400i,700,700i%7CJetBrains+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"JetBrains Mono";--md-code-font:"JetBrains Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../styles/overrides.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="slate" data-md-color-primary="grey" data-md-color-accent="grey">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#scaling-algorithm" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-color-scheme="default" data-md-component="outdated" hidden>
+        
+      </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="Orchestry Documentation" class="md-header__button md-logo" aria-label="Orchestry Documentation" data-md-component="logo">
+      
+  <img src="../../images/l0g0.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Orchestry Documentation
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Scaling Algorithm
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="grey" data-md-color-accent="grey"  aria-hidden="true"  type="radio" name="__palette" id="__palette_0">
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="Share" aria-label="Share" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91s2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08"/></svg>
+          </a>
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/admincodes7/Orchestry" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    admincodes7/Orchestry
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../user-guide/quick-start/" class="md-tabs__link">
+          
+  
+  
+  User Guide
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../architecture/" class="md-tabs__link">
+          
+  
+  
+  Developer Guide
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../examples/applications/" class="md-tabs__link">
+          
+  
+  
+  Examples
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="Orchestry Documentation" class="md-nav__button md-logo" aria-label="Orchestry Documentation" data-md-component="logo">
+      
+  <img src="../../images/l0g0.png" alt="logo">
+
+    </a>
+    Orchestry Documentation
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/admincodes7/Orchestry" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    admincodes7/Orchestry
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Home
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    User Guide
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            User Guide
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user-guide/quick-start/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Quick Start
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user-guide/cli-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    CLI Reference
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user-guide/app-spec/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Application Specification
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user-guide/configuration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Configuration
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user-guide/api-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    API Reference
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user-guide/troubleshooting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Troubleshooting
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    Developer Guide
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            Developer Guide
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Architecture Overview
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../components/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Core Components
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../leader-election/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Leader Election
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../database/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Database Schema
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    Scaling Algorithm
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    Scaling Algorithm
+    
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      Overview
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#core-algorithm" class="md-nav__link">
+    <span class="md-ellipsis">
+      Core Algorithm
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Core Algorithm">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#scaling-decision-flow" class="md-nav__link">
+    <span class="md-ellipsis">
+      Scaling Decision Flow
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#scale-factor-calculation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Scale Factor Calculation
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#scaling-policies" class="md-nav__link">
+    <span class="md-ellipsis">
+      Scaling Policies
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Scaling Policies">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#policy-structure" class="md-nav__link">
+    <span class="md-ellipsis">
+      Policy Structure
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#policy-examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      Policy Examples
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#scaling-decision-logic" class="md-nav__link">
+    <span class="md-ellipsis">
+      Scaling Decision Logic
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Scaling Decision Logic">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#scale-out-decision" class="md-nav__link">
+    <span class="md-ellipsis">
+      Scale Out Decision
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#scale-in-decision" class="md-nav__link">
+    <span class="md-ellipsis">
+      Scale In Decision
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#target-replica-calculation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Target Replica Calculation
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Target Replica Calculation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#scale-out-target" class="md-nav__link">
+    <span class="md-ellipsis">
+      Scale Out Target
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#scale-in-target" class="md-nav__link">
+    <span class="md-ellipsis">
+      Scale In Target
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cooldown-and-stability" class="md-nav__link">
+    <span class="md-ellipsis">
+      Cooldown and Stability
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Cooldown and Stability">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#cooldown-management" class="md-nav__link">
+    <span class="md-ellipsis">
+      Cooldown Management
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#stability-window" class="md-nav__link">
+    <span class="md-ellipsis">
+      Stability Window
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#metrics-collection-and-analysis" class="md-nav__link">
+    <span class="md-ellipsis">
+      Metrics Collection and Analysis
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Metrics Collection and Analysis">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#metrics-aggregation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Metrics Aggregation
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#smoothing-and-filtering" class="md-nav__link">
+    <span class="md-ellipsis">
+      Smoothing and Filtering
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#advanced-features" class="md-nav__link">
+    <span class="md-ellipsis">
+      Advanced Features
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Advanced Features">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#predictive-scaling" class="md-nav__link">
+    <span class="md-ellipsis">
+      Predictive Scaling
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#custom-scaling-strategies" class="md-nav__link">
+    <span class="md-ellipsis">
+      Custom Scaling Strategies
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#performance-optimization" class="md-nav__link">
+    <span class="md-ellipsis">
+      Performance Optimization
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Performance Optimization">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#efficient-metrics-storage" class="md-nav__link">
+    <span class="md-ellipsis">
+      Efficient Metrics Storage
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#batch-scaling-operations" class="md-nav__link">
+    <span class="md-ellipsis">
+      Batch Scaling Operations
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#monitoring-and-debugging" class="md-nav__link">
+    <span class="md-ellipsis">
+      Monitoring and Debugging
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Monitoring and Debugging">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#scaling-decision-logging" class="md-nav__link">
+    <span class="md-ellipsis">
+      Scaling Decision Logging
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#performance-metrics" class="md-nav__link">
+    <span class="md-ellipsis">
+      Performance Metrics
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../health/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Health Monitoring
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../load-balancing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Load Balancing
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../development/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Development Setup
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../extensions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Extensions
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Examples
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            Examples
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/applications/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Sample Applications
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      Overview
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#core-algorithm" class="md-nav__link">
+    <span class="md-ellipsis">
+      Core Algorithm
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Core Algorithm">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#scaling-decision-flow" class="md-nav__link">
+    <span class="md-ellipsis">
+      Scaling Decision Flow
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#scale-factor-calculation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Scale Factor Calculation
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#scaling-policies" class="md-nav__link">
+    <span class="md-ellipsis">
+      Scaling Policies
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Scaling Policies">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#policy-structure" class="md-nav__link">
+    <span class="md-ellipsis">
+      Policy Structure
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#policy-examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      Policy Examples
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#scaling-decision-logic" class="md-nav__link">
+    <span class="md-ellipsis">
+      Scaling Decision Logic
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Scaling Decision Logic">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#scale-out-decision" class="md-nav__link">
+    <span class="md-ellipsis">
+      Scale Out Decision
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#scale-in-decision" class="md-nav__link">
+    <span class="md-ellipsis">
+      Scale In Decision
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#target-replica-calculation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Target Replica Calculation
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Target Replica Calculation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#scale-out-target" class="md-nav__link">
+    <span class="md-ellipsis">
+      Scale Out Target
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#scale-in-target" class="md-nav__link">
+    <span class="md-ellipsis">
+      Scale In Target
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cooldown-and-stability" class="md-nav__link">
+    <span class="md-ellipsis">
+      Cooldown and Stability
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Cooldown and Stability">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#cooldown-management" class="md-nav__link">
+    <span class="md-ellipsis">
+      Cooldown Management
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#stability-window" class="md-nav__link">
+    <span class="md-ellipsis">
+      Stability Window
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#metrics-collection-and-analysis" class="md-nav__link">
+    <span class="md-ellipsis">
+      Metrics Collection and Analysis
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Metrics Collection and Analysis">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#metrics-aggregation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Metrics Aggregation
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#smoothing-and-filtering" class="md-nav__link">
+    <span class="md-ellipsis">
+      Smoothing and Filtering
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#advanced-features" class="md-nav__link">
+    <span class="md-ellipsis">
+      Advanced Features
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Advanced Features">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#predictive-scaling" class="md-nav__link">
+    <span class="md-ellipsis">
+      Predictive Scaling
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#custom-scaling-strategies" class="md-nav__link">
+    <span class="md-ellipsis">
+      Custom Scaling Strategies
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#performance-optimization" class="md-nav__link">
+    <span class="md-ellipsis">
+      Performance Optimization
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Performance Optimization">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#efficient-metrics-storage" class="md-nav__link">
+    <span class="md-ellipsis">
+      Efficient Metrics Storage
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#batch-scaling-operations" class="md-nav__link">
+    <span class="md-ellipsis">
+      Batch Scaling Operations
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#monitoring-and-debugging" class="md-nav__link">
+    <span class="md-ellipsis">
+      Monitoring and Debugging
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Monitoring and Debugging">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#scaling-decision-logging" class="md-nav__link">
+    <span class="md-ellipsis">
+      Scaling Decision Logging
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#performance-metrics" class="md-nav__link">
+    <span class="md-ellipsis">
+      Performance Metrics
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="scaling-algorithm">Scaling Algorithm<a class="headerlink" href="#scaling-algorithm" title="Permanent link">&para;</a></h1>
+<p>Deep dive into Orchestry's multi-metric auto-scaling algorithm, policies, and decision-making process.</p>
+<h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
+<p>Orchestry uses a sophisticated multi-metric scaling algorithm that considers CPU utilization, memory usage, request rate, response latency, and active connections to make intelligent scaling decisions. The algorithm is designed to be predictive, stable, and configurable.</p>
+<h2 id="core-algorithm">Core Algorithm<a class="headerlink" href="#core-algorithm" title="Permanent link">&para;</a></h2>
+<h3 id="scaling-decision-flow">Scaling Decision Flow<a class="headerlink" href="#scaling-decision-flow" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>graph TD
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    A[Collect Metrics] --&gt; B[Calculate Scale Factors]
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    B --&gt; C{In Cooldown?}
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    C --&gt;|Yes| D[No Scaling]
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    C --&gt;|No| E[Evaluate Thresholds]
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    E --&gt; F{Any Metric &gt; Scale Out Threshold?}
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    F --&gt;|Yes| G[Calculate Scale Out Target]
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>    F --&gt;|No| H{All Metrics &lt; Scale In Threshold?}
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>    H --&gt;|Yes| I[Calculate Scale In Target]
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>    H --&gt;|No| J[No Scaling Needed]
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>    G --&gt; K[Apply Constraints]
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>    I --&gt; K
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>    K --&gt; L[Execute Scaling]
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>    L --&gt; M[Log Decision]
+<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>    D --&gt; M
+<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>    J --&gt; M
+</code></pre></div>
+<h3 id="scale-factor-calculation">Scale Factor Calculation<a class="headerlink" href="#scale-factor-calculation" title="Permanent link">&para;</a></h3>
+<p>Each metric is normalized to a scale factor representing resource pressure:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">calculate_scale_factors</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">metrics</span><span class="p">:</span> <span class="n">ScalingMetrics</span><span class="p">,</span> <span class="n">policy</span><span class="p">:</span> <span class="n">ScalingPolicy</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="sd">    Calculate normalized scale factors for each metric.</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="sd">    A factor of 1.0 means the metric is at its target.</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="sd">    A factor &gt; 1.0 indicates pressure (potential scale out).</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="sd">    A factor &lt; 1.0 indicates underutilization (potential scale in).</span>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>    <span class="n">factors</span> <span class="o">=</span> <span class="p">{}</span>
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>    <span class="c1"># CPU Utilization Factor</span>
+<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>    <span class="c1"># Target: policy.max_cpu_percent (default: 70%)</span>
+<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>    <span class="k">if</span> <span class="n">policy</span><span class="o">.</span><span class="n">max_cpu_percent</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>        <span class="n">factors</span><span class="p">[</span><span class="s1">&#39;cpu&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">metrics</span><span class="o">.</span><span class="n">cpu_percent</span> <span class="o">/</span> <span class="n">policy</span><span class="o">.</span><span class="n">max_cpu_percent</span>
+<a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a>
+<a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a>    <span class="c1"># Memory Utilization Factor  </span>
+<a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a>    <span class="c1"># Target: policy.max_memory_percent (default: 75%)</span>
+<a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a>    <span class="k">if</span> <span class="n">policy</span><span class="o">.</span><span class="n">max_memory_percent</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+<a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a>        <span class="n">factors</span><span class="p">[</span><span class="s1">&#39;memory&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">metrics</span><span class="o">.</span><span class="n">memory_percent</span> <span class="o">/</span> <span class="n">policy</span><span class="o">.</span><span class="n">max_memory_percent</span>
+<a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a>
+<a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a>    <span class="c1"># Requests Per Second Factor</span>
+<a id="__codelineno-1-21" name="__codelineno-1-21" href="#__codelineno-1-21"></a>    <span class="c1"># Target: policy.target_rps_per_replica RPS per healthy replica</span>
+<a id="__codelineno-1-22" name="__codelineno-1-22" href="#__codelineno-1-22"></a>    <span class="k">if</span> <span class="n">policy</span><span class="o">.</span><span class="n">target_rps_per_replica</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">metrics</span><span class="o">.</span><span class="n">healthy_replicas</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+<a id="__codelineno-1-23" name="__codelineno-1-23" href="#__codelineno-1-23"></a>        <span class="n">current_rps_per_replica</span> <span class="o">=</span> <span class="n">metrics</span><span class="o">.</span><span class="n">rps</span> <span class="o">/</span> <span class="n">metrics</span><span class="o">.</span><span class="n">healthy_replicas</span>
+<a id="__codelineno-1-24" name="__codelineno-1-24" href="#__codelineno-1-24"></a>        <span class="n">factors</span><span class="p">[</span><span class="s1">&#39;rps&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">current_rps_per_replica</span> <span class="o">/</span> <span class="n">policy</span><span class="o">.</span><span class="n">target_rps_per_replica</span>
+<a id="__codelineno-1-25" name="__codelineno-1-25" href="#__codelineno-1-25"></a>
+<a id="__codelineno-1-26" name="__codelineno-1-26" href="#__codelineno-1-26"></a>    <span class="c1"># Response Latency Factor</span>
+<a id="__codelineno-1-27" name="__codelineno-1-27" href="#__codelineno-1-27"></a>    <span class="c1"># Target: policy.max_p95_latency_ms (default: 250ms)</span>
+<a id="__codelineno-1-28" name="__codelineno-1-28" href="#__codelineno-1-28"></a>    <span class="k">if</span> <span class="n">policy</span><span class="o">.</span><span class="n">max_p95_latency_ms</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+<a id="__codelineno-1-29" name="__codelineno-1-29" href="#__codelineno-1-29"></a>        <span class="n">factors</span><span class="p">[</span><span class="s1">&#39;latency&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">metrics</span><span class="o">.</span><span class="n">p95_latency_ms</span> <span class="o">/</span> <span class="n">policy</span><span class="o">.</span><span class="n">max_p95_latency_ms</span>
+<a id="__codelineno-1-30" name="__codelineno-1-30" href="#__codelineno-1-30"></a>
+<a id="__codelineno-1-31" name="__codelineno-1-31" href="#__codelineno-1-31"></a>    <span class="c1"># Connection Count Factor</span>
+<a id="__codelineno-1-32" name="__codelineno-1-32" href="#__codelineno-1-32"></a>    <span class="c1"># Target: policy.max_conn_per_replica connections per healthy replica</span>
+<a id="__codelineno-1-33" name="__codelineno-1-33" href="#__codelineno-1-33"></a>    <span class="k">if</span> <span class="n">policy</span><span class="o">.</span><span class="n">max_conn_per_replica</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">metrics</span><span class="o">.</span><span class="n">healthy_replicas</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+<a id="__codelineno-1-34" name="__codelineno-1-34" href="#__codelineno-1-34"></a>        <span class="n">current_conn_per_replica</span> <span class="o">=</span> <span class="n">metrics</span><span class="o">.</span><span class="n">active_connections</span> <span class="o">/</span> <span class="n">metrics</span><span class="o">.</span><span class="n">healthy_replicas</span>
+<a id="__codelineno-1-35" name="__codelineno-1-35" href="#__codelineno-1-35"></a>        <span class="n">factors</span><span class="p">[</span><span class="s1">&#39;connections&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">current_conn_per_replica</span> <span class="o">/</span> <span class="n">policy</span><span class="o">.</span><span class="n">max_conn_per_replica</span>
+<a id="__codelineno-1-36" name="__codelineno-1-36" href="#__codelineno-1-36"></a>
+<a id="__codelineno-1-37" name="__codelineno-1-37" href="#__codelineno-1-37"></a>    <span class="k">return</span> <span class="n">factors</span>
+</code></pre></div>
+<h2 id="scaling-policies">Scaling Policies<a class="headerlink" href="#scaling-policies" title="Permanent link">&para;</a></h2>
+<h3 id="policy-structure">Policy Structure<a class="headerlink" href="#policy-structure" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nd">@dataclass</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="k">class</span><span class="w"> </span><span class="nc">ScalingPolicy</span><span class="p">:</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Comprehensive scaling policy configuration.&quot;&quot;&quot;</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>    <span class="c1"># Replica bounds</span>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>    <span class="n">min_replicas</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>    <span class="n">max_replicas</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">5</span>
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>    <span class="c1"># Performance targets</span>
+<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>    <span class="n">target_rps_per_replica</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">50</span>        <span class="c1"># Target requests/sec per replica</span>
+<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>    <span class="n">max_p95_latency_ms</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">250</span>          <span class="c1"># Maximum 95th percentile latency</span>
+<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>    <span class="n">max_conn_per_replica</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">80</span>         <span class="c1"># Maximum connections per replica</span>
+<a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a>    <span class="n">max_cpu_percent</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">70.0</span>          <span class="c1"># Maximum CPU utilization %</span>
+<a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a>    <span class="n">max_memory_percent</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">75.0</span>       <span class="c1"># Maximum memory utilization %</span>
+<a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a>
+<a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a>    <span class="c1"># Scaling thresholds</span>
+<a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a>    <span class="n">scale_out_threshold_pct</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">80</span>      <span class="c1"># Scale out when factor &gt; 80% of target</span>
+<a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a>    <span class="n">scale_in_threshold_pct</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">30</span>       <span class="c1"># Scale in when factor &lt; 30% of target</span>
+<a id="__codelineno-2-19" name="__codelineno-2-19" href="#__codelineno-2-19"></a>
+<a id="__codelineno-2-20" name="__codelineno-2-20" href="#__codelineno-2-20"></a>    <span class="c1"># Timing configuration</span>
+<a id="__codelineno-2-21" name="__codelineno-2-21" href="#__codelineno-2-21"></a>    <span class="n">window_seconds</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">60</span>               <span class="c1"># Metrics evaluation window</span>
+<a id="__codelineno-2-22" name="__codelineno-2-22" href="#__codelineno-2-22"></a>    <span class="n">cooldown_seconds</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">180</span>            <span class="c1"># Minimum time between scaling events</span>
+<a id="__codelineno-2-23" name="__codelineno-2-23" href="#__codelineno-2-23"></a>
+<a id="__codelineno-2-24" name="__codelineno-2-24" href="#__codelineno-2-24"></a>    <span class="c1"># Advanced settings</span>
+<a id="__codelineno-2-25" name="__codelineno-2-25" href="#__codelineno-2-25"></a>    <span class="n">max_scale_out_step</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>            <span class="c1"># Max replicas to add (0 = unlimited)</span>
+<a id="__codelineno-2-26" name="__codelineno-2-26" href="#__codelineno-2-26"></a>    <span class="n">max_scale_in_step</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span>             <span class="c1"># Max replicas to remove per operation</span>
+<a id="__codelineno-2-27" name="__codelineno-2-27" href="#__codelineno-2-27"></a>    <span class="n">stabilization_window_seconds</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">300</span> <span class="c1"># Time to wait for stability</span>
+<a id="__codelineno-2-28" name="__codelineno-2-28" href="#__codelineno-2-28"></a>
+<a id="__codelineno-2-29" name="__codelineno-2-29" href="#__codelineno-2-29"></a>    <span class="c1"># Metric weights (future enhancement)</span>
+<a id="__codelineno-2-30" name="__codelineno-2-30" href="#__codelineno-2-30"></a>    <span class="n">cpu_weight</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span>
+<a id="__codelineno-2-31" name="__codelineno-2-31" href="#__codelineno-2-31"></a>    <span class="n">memory_weight</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span>
+<a id="__codelineno-2-32" name="__codelineno-2-32" href="#__codelineno-2-32"></a>    <span class="n">rps_weight</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span>
+<a id="__codelineno-2-33" name="__codelineno-2-33" href="#__codelineno-2-33"></a>    <span class="n">latency_weight</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.5</span>            <span class="c1"># Latency gets higher priority</span>
+<a id="__codelineno-2-34" name="__codelineno-2-34" href="#__codelineno-2-34"></a>    <span class="n">connection_weight</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.8</span>
+</code></pre></div>
+<h3 id="policy-examples">Policy Examples<a class="headerlink" href="#policy-examples" title="Permanent link">&para;</a></h3>
+<h4 id="latency-sensitive-application">Latency-Sensitive Application<a class="headerlink" href="#latency-sensitive-application" title="Permanent link">&para;</a></h4>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">latency_sensitive_policy</span> <span class="o">=</span> <span class="n">ScalingPolicy</span><span class="p">(</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>    <span class="n">min_replicas</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>                        <span class="c1"># Always maintain 3 replicas</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>    <span class="n">max_replicas</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>                       <span class="c1"># Can scale up to 20</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>    <span class="n">target_rps_per_replica</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span>             <span class="c1"># Lower RPS target</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>    <span class="n">max_p95_latency_ms</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>                <span class="c1"># Strict 100ms latency limit</span>
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>    <span class="n">max_cpu_percent</span><span class="o">=</span><span class="mf">60.0</span><span class="p">,</span>                  <span class="c1"># Conservative CPU target</span>
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>    <span class="n">scale_out_threshold_pct</span><span class="o">=</span><span class="mi">70</span><span class="p">,</span>            <span class="c1"># Scale out early</span>
+<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>    <span class="n">scale_in_threshold_pct</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>             <span class="c1"># Scale in conservatively</span>
+<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>    <span class="n">cooldown_seconds</span><span class="o">=</span><span class="mi">120</span><span class="p">,</span>                  <span class="c1"># Faster scaling decisions</span>
+<a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a>    <span class="n">stabilization_window_seconds</span><span class="o">=</span><span class="mi">180</span>       <span class="c1"># Shorter stability window</span>
+<a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="p">)</span>
+</code></pre></div>
+<h4 id="batch-processing-application">Batch Processing Application<a class="headerlink" href="#batch-processing-application" title="Permanent link">&para;</a></h4>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">batch_processing_policy</span> <span class="o">=</span> <span class="n">ScalingPolicy</span><span class="p">(</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>    <span class="n">min_replicas</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>                        <span class="c1"># Can scale to zero</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>    <span class="n">max_replicas</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span>                       <span class="c1"># High maximum for bursts</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>    <span class="n">target_rps_per_replica</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span>            <span class="c1"># Higher RPS tolerance</span>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>    <span class="n">max_p95_latency_ms</span><span class="o">=</span><span class="mi">2000</span><span class="p">,</span>               <span class="c1"># More latency tolerance</span>
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>    <span class="n">max_cpu_percent</span><span class="o">=</span><span class="mf">90.0</span><span class="p">,</span>                  <span class="c1"># High CPU utilization OK</span>
+<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>    <span class="n">max_memory_percent</span><span class="o">=</span><span class="mf">85.0</span><span class="p">,</span>               <span class="c1"># High memory utilization OK</span>
+<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>    <span class="n">scale_out_threshold_pct</span><span class="o">=</span><span class="mi">85</span><span class="p">,</span>            <span class="c1"># Scale out later</span>
+<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>    <span class="n">scale_in_threshold_pct</span><span class="o">=</span><span class="mi">15</span><span class="p">,</span>             <span class="c1"># Scale in aggressively</span>
+<a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a>    <span class="n">cooldown_seconds</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span>                  <span class="c1"># Slower scaling decisions</span>
+<a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a>    <span class="n">max_scale_out_step</span><span class="o">=</span><span class="mi">5</span>                   <span class="c1"># Scale out in larger steps</span>
+<a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a><span class="p">)</span>
+</code></pre></div>
+<h4 id="development-environment">Development Environment<a class="headerlink" href="#development-environment" title="Permanent link">&para;</a></h4>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">dev_policy</span> <span class="o">=</span> <span class="n">ScalingPolicy</span><span class="p">(</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>    <span class="n">min_replicas</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>    <span class="n">max_replicas</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>                        <span class="c1"># Limited scaling for dev</span>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>    <span class="n">target_rps_per_replica</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>             <span class="c1"># Low traffic expected</span>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>    <span class="n">max_p95_latency_ms</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>               <span class="c1"># Relaxed latency</span>
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>    <span class="n">max_cpu_percent</span><span class="o">=</span><span class="mf">80.0</span><span class="p">,</span>
+<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a>    <span class="n">scale_out_threshold_pct</span><span class="o">=</span><span class="mi">90</span><span class="p">,</span>            <span class="c1"># Scale out very late</span>
+<a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>    <span class="n">scale_in_threshold_pct</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>             <span class="c1"># Scale in very early</span>
+<a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a>    <span class="n">cooldown_seconds</span><span class="o">=</span><span class="mi">600</span><span class="p">,</span>                  <span class="c1"># Long cooldown for stability</span>
+<a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a>    <span class="n">stabilization_window_seconds</span><span class="o">=</span><span class="mi">600</span>
+<a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a><span class="p">)</span>
+</code></pre></div>
+<h2 id="scaling-decision-logic">Scaling Decision Logic<a class="headerlink" href="#scaling-decision-logic" title="Permanent link">&para;</a></h2>
+<h3 id="scale-out-decision">Scale Out Decision<a class="headerlink" href="#scale-out-decision" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">should_scale_out</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scale_factors</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">],</span> <span class="n">policy</span><span class="p">:</span> <span class="n">ScalingPolicy</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]:</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="sd">    Determine if scale out is needed.</span>
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>
+<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="sd">    Scale out if ANY metric exceeds the scale out threshold.</span>
+<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="sd">    This ensures responsive scaling when any resource becomes constrained.</span>
+<a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a>    <span class="n">threshold</span> <span class="o">=</span> <span class="n">policy</span><span class="o">.</span><span class="n">scale_out_threshold_pct</span> <span class="o">/</span> <span class="mf">100.0</span>
+<a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a>    <span class="n">triggered_metrics</span> <span class="o">=</span> <span class="p">[]</span>
+<a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a>
+<a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a>    <span class="k">for</span> <span class="n">metric_name</span><span class="p">,</span> <span class="n">factor</span> <span class="ow">in</span> <span class="n">scale_factors</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+<a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a>        <span class="k">if</span> <span class="n">factor</span> <span class="o">&gt;</span> <span class="n">threshold</span><span class="p">:</span>
+<a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a>            <span class="n">triggered_metrics</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">metric_name</span><span class="p">)</span>
+<a id="__codelineno-6-14" name="__codelineno-6-14" href="#__codelineno-6-14"></a>
+<a id="__codelineno-6-15" name="__codelineno-6-15" href="#__codelineno-6-15"></a>    <span class="k">if</span> <span class="n">triggered_metrics</span><span class="p">:</span>
+<a id="__codelineno-6-16" name="__codelineno-6-16" href="#__codelineno-6-16"></a>        <span class="c1"># Find the most constrained metric</span>
+<a id="__codelineno-6-17" name="__codelineno-6-17" href="#__codelineno-6-17"></a>        <span class="n">max_metric</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">scale_factors</span><span class="o">.</span><span class="n">items</span><span class="p">(),</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+<a id="__codelineno-6-18" name="__codelineno-6-18" href="#__codelineno-6-18"></a>        <span class="n">reason</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Scale out triggered by </span><span class="si">{</span><span class="n">max_metric</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">max_metric</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">x target&quot;</span>
+<a id="__codelineno-6-19" name="__codelineno-6-19" href="#__codelineno-6-19"></a>        <span class="k">return</span> <span class="kc">True</span><span class="p">,</span> <span class="n">reason</span><span class="p">,</span> <span class="n">triggered_metrics</span>
+<a id="__codelineno-6-20" name="__codelineno-6-20" href="#__codelineno-6-20"></a>
+<a id="__codelineno-6-21" name="__codelineno-6-21" href="#__codelineno-6-21"></a>    <span class="k">return</span> <span class="kc">False</span><span class="p">,</span> <span class="s2">&quot;All metrics below scale out threshold&quot;</span><span class="p">,</span> <span class="p">[]</span>
+</code></pre></div>
+<h3 id="scale-in-decision">Scale In Decision<a class="headerlink" href="#scale-in-decision" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">should_scale_in</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scale_factors</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">],</span> <span class="n">policy</span><span class="p">:</span> <span class="n">ScalingPolicy</span><span class="p">,</span> <span class="n">current_replicas</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="sd">    Determine if scale in is needed.</span>
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>
+<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="sd">    Scale in only if ALL metrics are below the scale in threshold.</span>
+<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="sd">    This ensures we don&#39;t scale in prematurely while any resource is under pressure.</span>
+<a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a>    <span class="k">if</span> <span class="n">current_replicas</span> <span class="o">&lt;=</span> <span class="n">policy</span><span class="o">.</span><span class="n">min_replicas</span><span class="p">:</span>
+<a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a>        <span class="k">return</span> <span class="kc">False</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Already at minimum replicas (</span><span class="si">{</span><span class="n">policy</span><span class="o">.</span><span class="n">min_replicas</span><span class="si">}</span><span class="s2">)&quot;</span>
+<a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a>
+<a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a>    <span class="n">threshold</span> <span class="o">=</span> <span class="n">policy</span><span class="o">.</span><span class="n">scale_in_threshold_pct</span> <span class="o">/</span> <span class="mf">100.0</span>
+<a id="__codelineno-7-12" name="__codelineno-7-12" href="#__codelineno-7-12"></a>
+<a id="__codelineno-7-13" name="__codelineno-7-13" href="#__codelineno-7-13"></a>    <span class="k">for</span> <span class="n">metric_name</span><span class="p">,</span> <span class="n">factor</span> <span class="ow">in</span> <span class="n">scale_factors</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+<a id="__codelineno-7-14" name="__codelineno-7-14" href="#__codelineno-7-14"></a>        <span class="k">if</span> <span class="n">factor</span> <span class="o">&gt;</span> <span class="n">threshold</span><span class="p">:</span>
+<a id="__codelineno-7-15" name="__codelineno-7-15" href="#__codelineno-7-15"></a>            <span class="k">return</span> <span class="kc">False</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Cannot scale in: </span><span class="si">{</span><span class="n">metric_name</span><span class="si">}</span><span class="s2"> factor </span><span class="si">{</span><span class="n">factor</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> &gt; threshold </span><span class="si">{</span><span class="n">threshold</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span>
+<a id="__codelineno-7-16" name="__codelineno-7-16" href="#__codelineno-7-16"></a>
+<a id="__codelineno-7-17" name="__codelineno-7-17" href="#__codelineno-7-17"></a>    <span class="c1"># All metrics are below threshold</span>
+<a id="__codelineno-7-18" name="__codelineno-7-18" href="#__codelineno-7-18"></a>    <span class="n">max_factor</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">scale_factors</span><span class="o">.</span><span class="n">values</span><span class="p">())</span> <span class="k">if</span> <span class="n">scale_factors</span> <span class="k">else</span> <span class="mi">0</span>
+<a id="__codelineno-7-19" name="__codelineno-7-19" href="#__codelineno-7-19"></a>    <span class="n">reason</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Scale in: All metrics below threshold (max factor: </span><span class="si">{</span><span class="n">max_factor</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">)&quot;</span>
+<a id="__codelineno-7-20" name="__codelineno-7-20" href="#__codelineno-7-20"></a>    <span class="k">return</span> <span class="kc">True</span><span class="p">,</span> <span class="n">reason</span>
+</code></pre></div>
+<h2 id="target-replica-calculation">Target Replica Calculation<a class="headerlink" href="#target-replica-calculation" title="Permanent link">&para;</a></h2>
+<h3 id="scale-out-target">Scale Out Target<a class="headerlink" href="#scale-out-target" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">calculate_scale_out_target</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">current_replicas</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">scale_factors</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">],</span> 
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>                              <span class="n">policy</span><span class="p">:</span> <span class="n">ScalingPolicy</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="sd">    Calculate target replicas for scale out operation.</span>
+<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a>
+<a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a><span class="sd">    Uses the highest scale factor to determine how many replicas are needed</span>
+<a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a><span class="sd">    to bring all metrics back within acceptable ranges.</span>
+<a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a>    <span class="k">if</span> <span class="ow">not</span> <span class="n">scale_factors</span><span class="p">:</span>
+<a id="__codelineno-8-10" name="__codelineno-8-10" href="#__codelineno-8-10"></a>        <span class="k">return</span> <span class="n">current_replicas</span> <span class="o">+</span> <span class="mi">1</span>
+<a id="__codelineno-8-11" name="__codelineno-8-11" href="#__codelineno-8-11"></a>
+<a id="__codelineno-8-12" name="__codelineno-8-12" href="#__codelineno-8-12"></a>    <span class="c1"># Find the metric with highest pressure</span>
+<a id="__codelineno-8-13" name="__codelineno-8-13" href="#__codelineno-8-13"></a>    <span class="n">max_factor</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">scale_factors</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+<a id="__codelineno-8-14" name="__codelineno-8-14" href="#__codelineno-8-14"></a>
+<a id="__codelineno-8-15" name="__codelineno-8-15" href="#__codelineno-8-15"></a>    <span class="c1"># Calculate theoretical target based on max factor</span>
+<a id="__codelineno-8-16" name="__codelineno-8-16" href="#__codelineno-8-16"></a>    <span class="c1"># If factor is 1.5, we need 50% more capacity</span>
+<a id="__codelineno-8-17" name="__codelineno-8-17" href="#__codelineno-8-17"></a>    <span class="n">theoretical_target</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">current_replicas</span> <span class="o">*</span> <span class="n">max_factor</span><span class="p">)</span>
+<a id="__codelineno-8-18" name="__codelineno-8-18" href="#__codelineno-8-18"></a>
+<a id="__codelineno-8-19" name="__codelineno-8-19" href="#__codelineno-8-19"></a>    <span class="c1"># Apply step limits</span>
+<a id="__codelineno-8-20" name="__codelineno-8-20" href="#__codelineno-8-20"></a>    <span class="k">if</span> <span class="n">policy</span><span class="o">.</span><span class="n">max_scale_out_step</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+<a id="__codelineno-8-21" name="__codelineno-8-21" href="#__codelineno-8-21"></a>        <span class="n">max_increase</span> <span class="o">=</span> <span class="n">policy</span><span class="o">.</span><span class="n">max_scale_out_step</span>
+<a id="__codelineno-8-22" name="__codelineno-8-22" href="#__codelineno-8-22"></a>        <span class="n">theoretical_target</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">theoretical_target</span><span class="p">,</span> <span class="n">current_replicas</span> <span class="o">+</span> <span class="n">max_increase</span><span class="p">)</span>
+<a id="__codelineno-8-23" name="__codelineno-8-23" href="#__codelineno-8-23"></a>
+<a id="__codelineno-8-24" name="__codelineno-8-24" href="#__codelineno-8-24"></a>    <span class="c1"># Conservative scaling: don&#39;t increase by more than 100% at once</span>
+<a id="__codelineno-8-25" name="__codelineno-8-25" href="#__codelineno-8-25"></a>    <span class="n">max_conservative</span> <span class="o">=</span> <span class="n">current_replicas</span> <span class="o">*</span> <span class="mi">2</span>
+<a id="__codelineno-8-26" name="__codelineno-8-26" href="#__codelineno-8-26"></a>    <span class="n">theoretical_target</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">theoretical_target</span><span class="p">,</span> <span class="n">max_conservative</span><span class="p">)</span>
+<a id="__codelineno-8-27" name="__codelineno-8-27" href="#__codelineno-8-27"></a>
+<a id="__codelineno-8-28" name="__codelineno-8-28" href="#__codelineno-8-28"></a>    <span class="c1"># Apply absolute maximum</span>
+<a id="__codelineno-8-29" name="__codelineno-8-29" href="#__codelineno-8-29"></a>    <span class="n">final_target</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">theoretical_target</span><span class="p">,</span> <span class="n">policy</span><span class="o">.</span><span class="n">max_replicas</span><span class="p">)</span>
+<a id="__codelineno-8-30" name="__codelineno-8-30" href="#__codelineno-8-30"></a>
+<a id="__codelineno-8-31" name="__codelineno-8-31" href="#__codelineno-8-31"></a>    <span class="c1"># Ensure we&#39;re actually scaling out</span>
+<a id="__codelineno-8-32" name="__codelineno-8-32" href="#__codelineno-8-32"></a>    <span class="k">return</span> <span class="nb">max</span><span class="p">(</span><span class="n">final_target</span><span class="p">,</span> <span class="n">current_replicas</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+</code></pre></div>
+<h3 id="scale-in-target">Scale In Target<a class="headerlink" href="#scale-in-target" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">calculate_scale_in_target</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">current_replicas</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">scale_factors</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">],</span> 
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>                             <span class="n">policy</span><span class="p">:</span> <span class="n">ScalingPolicy</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="sd">    Calculate target replicas for scale in operation.</span>
+<a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>
+<a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a><span class="sd">    Uses conservative approach - remove one replica at a time unless</span>
+<a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a><span class="sd">    utilization is extremely low.</span>
+<a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a>    <span class="k">if</span> <span class="n">current_replicas</span> <span class="o">&lt;=</span> <span class="n">policy</span><span class="o">.</span><span class="n">min_replicas</span><span class="p">:</span>
+<a id="__codelineno-9-10" name="__codelineno-9-10" href="#__codelineno-9-10"></a>        <span class="k">return</span> <span class="n">current_replicas</span>
+<a id="__codelineno-9-11" name="__codelineno-9-11" href="#__codelineno-9-11"></a>
+<a id="__codelineno-9-12" name="__codelineno-9-12" href="#__codelineno-9-12"></a>    <span class="c1"># Default: scale in by 1 replica</span>
+<a id="__codelineno-9-13" name="__codelineno-9-13" href="#__codelineno-9-13"></a>    <span class="n">target</span> <span class="o">=</span> <span class="n">current_replicas</span> <span class="o">-</span> <span class="mi">1</span>
+<a id="__codelineno-9-14" name="__codelineno-9-14" href="#__codelineno-9-14"></a>
+<a id="__codelineno-9-15" name="__codelineno-9-15" href="#__codelineno-9-15"></a>    <span class="c1"># If utilization is very low, consider scaling in more aggressively</span>
+<a id="__codelineno-9-16" name="__codelineno-9-16" href="#__codelineno-9-16"></a>    <span class="k">if</span> <span class="n">scale_factors</span><span class="p">:</span>
+<a id="__codelineno-9-17" name="__codelineno-9-17" href="#__codelineno-9-17"></a>        <span class="n">max_factor</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">scale_factors</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+<a id="__codelineno-9-18" name="__codelineno-9-18" href="#__codelineno-9-18"></a>        <span class="k">if</span> <span class="n">max_factor</span> <span class="o">&lt;</span> <span class="mf">0.1</span><span class="p">:</span>  <span class="c1"># Less than 10% utilization</span>
+<a id="__codelineno-9-19" name="__codelineno-9-19" href="#__codelineno-9-19"></a>            <span class="c1"># Can scale in more aggressively</span>
+<a id="__codelineno-9-20" name="__codelineno-9-20" href="#__codelineno-9-20"></a>            <span class="n">theoretical_target</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">floor</span><span class="p">(</span><span class="n">current_replicas</span> <span class="o">*</span> <span class="n">max_factor</span> <span class="o">*</span> <span class="mi">2</span><span class="p">)</span>  <span class="c1"># 2x buffer</span>
+<a id="__codelineno-9-21" name="__codelineno-9-21" href="#__codelineno-9-21"></a>            <span class="n">target</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">theoretical_target</span><span class="p">,</span> <span class="n">policy</span><span class="o">.</span><span class="n">min_replicas</span><span class="p">)</span>
+<a id="__codelineno-9-22" name="__codelineno-9-22" href="#__codelineno-9-22"></a>
+<a id="__codelineno-9-23" name="__codelineno-9-23" href="#__codelineno-9-23"></a>    <span class="c1"># Apply step limits</span>
+<a id="__codelineno-9-24" name="__codelineno-9-24" href="#__codelineno-9-24"></a>    <span class="k">if</span> <span class="n">policy</span><span class="o">.</span><span class="n">max_scale_in_step</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+<a id="__codelineno-9-25" name="__codelineno-9-25" href="#__codelineno-9-25"></a>        <span class="n">max_decrease</span> <span class="o">=</span> <span class="n">policy</span><span class="o">.</span><span class="n">max_scale_in_step</span>
+<a id="__codelineno-9-26" name="__codelineno-9-26" href="#__codelineno-9-26"></a>        <span class="n">target</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">current_replicas</span> <span class="o">-</span> <span class="n">max_decrease</span><span class="p">)</span>
+<a id="__codelineno-9-27" name="__codelineno-9-27" href="#__codelineno-9-27"></a>
+<a id="__codelineno-9-28" name="__codelineno-9-28" href="#__codelineno-9-28"></a>    <span class="c1"># Ensure we don&#39;t go below minimum</span>
+<a id="__codelineno-9-29" name="__codelineno-9-29" href="#__codelineno-9-29"></a>    <span class="k">return</span> <span class="nb">max</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">policy</span><span class="o">.</span><span class="n">min_replicas</span><span class="p">)</span>
+</code></pre></div>
+<h2 id="cooldown-and-stability">Cooldown and Stability<a class="headerlink" href="#cooldown-and-stability" title="Permanent link">&para;</a></h2>
+<h3 id="cooldown-management">Cooldown Management<a class="headerlink" href="#cooldown-management" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">is_in_cooldown</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">app_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">cooldown_seconds</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="sd">    Check if application is in cooldown period.</span>
+<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a>
+<a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a><span class="sd">    Cooldown prevents rapid scaling oscillations by enforcing</span>
+<a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a><span class="sd">    minimum time between scaling operations.</span>
+<a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a>    <span class="n">last_scale_time</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">last_scale_time</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">app_name</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+<a id="__codelineno-10-9" name="__codelineno-10-9" href="#__codelineno-10-9"></a>    <span class="k">return</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">last_scale_time</span> <span class="o">&lt;</span> <span class="n">cooldown_seconds</span>
+<a id="__codelineno-10-10" name="__codelineno-10-10" href="#__codelineno-10-10"></a>
+<a id="__codelineno-10-11" name="__codelineno-10-11" href="#__codelineno-10-11"></a><span class="k">def</span><span class="w"> </span><span class="nf">update_cooldown_timer</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">app_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<a id="__codelineno-10-12" name="__codelineno-10-12" href="#__codelineno-10-12"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Update the last scaling time for cooldown calculation.&quot;&quot;&quot;</span>
+<a id="__codelineno-10-13" name="__codelineno-10-13" href="#__codelineno-10-13"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">last_scale_time</span><span class="p">[</span><span class="n">app_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+</code></pre></div>
+<h3 id="stability-window">Stability Window<a class="headerlink" href="#stability-window" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">is_system_stable</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">app_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">policy</span><span class="p">:</span> <span class="n">ScalingPolicy</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="sd">    Check if the system has been stable for the required period.</span>
+<a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a>
+<a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a><span class="sd">    Stability window ensures the system has had time to adapt to</span>
+<a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a><span class="sd">    previous scaling decisions before making new ones.</span>
+<a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a>    <span class="c1"># Get recent scaling events</span>
+<a id="__codelineno-11-9" name="__codelineno-11-9" href="#__codelineno-11-9"></a>    <span class="n">recent_events</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_recent_scaling_events</span><span class="p">(</span>
+<a id="__codelineno-11-10" name="__codelineno-11-10" href="#__codelineno-11-10"></a>        <span class="n">app_name</span><span class="p">,</span> 
+<a id="__codelineno-11-11" name="__codelineno-11-11" href="#__codelineno-11-11"></a>        <span class="n">since</span><span class="o">=</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">policy</span><span class="o">.</span><span class="n">stabilization_window_seconds</span>
+<a id="__codelineno-11-12" name="__codelineno-11-12" href="#__codelineno-11-12"></a>    <span class="p">)</span>
+<a id="__codelineno-11-13" name="__codelineno-11-13" href="#__codelineno-11-13"></a>
+<a id="__codelineno-11-14" name="__codelineno-11-14" href="#__codelineno-11-14"></a>    <span class="c1"># System is stable if no scaling events in the stability window</span>
+<a id="__codelineno-11-15" name="__codelineno-11-15" href="#__codelineno-11-15"></a>    <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="n">recent_events</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span>
+</code></pre></div>
+<h2 id="metrics-collection-and-analysis">Metrics Collection and Analysis<a class="headerlink" href="#metrics-collection-and-analysis" title="Permanent link">&para;</a></h2>
+<h3 id="metrics-aggregation">Metrics Aggregation<a class="headerlink" href="#metrics-aggregation" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">aggregate_metrics</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">app_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">window_seconds</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ScalingMetrics</span><span class="p">:</span>
+<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a><span class="sd">    Aggregate metrics over the specified time window.</span>
+<a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a>
+<a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a><span class="sd">    Uses different aggregation methods for different metrics:</span>
+<a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a><span class="sd">    - CPU/Memory: Average over window</span>
+<a id="__codelineno-12-7" name="__codelineno-12-7" href="#__codelineno-12-7"></a><span class="sd">    - RPS: Rate calculation over window  </span>
+<a id="__codelineno-12-8" name="__codelineno-12-8" href="#__codelineno-12-8"></a><span class="sd">    - Latency: 95th percentile over window</span>
+<a id="__codelineno-12-9" name="__codelineno-12-9" href="#__codelineno-12-9"></a><span class="sd">    - Connections: Current value (latest)</span>
+<a id="__codelineno-12-10" name="__codelineno-12-10" href="#__codelineno-12-10"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-12-11" name="__codelineno-12-11" href="#__codelineno-12-11"></a>    <span class="n">cutoff_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">window_seconds</span>
+<a id="__codelineno-12-12" name="__codelineno-12-12" href="#__codelineno-12-12"></a>    <span class="n">history</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">metrics_history</span><span class="p">[</span><span class="n">app_name</span><span class="p">]</span>
+<a id="__codelineno-12-13" name="__codelineno-12-13" href="#__codelineno-12-13"></a>
+<a id="__codelineno-12-14" name="__codelineno-12-14" href="#__codelineno-12-14"></a>    <span class="c1"># Filter metrics within window</span>
+<a id="__codelineno-12-15" name="__codelineno-12-15" href="#__codelineno-12-15"></a>    <span class="n">cpu_points</span> <span class="o">=</span> <span class="p">[</span><span class="n">p</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">history</span><span class="p">[</span><span class="s1">&#39;cpu&#39;</span><span class="p">]</span> <span class="k">if</span> <span class="n">p</span><span class="o">.</span><span class="n">timestamp</span> <span class="o">&gt;=</span> <span class="n">cutoff_time</span><span class="p">]</span>
+<a id="__codelineno-12-16" name="__codelineno-12-16" href="#__codelineno-12-16"></a>    <span class="n">memory_points</span> <span class="o">=</span> <span class="p">[</span><span class="n">p</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">history</span><span class="p">[</span><span class="s1">&#39;memory&#39;</span><span class="p">]</span> <span class="k">if</span> <span class="n">p</span><span class="o">.</span><span class="n">timestamp</span> <span class="o">&gt;=</span> <span class="n">cutoff_time</span><span class="p">]</span>
+<a id="__codelineno-12-17" name="__codelineno-12-17" href="#__codelineno-12-17"></a>    <span class="n">rps_points</span> <span class="o">=</span> <span class="p">[</span><span class="n">p</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">history</span><span class="p">[</span><span class="s1">&#39;rps&#39;</span><span class="p">]</span> <span class="k">if</span> <span class="n">p</span><span class="o">.</span><span class="n">timestamp</span> <span class="o">&gt;=</span> <span class="n">cutoff_time</span><span class="p">]</span>
+<a id="__codelineno-12-18" name="__codelineno-12-18" href="#__codelineno-12-18"></a>    <span class="n">latency_points</span> <span class="o">=</span> <span class="p">[</span><span class="n">p</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">history</span><span class="p">[</span><span class="s1">&#39;latency&#39;</span><span class="p">]</span> <span class="k">if</span> <span class="n">p</span><span class="o">.</span><span class="n">timestamp</span> <span class="o">&gt;=</span> <span class="n">cutoff_time</span><span class="p">]</span>
+<a id="__codelineno-12-19" name="__codelineno-12-19" href="#__codelineno-12-19"></a>    <span class="n">connection_points</span> <span class="o">=</span> <span class="p">[</span><span class="n">p</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">history</span><span class="p">[</span><span class="s1">&#39;connections&#39;</span><span class="p">]</span> <span class="k">if</span> <span class="n">p</span><span class="o">.</span><span class="n">timestamp</span> <span class="o">&gt;=</span> <span class="n">cutoff_time</span><span class="p">]</span>
+<a id="__codelineno-12-20" name="__codelineno-12-20" href="#__codelineno-12-20"></a>    <span class="n">replica_points</span> <span class="o">=</span> <span class="p">[</span><span class="n">p</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">history</span><span class="p">[</span><span class="s1">&#39;healthy_replicas&#39;</span><span class="p">]</span> <span class="k">if</span> <span class="n">p</span><span class="o">.</span><span class="n">timestamp</span> <span class="o">&gt;=</span> <span class="n">cutoff_time</span><span class="p">]</span>
+<a id="__codelineno-12-21" name="__codelineno-12-21" href="#__codelineno-12-21"></a>
+<a id="__codelineno-12-22" name="__codelineno-12-22" href="#__codelineno-12-22"></a>    <span class="c1"># Calculate aggregated values</span>
+<a id="__codelineno-12-23" name="__codelineno-12-23" href="#__codelineno-12-23"></a>    <span class="n">metrics</span> <span class="o">=</span> <span class="n">ScalingMetrics</span><span class="p">()</span>
+<a id="__codelineno-12-24" name="__codelineno-12-24" href="#__codelineno-12-24"></a>
+<a id="__codelineno-12-25" name="__codelineno-12-25" href="#__codelineno-12-25"></a>    <span class="k">if</span> <span class="n">cpu_points</span><span class="p">:</span>
+<a id="__codelineno-12-26" name="__codelineno-12-26" href="#__codelineno-12-26"></a>        <span class="n">metrics</span><span class="o">.</span><span class="n">cpu_percent</span> <span class="o">=</span> <span class="n">statistics</span><span class="o">.</span><span class="n">mean</span><span class="p">([</span><span class="n">p</span><span class="o">.</span><span class="n">value</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">cpu_points</span><span class="p">])</span>
+<a id="__codelineno-12-27" name="__codelineno-12-27" href="#__codelineno-12-27"></a>
+<a id="__codelineno-12-28" name="__codelineno-12-28" href="#__codelineno-12-28"></a>    <span class="k">if</span> <span class="n">memory_points</span><span class="p">:</span>
+<a id="__codelineno-12-29" name="__codelineno-12-29" href="#__codelineno-12-29"></a>        <span class="n">metrics</span><span class="o">.</span><span class="n">memory_percent</span> <span class="o">=</span> <span class="n">statistics</span><span class="o">.</span><span class="n">mean</span><span class="p">([</span><span class="n">p</span><span class="o">.</span><span class="n">value</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">memory_points</span><span class="p">])</span>
+<a id="__codelineno-12-30" name="__codelineno-12-30" href="#__codelineno-12-30"></a>
+<a id="__codelineno-12-31" name="__codelineno-12-31" href="#__codelineno-12-31"></a>    <span class="k">if</span> <span class="n">rps_points</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">rps_points</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">2</span><span class="p">:</span>
+<a id="__codelineno-12-32" name="__codelineno-12-32" href="#__codelineno-12-32"></a>        <span class="c1"># Calculate rate from first and last points</span>
+<a id="__codelineno-12-33" name="__codelineno-12-33" href="#__codelineno-12-33"></a>        <span class="n">first_point</span> <span class="o">=</span> <span class="n">rps_points</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+<a id="__codelineno-12-34" name="__codelineno-12-34" href="#__codelineno-12-34"></a>        <span class="n">last_point</span> <span class="o">=</span> <span class="n">rps_points</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+<a id="__codelineno-12-35" name="__codelineno-12-35" href="#__codelineno-12-35"></a>        <span class="n">time_diff</span> <span class="o">=</span> <span class="n">last_point</span><span class="o">.</span><span class="n">timestamp</span> <span class="o">-</span> <span class="n">first_point</span><span class="o">.</span><span class="n">timestamp</span>
+<a id="__codelineno-12-36" name="__codelineno-12-36" href="#__codelineno-12-36"></a>        <span class="k">if</span> <span class="n">time_diff</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+<a id="__codelineno-12-37" name="__codelineno-12-37" href="#__codelineno-12-37"></a>            <span class="n">metrics</span><span class="o">.</span><span class="n">rps</span> <span class="o">=</span> <span class="p">(</span><span class="n">last_point</span><span class="o">.</span><span class="n">value</span> <span class="o">-</span> <span class="n">first_point</span><span class="o">.</span><span class="n">value</span><span class="p">)</span> <span class="o">/</span> <span class="n">time_diff</span>
+<a id="__codelineno-12-38" name="__codelineno-12-38" href="#__codelineno-12-38"></a>
+<a id="__codelineno-12-39" name="__codelineno-12-39" href="#__codelineno-12-39"></a>    <span class="k">if</span> <span class="n">latency_points</span><span class="p">:</span>
+<a id="__codelineno-12-40" name="__codelineno-12-40" href="#__codelineno-12-40"></a>        <span class="c1"># Use 95th percentile</span>
+<a id="__codelineno-12-41" name="__codelineno-12-41" href="#__codelineno-12-41"></a>        <span class="n">latencies</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">([</span><span class="n">p</span><span class="o">.</span><span class="n">value</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">latency_points</span><span class="p">])</span>
+<a id="__codelineno-12-42" name="__codelineno-12-42" href="#__codelineno-12-42"></a>        <span class="n">percentile_idx</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="mf">0.95</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">latencies</span><span class="p">))</span>
+<a id="__codelineno-12-43" name="__codelineno-12-43" href="#__codelineno-12-43"></a>        <span class="n">metrics</span><span class="o">.</span><span class="n">p95_latency_ms</span> <span class="o">=</span> <span class="n">latencies</span><span class="p">[</span><span class="n">percentile_idx</span><span class="p">]</span>
+<a id="__codelineno-12-44" name="__codelineno-12-44" href="#__codelineno-12-44"></a>
+<a id="__codelineno-12-45" name="__codelineno-12-45" href="#__codelineno-12-45"></a>    <span class="k">if</span> <span class="n">connection_points</span><span class="p">:</span>
+<a id="__codelineno-12-46" name="__codelineno-12-46" href="#__codelineno-12-46"></a>        <span class="c1"># Use latest value</span>
+<a id="__codelineno-12-47" name="__codelineno-12-47" href="#__codelineno-12-47"></a>        <span class="n">metrics</span><span class="o">.</span><span class="n">active_connections</span> <span class="o">=</span> <span class="n">connection_points</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">value</span>
+<a id="__codelineno-12-48" name="__codelineno-12-48" href="#__codelineno-12-48"></a>
+<a id="__codelineno-12-49" name="__codelineno-12-49" href="#__codelineno-12-49"></a>    <span class="k">if</span> <span class="n">replica_points</span><span class="p">:</span>
+<a id="__codelineno-12-50" name="__codelineno-12-50" href="#__codelineno-12-50"></a>        <span class="c1"># Use latest healthy replica count</span>
+<a id="__codelineno-12-51" name="__codelineno-12-51" href="#__codelineno-12-51"></a>        <span class="n">metrics</span><span class="o">.</span><span class="n">healthy_replicas</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">replica_points</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+<a id="__codelineno-12-52" name="__codelineno-12-52" href="#__codelineno-12-52"></a>        <span class="n">metrics</span><span class="o">.</span><span class="n">total_replicas</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_total_replicas</span><span class="p">(</span><span class="n">app_name</span><span class="p">)</span>
+<a id="__codelineno-12-53" name="__codelineno-12-53" href="#__codelineno-12-53"></a>
+<a id="__codelineno-12-54" name="__codelineno-12-54" href="#__codelineno-12-54"></a>    <span class="k">return</span> <span class="n">metrics</span>
+</code></pre></div>
+<h3 id="smoothing-and-filtering">Smoothing and Filtering<a class="headerlink" href="#smoothing-and-filtering" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">apply_smoothing</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">current_metrics</span><span class="p">:</span> <span class="n">ScalingMetrics</span><span class="p">,</span> 
+<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>                   <span class="n">previous_metrics</span><span class="p">:</span> <span class="n">ScalingMetrics</span><span class="p">,</span> <span class="n">alpha</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.3</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ScalingMetrics</span><span class="p">:</span>
+<a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a><span class="sd">    Apply exponential smoothing to reduce noise in metrics.</span>
+<a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a>
+<a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a><span class="sd">    Uses exponential weighted moving average:</span>
+<a id="__codelineno-13-7" name="__codelineno-13-7" href="#__codelineno-13-7"></a><span class="sd">    smoothed_value = alpha * current + (1 - alpha) * previous</span>
+<a id="__codelineno-13-8" name="__codelineno-13-8" href="#__codelineno-13-8"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-13-9" name="__codelineno-13-9" href="#__codelineno-13-9"></a>    <span class="k">if</span> <span class="ow">not</span> <span class="n">previous_metrics</span><span class="p">:</span>
+<a id="__codelineno-13-10" name="__codelineno-13-10" href="#__codelineno-13-10"></a>        <span class="k">return</span> <span class="n">current_metrics</span>
+<a id="__codelineno-13-11" name="__codelineno-13-11" href="#__codelineno-13-11"></a>
+<a id="__codelineno-13-12" name="__codelineno-13-12" href="#__codelineno-13-12"></a>    <span class="n">smoothed</span> <span class="o">=</span> <span class="n">ScalingMetrics</span><span class="p">()</span>
+<a id="__codelineno-13-13" name="__codelineno-13-13" href="#__codelineno-13-13"></a>    <span class="n">smoothed</span><span class="o">.</span><span class="n">cpu_percent</span> <span class="o">=</span> <span class="n">alpha</span> <span class="o">*</span> <span class="n">current_metrics</span><span class="o">.</span><span class="n">cpu_percent</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">alpha</span><span class="p">)</span> <span class="o">*</span> <span class="n">previous_metrics</span><span class="o">.</span><span class="n">cpu_percent</span>
+<a id="__codelineno-13-14" name="__codelineno-13-14" href="#__codelineno-13-14"></a>    <span class="n">smoothed</span><span class="o">.</span><span class="n">memory_percent</span> <span class="o">=</span> <span class="n">alpha</span> <span class="o">*</span> <span class="n">current_metrics</span><span class="o">.</span><span class="n">memory_percent</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">alpha</span><span class="p">)</span> <span class="o">*</span> <span class="n">previous_metrics</span><span class="o">.</span><span class="n">memory_percent</span>
+<a id="__codelineno-13-15" name="__codelineno-13-15" href="#__codelineno-13-15"></a>    <span class="n">smoothed</span><span class="o">.</span><span class="n">rps</span> <span class="o">=</span> <span class="n">alpha</span> <span class="o">*</span> <span class="n">current_metrics</span><span class="o">.</span><span class="n">rps</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">alpha</span><span class="p">)</span> <span class="o">*</span> <span class="n">previous_metrics</span><span class="o">.</span><span class="n">rps</span>
+<a id="__codelineno-13-16" name="__codelineno-13-16" href="#__codelineno-13-16"></a>    <span class="n">smoothed</span><span class="o">.</span><span class="n">p95_latency_ms</span> <span class="o">=</span> <span class="n">alpha</span> <span class="o">*</span> <span class="n">current_metrics</span><span class="o">.</span><span class="n">p95_latency_ms</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">alpha</span><span class="p">)</span> <span class="o">*</span> <span class="n">previous_metrics</span><span class="o">.</span><span class="n">p95_latency_ms</span>
+<a id="__codelineno-13-17" name="__codelineno-13-17" href="#__codelineno-13-17"></a>    <span class="n">smoothed</span><span class="o">.</span><span class="n">active_connections</span> <span class="o">=</span> <span class="n">current_metrics</span><span class="o">.</span><span class="n">active_connections</span>  <span class="c1"># Don&#39;t smooth discrete values</span>
+<a id="__codelineno-13-18" name="__codelineno-13-18" href="#__codelineno-13-18"></a>    <span class="n">smoothed</span><span class="o">.</span><span class="n">healthy_replicas</span> <span class="o">=</span> <span class="n">current_metrics</span><span class="o">.</span><span class="n">healthy_replicas</span>
+<a id="__codelineno-13-19" name="__codelineno-13-19" href="#__codelineno-13-19"></a>    <span class="n">smoothed</span><span class="o">.</span><span class="n">total_replicas</span> <span class="o">=</span> <span class="n">current_metrics</span><span class="o">.</span><span class="n">total_replicas</span>
+<a id="__codelineno-13-20" name="__codelineno-13-20" href="#__codelineno-13-20"></a>
+<a id="__codelineno-13-21" name="__codelineno-13-21" href="#__codelineno-13-21"></a>    <span class="k">return</span> <span class="n">smoothed</span>
+</code></pre></div>
+<h2 id="advanced-features">Advanced Features<a class="headerlink" href="#advanced-features" title="Permanent link">&para;</a></h2>
+<h3 id="predictive-scaling">Predictive Scaling<a class="headerlink" href="#predictive-scaling" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">predict_future_load</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">app_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">lookahead_minutes</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">5</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ScalingMetrics</span><span class="p">:</span>
+<a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a><span class="sd">    Predict future load based on historical trends.</span>
+<a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a>
+<a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a><span class="sd">    Uses linear regression on recent metrics to predict future values.</span>
+<a id="__codelineno-14-6" name="__codelineno-14-6" href="#__codelineno-14-6"></a><span class="sd">    This enables proactive scaling before resources become constrained.</span>
+<a id="__codelineno-14-7" name="__codelineno-14-7" href="#__codelineno-14-7"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-14-8" name="__codelineno-14-8" href="#__codelineno-14-8"></a>    <span class="n">history</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">metrics_history</span><span class="p">[</span><span class="n">app_name</span><span class="p">]</span>
+<a id="__codelineno-14-9" name="__codelineno-14-9" href="#__codelineno-14-9"></a>    <span class="n">current_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+<a id="__codelineno-14-10" name="__codelineno-14-10" href="#__codelineno-14-10"></a>    <span class="n">lookback_seconds</span> <span class="o">=</span> <span class="n">lookahead_minutes</span> <span class="o">*</span> <span class="mi">60</span> <span class="o">*</span> <span class="mi">4</span>  <span class="c1"># Look back 4x the prediction window</span>
+<a id="__codelineno-14-11" name="__codelineno-14-11" href="#__codelineno-14-11"></a>
+<a id="__codelineno-14-12" name="__codelineno-14-12" href="#__codelineno-14-12"></a>    <span class="c1"># Get recent RPS data points</span>
+<a id="__codelineno-14-13" name="__codelineno-14-13" href="#__codelineno-14-13"></a>    <span class="n">rps_points</span> <span class="o">=</span> <span class="p">[</span><span class="n">p</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">history</span><span class="p">[</span><span class="s1">&#39;rps&#39;</span><span class="p">]</span> 
+<a id="__codelineno-14-14" name="__codelineno-14-14" href="#__codelineno-14-14"></a>                  <span class="k">if</span> <span class="n">p</span><span class="o">.</span><span class="n">timestamp</span> <span class="o">&gt;=</span> <span class="n">current_time</span> <span class="o">-</span> <span class="n">lookback_seconds</span><span class="p">]</span>
+<a id="__codelineno-14-15" name="__codelineno-14-15" href="#__codelineno-14-15"></a>
+<a id="__codelineno-14-16" name="__codelineno-14-16" href="#__codelineno-14-16"></a>    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">rps_points</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">10</span><span class="p">:</span>  <span class="c1"># Need sufficient data</span>
+<a id="__codelineno-14-17" name="__codelineno-14-17" href="#__codelineno-14-17"></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_current_metrics</span><span class="p">(</span><span class="n">app_name</span><span class="p">)</span>
+<a id="__codelineno-14-18" name="__codelineno-14-18" href="#__codelineno-14-18"></a>
+<a id="__codelineno-14-19" name="__codelineno-14-19" href="#__codelineno-14-19"></a>    <span class="c1"># Simple linear trend calculation</span>
+<a id="__codelineno-14-20" name="__codelineno-14-20" href="#__codelineno-14-20"></a>    <span class="n">x_values</span> <span class="o">=</span> <span class="p">[</span><span class="n">p</span><span class="o">.</span><span class="n">timestamp</span> <span class="o">-</span> <span class="n">current_time</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">rps_points</span><span class="p">]</span>
+<a id="__codelineno-14-21" name="__codelineno-14-21" href="#__codelineno-14-21"></a>    <span class="n">y_values</span> <span class="o">=</span> <span class="p">[</span><span class="n">p</span><span class="o">.</span><span class="n">value</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">rps_points</span><span class="p">]</span>
+<a id="__codelineno-14-22" name="__codelineno-14-22" href="#__codelineno-14-22"></a>
+<a id="__codelineno-14-23" name="__codelineno-14-23" href="#__codelineno-14-23"></a>    <span class="c1"># Calculate trend (slope)</span>
+<a id="__codelineno-14-24" name="__codelineno-14-24" href="#__codelineno-14-24"></a>    <span class="n">n</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">x_values</span><span class="p">)</span>
+<a id="__codelineno-14-25" name="__codelineno-14-25" href="#__codelineno-14-25"></a>    <span class="n">sum_x</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">x_values</span><span class="p">)</span>
+<a id="__codelineno-14-26" name="__codelineno-14-26" href="#__codelineno-14-26"></a>    <span class="n">sum_y</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">y_values</span><span class="p">)</span>
+<a id="__codelineno-14-27" name="__codelineno-14-27" href="#__codelineno-14-27"></a>    <span class="n">sum_xy</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">x</span> <span class="o">*</span> <span class="n">y</span> <span class="k">for</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">x_values</span><span class="p">,</span> <span class="n">y_values</span><span class="p">))</span>
+<a id="__codelineno-14-28" name="__codelineno-14-28" href="#__codelineno-14-28"></a>    <span class="n">sum_x2</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">x</span> <span class="o">*</span> <span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">x_values</span><span class="p">)</span>
+<a id="__codelineno-14-29" name="__codelineno-14-29" href="#__codelineno-14-29"></a>
+<a id="__codelineno-14-30" name="__codelineno-14-30" href="#__codelineno-14-30"></a>    <span class="n">slope</span> <span class="o">=</span> <span class="p">(</span><span class="n">n</span> <span class="o">*</span> <span class="n">sum_xy</span> <span class="o">-</span> <span class="n">sum_x</span> <span class="o">*</span> <span class="n">sum_y</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">n</span> <span class="o">*</span> <span class="n">sum_x2</span> <span class="o">-</span> <span class="n">sum_x</span> <span class="o">*</span> <span class="n">sum_x</span><span class="p">)</span>
+<a id="__codelineno-14-31" name="__codelineno-14-31" href="#__codelineno-14-31"></a>    <span class="n">intercept</span> <span class="o">=</span> <span class="p">(</span><span class="n">sum_y</span> <span class="o">-</span> <span class="n">slope</span> <span class="o">*</span> <span class="n">sum_x</span><span class="p">)</span> <span class="o">/</span> <span class="n">n</span>
+<a id="__codelineno-14-32" name="__codelineno-14-32" href="#__codelineno-14-32"></a>
+<a id="__codelineno-14-33" name="__codelineno-14-33" href="#__codelineno-14-33"></a>    <span class="c1"># Predict future RPS</span>
+<a id="__codelineno-14-34" name="__codelineno-14-34" href="#__codelineno-14-34"></a>    <span class="n">future_time</span> <span class="o">=</span> <span class="n">lookahead_minutes</span> <span class="o">*</span> <span class="mi">60</span>
+<a id="__codelineno-14-35" name="__codelineno-14-35" href="#__codelineno-14-35"></a>    <span class="n">predicted_rps</span> <span class="o">=</span> <span class="n">slope</span> <span class="o">*</span> <span class="n">future_time</span> <span class="o">+</span> <span class="n">intercept</span>
+<a id="__codelineno-14-36" name="__codelineno-14-36" href="#__codelineno-14-36"></a>
+<a id="__codelineno-14-37" name="__codelineno-14-37" href="#__codelineno-14-37"></a>    <span class="c1"># Create predicted metrics</span>
+<a id="__codelineno-14-38" name="__codelineno-14-38" href="#__codelineno-14-38"></a>    <span class="n">current_metrics</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_current_metrics</span><span class="p">(</span><span class="n">app_name</span><span class="p">)</span>
+<a id="__codelineno-14-39" name="__codelineno-14-39" href="#__codelineno-14-39"></a>    <span class="n">predicted_metrics</span> <span class="o">=</span> <span class="n">ScalingMetrics</span><span class="p">(</span>
+<a id="__codelineno-14-40" name="__codelineno-14-40" href="#__codelineno-14-40"></a>        <span class="n">rps</span><span class="o">=</span><span class="nb">max</span><span class="p">(</span><span class="n">predicted_rps</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span>  <span class="c1"># RPS can&#39;t be negative</span>
+<a id="__codelineno-14-41" name="__codelineno-14-41" href="#__codelineno-14-41"></a>        <span class="n">cpu_percent</span><span class="o">=</span><span class="n">current_metrics</span><span class="o">.</span><span class="n">cpu_percent</span><span class="p">,</span>
+<a id="__codelineno-14-42" name="__codelineno-14-42" href="#__codelineno-14-42"></a>        <span class="n">memory_percent</span><span class="o">=</span><span class="n">current_metrics</span><span class="o">.</span><span class="n">memory_percent</span><span class="p">,</span>
+<a id="__codelineno-14-43" name="__codelineno-14-43" href="#__codelineno-14-43"></a>        <span class="n">p95_latency_ms</span><span class="o">=</span><span class="n">current_metrics</span><span class="o">.</span><span class="n">p95_latency_ms</span><span class="p">,</span>
+<a id="__codelineno-14-44" name="__codelineno-14-44" href="#__codelineno-14-44"></a>        <span class="n">active_connections</span><span class="o">=</span><span class="n">current_metrics</span><span class="o">.</span><span class="n">active_connections</span><span class="p">,</span>
+<a id="__codelineno-14-45" name="__codelineno-14-45" href="#__codelineno-14-45"></a>        <span class="n">healthy_replicas</span><span class="o">=</span><span class="n">current_metrics</span><span class="o">.</span><span class="n">healthy_replicas</span><span class="p">,</span>
+<a id="__codelineno-14-46" name="__codelineno-14-46" href="#__codelineno-14-46"></a>        <span class="n">total_replicas</span><span class="o">=</span><span class="n">current_metrics</span><span class="o">.</span><span class="n">total_replicas</span>
+<a id="__codelineno-14-47" name="__codelineno-14-47" href="#__codelineno-14-47"></a>    <span class="p">)</span>
+<a id="__codelineno-14-48" name="__codelineno-14-48" href="#__codelineno-14-48"></a>
+<a id="__codelineno-14-49" name="__codelineno-14-49" href="#__codelineno-14-49"></a>    <span class="k">return</span> <span class="n">predicted_metrics</span>
+</code></pre></div>
+<h3 id="custom-scaling-strategies">Custom Scaling Strategies<a class="headerlink" href="#custom-scaling-strategies" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">ScalingStrategy</span><span class="p">:</span>
+<a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Base class for custom scaling strategies.&quot;&quot;&quot;</span>
+<a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a>
+<a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">should_scale</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">metrics</span><span class="p">:</span> <span class="n">ScalingMetrics</span><span class="p">,</span> <span class="n">policy</span><span class="p">:</span> <span class="n">ScalingPolicy</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ScalingDecision</span><span class="p">:</span>
+<a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a>        <span class="k">raise</span> <span class="ne">NotImplementedError</span>
+<a id="__codelineno-15-6" name="__codelineno-15-6" href="#__codelineno-15-6"></a>
+<a id="__codelineno-15-7" name="__codelineno-15-7" href="#__codelineno-15-7"></a><span class="k">class</span><span class="w"> </span><span class="nc">ConservativeStrategy</span><span class="p">(</span><span class="n">ScalingStrategy</span><span class="p">):</span>
+<a id="__codelineno-15-8" name="__codelineno-15-8" href="#__codelineno-15-8"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Conservative scaling strategy - prefers stability over responsiveness.&quot;&quot;&quot;</span>
+<a id="__codelineno-15-9" name="__codelineno-15-9" href="#__codelineno-15-9"></a>
+<a id="__codelineno-15-10" name="__codelineno-15-10" href="#__codelineno-15-10"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">should_scale</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">metrics</span><span class="p">:</span> <span class="n">ScalingMetrics</span><span class="p">,</span> <span class="n">policy</span><span class="p">:</span> <span class="n">ScalingPolicy</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ScalingDecision</span><span class="p">:</span>
+<a id="__codelineno-15-11" name="__codelineno-15-11" href="#__codelineno-15-11"></a>        <span class="c1"># Require multiple metrics to be over threshold</span>
+<a id="__codelineno-15-12" name="__codelineno-15-12" href="#__codelineno-15-12"></a>        <span class="n">scale_factors</span> <span class="o">=</span> <span class="n">calculate_scale_factors</span><span class="p">(</span><span class="n">metrics</span><span class="p">,</span> <span class="n">policy</span><span class="p">)</span>
+<a id="__codelineno-15-13" name="__codelineno-15-13" href="#__codelineno-15-13"></a>        <span class="n">over_threshold</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="mi">1</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">scale_factors</span><span class="o">.</span><span class="n">values</span><span class="p">()</span> 
+<a id="__codelineno-15-14" name="__codelineno-15-14" href="#__codelineno-15-14"></a>                           <span class="k">if</span> <span class="n">f</span> <span class="o">&gt;</span> <span class="n">policy</span><span class="o">.</span><span class="n">scale_out_threshold_pct</span> <span class="o">/</span> <span class="mi">100</span><span class="p">)</span>
+<a id="__codelineno-15-15" name="__codelineno-15-15" href="#__codelineno-15-15"></a>
+<a id="__codelineno-15-16" name="__codelineno-15-16" href="#__codelineno-15-16"></a>        <span class="k">if</span> <span class="n">over_threshold</span> <span class="o">&gt;=</span> <span class="mi">2</span><span class="p">:</span>  <span class="c1"># Require at least 2 metrics</span>
+<a id="__codelineno-15-17" name="__codelineno-15-17" href="#__codelineno-15-17"></a>            <span class="k">return</span> <span class="n">ScalingDecision</span><span class="p">(</span><span class="n">should_scale</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">direction</span><span class="o">=</span><span class="s1">&#39;out&#39;</span><span class="p">)</span>
+<a id="__codelineno-15-18" name="__codelineno-15-18" href="#__codelineno-15-18"></a>
+<a id="__codelineno-15-19" name="__codelineno-15-19" href="#__codelineno-15-19"></a>        <span class="c1"># Scale in only if all metrics very low</span>
+<a id="__codelineno-15-20" name="__codelineno-15-20" href="#__codelineno-15-20"></a>        <span class="k">if</span> <span class="nb">all</span><span class="p">(</span><span class="n">f</span> <span class="o">&lt;</span> <span class="n">policy</span><span class="o">.</span><span class="n">scale_in_threshold_pct</span> <span class="o">/</span> <span class="mi">200</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">scale_factors</span><span class="o">.</span><span class="n">values</span><span class="p">()):</span>
+<a id="__codelineno-15-21" name="__codelineno-15-21" href="#__codelineno-15-21"></a>            <span class="k">return</span> <span class="n">ScalingDecision</span><span class="p">(</span><span class="n">should_scale</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">direction</span><span class="o">=</span><span class="s1">&#39;in&#39;</span><span class="p">)</span>
+<a id="__codelineno-15-22" name="__codelineno-15-22" href="#__codelineno-15-22"></a>
+<a id="__codelineno-15-23" name="__codelineno-15-23" href="#__codelineno-15-23"></a>        <span class="k">return</span> <span class="n">ScalingDecision</span><span class="p">(</span><span class="n">should_scale</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<a id="__codelineno-15-24" name="__codelineno-15-24" href="#__codelineno-15-24"></a>
+<a id="__codelineno-15-25" name="__codelineno-15-25" href="#__codelineno-15-25"></a><span class="k">class</span><span class="w"> </span><span class="nc">AggressiveStrategy</span><span class="p">(</span><span class="n">ScalingStrategy</span><span class="p">):</span>
+<a id="__codelineno-15-26" name="__codelineno-15-26" href="#__codelineno-15-26"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Aggressive scaling strategy - prioritizes performance over cost.&quot;&quot;&quot;</span>
+<a id="__codelineno-15-27" name="__codelineno-15-27" href="#__codelineno-15-27"></a>
+<a id="__codelineno-15-28" name="__codelineno-15-28" href="#__codelineno-15-28"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">should_scale</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">metrics</span><span class="p">:</span> <span class="n">ScalingMetrics</span><span class="p">,</span> <span class="n">policy</span><span class="p">:</span> <span class="n">ScalingPolicy</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ScalingDecision</span><span class="p">:</span>
+<a id="__codelineno-15-29" name="__codelineno-15-29" href="#__codelineno-15-29"></a>        <span class="n">scale_factors</span> <span class="o">=</span> <span class="n">calculate_scale_factors</span><span class="p">(</span><span class="n">metrics</span><span class="p">,</span> <span class="n">policy</span><span class="p">)</span>
+<a id="__codelineno-15-30" name="__codelineno-15-30" href="#__codelineno-15-30"></a>
+<a id="__codelineno-15-31" name="__codelineno-15-31" href="#__codelineno-15-31"></a>        <span class="c1"># Scale out if any metric approaching threshold</span>
+<a id="__codelineno-15-32" name="__codelineno-15-32" href="#__codelineno-15-32"></a>        <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="n">f</span> <span class="o">&gt;</span> <span class="n">policy</span><span class="o">.</span><span class="n">scale_out_threshold_pct</span> <span class="o">/</span> <span class="mi">150</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">scale_factors</span><span class="o">.</span><span class="n">values</span><span class="p">()):</span>
+<a id="__codelineno-15-33" name="__codelineno-15-33" href="#__codelineno-15-33"></a>            <span class="k">return</span> <span class="n">ScalingDecision</span><span class="p">(</span><span class="n">should_scale</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">direction</span><span class="o">=</span><span class="s1">&#39;out&#39;</span><span class="p">)</span>
+<a id="__codelineno-15-34" name="__codelineno-15-34" href="#__codelineno-15-34"></a>
+<a id="__codelineno-15-35" name="__codelineno-15-35" href="#__codelineno-15-35"></a>        <span class="c1"># Scale in only if all metrics very low for extended period</span>
+<a id="__codelineno-15-36" name="__codelineno-15-36" href="#__codelineno-15-36"></a>        <span class="k">if</span> <span class="p">(</span><span class="nb">all</span><span class="p">(</span><span class="n">f</span> <span class="o">&lt;</span> <span class="n">policy</span><span class="o">.</span><span class="n">scale_in_threshold_pct</span> <span class="o">/</span> <span class="mi">100</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">scale_factors</span><span class="o">.</span><span class="n">values</span><span class="p">())</span> <span class="ow">and</span>
+<a id="__codelineno-15-37" name="__codelineno-15-37" href="#__codelineno-15-37"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">low_utilization_duration</span><span class="p">(</span><span class="n">app_name</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">600</span><span class="p">):</span>  <span class="c1"># 10 minutes</span>
+<a id="__codelineno-15-38" name="__codelineno-15-38" href="#__codelineno-15-38"></a>            <span class="k">return</span> <span class="n">ScalingDecision</span><span class="p">(</span><span class="n">should_scale</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">direction</span><span class="o">=</span><span class="s1">&#39;in&#39;</span><span class="p">)</span>
+<a id="__codelineno-15-39" name="__codelineno-15-39" href="#__codelineno-15-39"></a>
+<a id="__codelineno-15-40" name="__codelineno-15-40" href="#__codelineno-15-40"></a>        <span class="k">return</span> <span class="n">ScalingDecision</span><span class="p">(</span><span class="n">should_scale</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+</code></pre></div>
+<h2 id="performance-optimization">Performance Optimization<a class="headerlink" href="#performance-optimization" title="Permanent link">&para;</a></h2>
+<h3 id="efficient-metrics-storage">Efficient Metrics Storage<a class="headerlink" href="#efficient-metrics-storage" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">RingBuffer</span><span class="p">:</span>
+<a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Memory-efficient ring buffer for metrics storage.&quot;&quot;&quot;</span>
+<a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a>
+<a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">max_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1000</span><span class="p">):</span>
+<a id="__codelineno-16-5" name="__codelineno-16-5" href="#__codelineno-16-5"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">max_size</span> <span class="o">=</span> <span class="n">max_size</span>
+<a id="__codelineno-16-6" name="__codelineno-16-6" href="#__codelineno-16-6"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">buffer</span> <span class="o">=</span> <span class="p">[</span><span class="kc">None</span><span class="p">]</span> <span class="o">*</span> <span class="n">max_size</span>
+<a id="__codelineno-16-7" name="__codelineno-16-7" href="#__codelineno-16-7"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">head</span> <span class="o">=</span> <span class="mi">0</span>
+<a id="__codelineno-16-8" name="__codelineno-16-8" href="#__codelineno-16-8"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">size</span> <span class="o">=</span> <span class="mi">0</span>
+<a id="__codelineno-16-9" name="__codelineno-16-9" href="#__codelineno-16-9"></a>
+<a id="__codelineno-16-10" name="__codelineno-16-10" href="#__codelineno-16-10"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">append</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">item</span><span class="p">):</span>
+<a id="__codelineno-16-11" name="__codelineno-16-11" href="#__codelineno-16-11"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">buffer</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">head</span><span class="p">]</span> <span class="o">=</span> <span class="n">item</span>
+<a id="__codelineno-16-12" name="__codelineno-16-12" href="#__codelineno-16-12"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">head</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">head</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_size</span>
+<a id="__codelineno-16-13" name="__codelineno-16-13" href="#__codelineno-16-13"></a>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">size</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_size</span><span class="p">:</span>
+<a id="__codelineno-16-14" name="__codelineno-16-14" href="#__codelineno-16-14"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">size</span> <span class="o">+=</span> <span class="mi">1</span>
+<a id="__codelineno-16-15" name="__codelineno-16-15" href="#__codelineno-16-15"></a>
+<a id="__codelineno-16-16" name="__codelineno-16-16" href="#__codelineno-16-16"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">get_recent</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">count</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+<a id="__codelineno-16-17" name="__codelineno-16-17" href="#__codelineno-16-17"></a>        <span class="k">if</span> <span class="n">count</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">size</span><span class="p">:</span>
+<a id="__codelineno-16-18" name="__codelineno-16-18" href="#__codelineno-16-18"></a>            <span class="c1"># Return all items</span>
+<a id="__codelineno-16-19" name="__codelineno-16-19" href="#__codelineno-16-19"></a>            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">size</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_size</span><span class="p">:</span>
+<a id="__codelineno-16-20" name="__codelineno-16-20" href="#__codelineno-16-20"></a>                <span class="k">return</span> <span class="p">[</span><span class="n">item</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">buffer</span><span class="p">[:</span><span class="bp">self</span><span class="o">.</span><span class="n">size</span><span class="p">]</span> <span class="k">if</span> <span class="n">item</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">]</span>
+<a id="__codelineno-16-21" name="__codelineno-16-21" href="#__codelineno-16-21"></a>            <span class="k">else</span><span class="p">:</span>
+<a id="__codelineno-16-22" name="__codelineno-16-22" href="#__codelineno-16-22"></a>                <span class="k">return</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">buffer</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">head</span><span class="p">:]</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">buffer</span><span class="p">[:</span><span class="bp">self</span><span class="o">.</span><span class="n">head</span><span class="p">])</span>
+<a id="__codelineno-16-23" name="__codelineno-16-23" href="#__codelineno-16-23"></a>        <span class="k">else</span><span class="p">:</span>
+<a id="__codelineno-16-24" name="__codelineno-16-24" href="#__codelineno-16-24"></a>            <span class="c1"># Return most recent items</span>
+<a id="__codelineno-16-25" name="__codelineno-16-25" href="#__codelineno-16-25"></a>            <span class="n">items</span> <span class="o">=</span> <span class="p">[]</span>
+<a id="__codelineno-16-26" name="__codelineno-16-26" href="#__codelineno-16-26"></a>            <span class="n">pos</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">head</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_size</span>
+<a id="__codelineno-16-27" name="__codelineno-16-27" href="#__codelineno-16-27"></a>            <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">count</span><span class="p">):</span>
+<a id="__codelineno-16-28" name="__codelineno-16-28" href="#__codelineno-16-28"></a>                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">buffer</span><span class="p">[</span><span class="n">pos</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-16-29" name="__codelineno-16-29" href="#__codelineno-16-29"></a>                    <span class="n">items</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">buffer</span><span class="p">[</span><span class="n">pos</span><span class="p">])</span>
+<a id="__codelineno-16-30" name="__codelineno-16-30" href="#__codelineno-16-30"></a>                <span class="n">pos</span> <span class="o">=</span> <span class="p">(</span><span class="n">pos</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_size</span>
+<a id="__codelineno-16-31" name="__codelineno-16-31" href="#__codelineno-16-31"></a>            <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="nb">reversed</span><span class="p">(</span><span class="n">items</span><span class="p">))</span>
+</code></pre></div>
+<h3 id="batch-scaling-operations">Batch Scaling Operations<a class="headerlink" href="#batch-scaling-operations" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">batch_scale_operations</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scaling_decisions</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]):</span>
+<a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a><span class="sd">    Execute multiple scaling operations in parallel.</span>
+<a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a>
+<a id="__codelineno-17-5" name="__codelineno-17-5" href="#__codelineno-17-5"></a><span class="sd">    Improves performance when scaling multiple applications simultaneously.</span>
+<a id="__codelineno-17-6" name="__codelineno-17-6" href="#__codelineno-17-6"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-17-7" name="__codelineno-17-7" href="#__codelineno-17-7"></a>    <span class="n">tasks</span> <span class="o">=</span> <span class="p">[]</span>
+<a id="__codelineno-17-8" name="__codelineno-17-8" href="#__codelineno-17-8"></a>    <span class="k">for</span> <span class="n">app_name</span><span class="p">,</span> <span class="n">target_replicas</span> <span class="ow">in</span> <span class="n">scaling_decisions</span><span class="p">:</span>
+<a id="__codelineno-17-9" name="__codelineno-17-9" href="#__codelineno-17-9"></a>        <span class="n">task</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">create_task</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">execute_scaling</span><span class="p">(</span><span class="n">app_name</span><span class="p">,</span> <span class="n">target_replicas</span><span class="p">))</span>
+<a id="__codelineno-17-10" name="__codelineno-17-10" href="#__codelineno-17-10"></a>        <span class="n">tasks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">task</span><span class="p">)</span>
+<a id="__codelineno-17-11" name="__codelineno-17-11" href="#__codelineno-17-11"></a>
+<a id="__codelineno-17-12" name="__codelineno-17-12" href="#__codelineno-17-12"></a>    <span class="c1"># Execute all scaling operations concurrently</span>
+<a id="__codelineno-17-13" name="__codelineno-17-13" href="#__codelineno-17-13"></a>    <span class="n">results</span> <span class="o">=</span> <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">gather</span><span class="p">(</span><span class="o">*</span><span class="n">tasks</span><span class="p">,</span> <span class="n">return_exceptions</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<a id="__codelineno-17-14" name="__codelineno-17-14" href="#__codelineno-17-14"></a>
+<a id="__codelineno-17-15" name="__codelineno-17-15" href="#__codelineno-17-15"></a>    <span class="c1"># Handle results and exceptions</span>
+<a id="__codelineno-17-16" name="__codelineno-17-16" href="#__codelineno-17-16"></a>    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">result</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">results</span><span class="p">):</span>
+<a id="__codelineno-17-17" name="__codelineno-17-17" href="#__codelineno-17-17"></a>        <span class="n">app_name</span><span class="p">,</span> <span class="n">target_replicas</span> <span class="o">=</span> <span class="n">scaling_decisions</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+<a id="__codelineno-17-18" name="__codelineno-17-18" href="#__codelineno-17-18"></a>        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="ne">Exception</span><span class="p">):</span>
+<a id="__codelineno-17-19" name="__codelineno-17-19" href="#__codelineno-17-19"></a>            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Scaling failed for </span><span class="si">{</span><span class="n">app_name</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">result</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<a id="__codelineno-17-20" name="__codelineno-17-20" href="#__codelineno-17-20"></a>        <span class="k">else</span><span class="p">:</span>
+<a id="__codelineno-17-21" name="__codelineno-17-21" href="#__codelineno-17-21"></a>            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Successfully scaled </span><span class="si">{</span><span class="n">app_name</span><span class="si">}</span><span class="s2"> to </span><span class="si">{</span><span class="n">target_replicas</span><span class="si">}</span><span class="s2"> replicas&quot;</span><span class="p">)</span>
+</code></pre></div>
+<h2 id="monitoring-and-debugging">Monitoring and Debugging<a class="headerlink" href="#monitoring-and-debugging" title="Permanent link">&para;</a></h2>
+<h3 id="scaling-decision-logging">Scaling Decision Logging<a class="headerlink" href="#scaling-decision-logging" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">log_scaling_decision</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">app_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">decision</span><span class="p">:</span> <span class="n">ScalingDecision</span><span class="p">):</span>
+<a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Log detailed scaling decision for debugging and analysis.&quot;&quot;&quot;</span>
+<a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a>    <span class="n">log_data</span> <span class="o">=</span> <span class="p">{</span>
+<a id="__codelineno-18-4" name="__codelineno-18-4" href="#__codelineno-18-4"></a>        <span class="s1">&#39;app_name&#39;</span><span class="p">:</span> <span class="n">app_name</span><span class="p">,</span>
+<a id="__codelineno-18-5" name="__codelineno-18-5" href="#__codelineno-18-5"></a>        <span class="s1">&#39;timestamp&#39;</span><span class="p">:</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">(),</span>
+<a id="__codelineno-18-6" name="__codelineno-18-6" href="#__codelineno-18-6"></a>        <span class="s1">&#39;should_scale&#39;</span><span class="p">:</span> <span class="n">decision</span><span class="o">.</span><span class="n">should_scale</span><span class="p">,</span>
+<a id="__codelineno-18-7" name="__codelineno-18-7" href="#__codelineno-18-7"></a>        <span class="s1">&#39;current_replicas&#39;</span><span class="p">:</span> <span class="n">decision</span><span class="o">.</span><span class="n">current_replicas</span><span class="p">,</span>
+<a id="__codelineno-18-8" name="__codelineno-18-8" href="#__codelineno-18-8"></a>        <span class="s1">&#39;target_replicas&#39;</span><span class="p">:</span> <span class="n">decision</span><span class="o">.</span><span class="n">target_replicas</span><span class="p">,</span>
+<a id="__codelineno-18-9" name="__codelineno-18-9" href="#__codelineno-18-9"></a>        <span class="s1">&#39;reason&#39;</span><span class="p">:</span> <span class="n">decision</span><span class="o">.</span><span class="n">reason</span><span class="p">,</span>
+<a id="__codelineno-18-10" name="__codelineno-18-10" href="#__codelineno-18-10"></a>        <span class="s1">&#39;triggered_by&#39;</span><span class="p">:</span> <span class="n">decision</span><span class="o">.</span><span class="n">triggered_by</span><span class="p">,</span>
+<a id="__codelineno-18-11" name="__codelineno-18-11" href="#__codelineno-18-11"></a>        <span class="s1">&#39;metrics&#39;</span><span class="p">:</span> <span class="p">{</span>
+<a id="__codelineno-18-12" name="__codelineno-18-12" href="#__codelineno-18-12"></a>            <span class="s1">&#39;cpu_percent&#39;</span><span class="p">:</span> <span class="n">decision</span><span class="o">.</span><span class="n">metrics</span><span class="o">.</span><span class="n">cpu_percent</span><span class="p">,</span>
+<a id="__codelineno-18-13" name="__codelineno-18-13" href="#__codelineno-18-13"></a>            <span class="s1">&#39;memory_percent&#39;</span><span class="p">:</span> <span class="n">decision</span><span class="o">.</span><span class="n">metrics</span><span class="o">.</span><span class="n">memory_percent</span><span class="p">,</span>
+<a id="__codelineno-18-14" name="__codelineno-18-14" href="#__codelineno-18-14"></a>            <span class="s1">&#39;rps&#39;</span><span class="p">:</span> <span class="n">decision</span><span class="o">.</span><span class="n">metrics</span><span class="o">.</span><span class="n">rps</span><span class="p">,</span>
+<a id="__codelineno-18-15" name="__codelineno-18-15" href="#__codelineno-18-15"></a>            <span class="s1">&#39;latency_p95_ms&#39;</span><span class="p">:</span> <span class="n">decision</span><span class="o">.</span><span class="n">metrics</span><span class="o">.</span><span class="n">p95_latency_ms</span><span class="p">,</span>
+<a id="__codelineno-18-16" name="__codelineno-18-16" href="#__codelineno-18-16"></a>            <span class="s1">&#39;active_connections&#39;</span><span class="p">:</span> <span class="n">decision</span><span class="o">.</span><span class="n">metrics</span><span class="o">.</span><span class="n">active_connections</span>
+<a id="__codelineno-18-17" name="__codelineno-18-17" href="#__codelineno-18-17"></a>        <span class="p">}</span> <span class="k">if</span> <span class="n">decision</span><span class="o">.</span><span class="n">metrics</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-18-18" name="__codelineno-18-18" href="#__codelineno-18-18"></a>        <span class="s1">&#39;scale_factors&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">last_scale_factors</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">app_name</span><span class="p">,</span> <span class="p">{})</span>
+<a id="__codelineno-18-19" name="__codelineno-18-19" href="#__codelineno-18-19"></a>    <span class="p">}</span>
+<a id="__codelineno-18-20" name="__codelineno-18-20" href="#__codelineno-18-20"></a>
+<a id="__codelineno-18-21" name="__codelineno-18-21" href="#__codelineno-18-21"></a>    <span class="c1"># Store in database for analysis</span>
+<a id="__codelineno-18-22" name="__codelineno-18-22" href="#__codelineno-18-22"></a>    <span class="n">asyncio</span><span class="o">.</span><span class="n">create_task</span><span class="p">(</span>
+<a id="__codelineno-18-23" name="__codelineno-18-23" href="#__codelineno-18-23"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">state_store</span><span class="o">.</span><span class="n">log_event</span><span class="p">(</span>
+<a id="__codelineno-18-24" name="__codelineno-18-24" href="#__codelineno-18-24"></a>            <span class="n">app_name</span><span class="o">=</span><span class="n">app_name</span><span class="p">,</span>
+<a id="__codelineno-18-25" name="__codelineno-18-25" href="#__codelineno-18-25"></a>            <span class="n">event_type</span><span class="o">=</span><span class="s1">&#39;scaling_decision&#39;</span><span class="p">,</span>
+<a id="__codelineno-18-26" name="__codelineno-18-26" href="#__codelineno-18-26"></a>            <span class="n">message</span><span class="o">=</span><span class="n">decision</span><span class="o">.</span><span class="n">reason</span><span class="p">,</span>
+<a id="__codelineno-18-27" name="__codelineno-18-27" href="#__codelineno-18-27"></a>            <span class="n">details</span><span class="o">=</span><span class="n">log_data</span>
+<a id="__codelineno-18-28" name="__codelineno-18-28" href="#__codelineno-18-28"></a>        <span class="p">)</span>
+<a id="__codelineno-18-29" name="__codelineno-18-29" href="#__codelineno-18-29"></a>    <span class="p">)</span>
+</code></pre></div>
+<h3 id="performance-metrics">Performance Metrics<a class="headerlink" href="#performance-metrics" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">get_scaling_performance_metrics</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">app_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Get performance metrics for the scaling algorithm.&quot;&quot;&quot;</span>
+<a id="__codelineno-19-3" name="__codelineno-19-3" href="#__codelineno-19-3"></a>    <span class="n">decisions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_recent_scaling_decisions</span><span class="p">(</span><span class="n">app_name</span><span class="p">,</span> <span class="n">hours</span><span class="o">=</span><span class="mi">24</span><span class="p">)</span>
+<a id="__codelineno-19-4" name="__codelineno-19-4" href="#__codelineno-19-4"></a>
+<a id="__codelineno-19-5" name="__codelineno-19-5" href="#__codelineno-19-5"></a>    <span class="n">total_decisions</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">decisions</span><span class="p">)</span>
+<a id="__codelineno-19-6" name="__codelineno-19-6" href="#__codelineno-19-6"></a>    <span class="n">scale_out_decisions</span> <span class="o">=</span> <span class="nb">len</span><span class="p">([</span><span class="n">d</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">decisions</span> <span class="k">if</span> <span class="n">d</span><span class="o">.</span><span class="n">target_replicas</span> <span class="o">&gt;</span> <span class="n">d</span><span class="o">.</span><span class="n">current_replicas</span><span class="p">])</span>
+<a id="__codelineno-19-7" name="__codelineno-19-7" href="#__codelineno-19-7"></a>    <span class="n">scale_in_decisions</span> <span class="o">=</span> <span class="nb">len</span><span class="p">([</span><span class="n">d</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">decisions</span> <span class="k">if</span> <span class="n">d</span><span class="o">.</span><span class="n">target_replicas</span> <span class="o">&lt;</span> <span class="n">d</span><span class="o">.</span><span class="n">current_replicas</span><span class="p">])</span>
+<a id="__codelineno-19-8" name="__codelineno-19-8" href="#__codelineno-19-8"></a>    <span class="n">no_scale_decisions</span> <span class="o">=</span> <span class="n">total_decisions</span> <span class="o">-</span> <span class="n">scale_out_decisions</span> <span class="o">-</span> <span class="n">scale_in_decisions</span>
+<a id="__codelineno-19-9" name="__codelineno-19-9" href="#__codelineno-19-9"></a>
+<a id="__codelineno-19-10" name="__codelineno-19-10" href="#__codelineno-19-10"></a>    <span class="c1"># Calculate average response time to scaling needs</span>
+<a id="__codelineno-19-11" name="__codelineno-19-11" href="#__codelineno-19-11"></a>    <span class="n">response_times</span> <span class="o">=</span> <span class="p">[]</span>
+<a id="__codelineno-19-12" name="__codelineno-19-12" href="#__codelineno-19-12"></a>    <span class="k">for</span> <span class="n">decision</span> <span class="ow">in</span> <span class="n">decisions</span><span class="p">:</span>
+<a id="__codelineno-19-13" name="__codelineno-19-13" href="#__codelineno-19-13"></a>        <span class="k">if</span> <span class="n">decision</span><span class="o">.</span><span class="n">should_scale</span><span class="p">:</span>
+<a id="__codelineno-19-14" name="__codelineno-19-14" href="#__codelineno-19-14"></a>            <span class="c1"># Time from when scaling was needed to when it was decided</span>
+<a id="__codelineno-19-15" name="__codelineno-19-15" href="#__codelineno-19-15"></a>            <span class="n">response_time</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">calculate_response_time</span><span class="p">(</span><span class="n">app_name</span><span class="p">,</span> <span class="n">decision</span><span class="o">.</span><span class="n">timestamp</span><span class="p">)</span>
+<a id="__codelineno-19-16" name="__codelineno-19-16" href="#__codelineno-19-16"></a>            <span class="k">if</span> <span class="n">response_time</span><span class="p">:</span>
+<a id="__codelineno-19-17" name="__codelineno-19-17" href="#__codelineno-19-17"></a>                <span class="n">response_times</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">response_time</span><span class="p">)</span>
+<a id="__codelineno-19-18" name="__codelineno-19-18" href="#__codelineno-19-18"></a>
+<a id="__codelineno-19-19" name="__codelineno-19-19" href="#__codelineno-19-19"></a>    <span class="k">return</span> <span class="p">{</span>
+<a id="__codelineno-19-20" name="__codelineno-19-20" href="#__codelineno-19-20"></a>        <span class="s1">&#39;total_decisions&#39;</span><span class="p">:</span> <span class="n">total_decisions</span><span class="p">,</span>
+<a id="__codelineno-19-21" name="__codelineno-19-21" href="#__codelineno-19-21"></a>        <span class="s1">&#39;scale_out_count&#39;</span><span class="p">:</span> <span class="n">scale_out_decisions</span><span class="p">,</span>
+<a id="__codelineno-19-22" name="__codelineno-19-22" href="#__codelineno-19-22"></a>        <span class="s1">&#39;scale_in_count&#39;</span><span class="p">:</span> <span class="n">scale_in_decisions</span><span class="p">,</span>
+<a id="__codelineno-19-23" name="__codelineno-19-23" href="#__codelineno-19-23"></a>        <span class="s1">&#39;no_scale_count&#39;</span><span class="p">:</span> <span class="n">no_scale_decisions</span><span class="p">,</span>
+<a id="__codelineno-19-24" name="__codelineno-19-24" href="#__codelineno-19-24"></a>        <span class="s1">&#39;avg_response_time_seconds&#39;</span><span class="p">:</span> <span class="n">statistics</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">response_times</span><span class="p">)</span> <span class="k">if</span> <span class="n">response_times</span> <span class="k">else</span> <span class="mi">0</span><span class="p">,</span>
+<a id="__codelineno-19-25" name="__codelineno-19-25" href="#__codelineno-19-25"></a>        <span class="s1">&#39;scaling_efficiency&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">calculate_scaling_efficiency</span><span class="p">(</span><span class="n">app_name</span><span class="p">),</span>
+<a id="__codelineno-19-26" name="__codelineno-19-26" href="#__codelineno-19-26"></a>        <span class="s1">&#39;oscillation_rate&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">calculate_oscillation_rate</span><span class="p">(</span><span class="n">app_name</span><span class="p">)</span>
+<a id="__codelineno-19-27" name="__codelineno-19-27" href="#__codelineno-19-27"></a>    <span class="p">}</span>
+</code></pre></div>
+<hr />
+<p><strong>Next Steps</strong>: Learn about <a href="../health/">Health Monitoring</a> and how health checks integrate with scaling decisions.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/admincodes7/Orchestry" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.tabs", "navigation.sections", "navigation.expand", "navigation.top", "search.highlight", "search.share", "content.code.copy", "content.code.annotate"], "search": "../../assets/javascripts/workers/search.973d3a69.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.f55a23d4.min.js"></script>
+      
+    
+  </body>
+</html>
